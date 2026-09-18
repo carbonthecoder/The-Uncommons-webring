@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { MEMBERS } from '../data/members';
 import type { Member } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
-import { Search, ExternalLink, Terminal } from 'lucide-react';
+import { Search, ExternalLink, Terminal, ArrowRight } from 'lucide-react';
 
 export const NodesPage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -129,6 +130,41 @@ export const NodesPage: React.FC = () => {
             </div>
           </div>
         ))}
+
+        {/* Open Genesis Candidate Slot Card */}
+        <Link
+          to="/apply"
+          onClick={() => sound.playClick()}
+          className="group p-4 bg-zinc-950/60 hover:bg-zinc-950 border border-dashed border-emerald-500/30 hover:border-emerald-500/60 rounded-lg transition-all cursor-pointer flex flex-col justify-between space-y-3"
+        >
+          <div>
+            <div className="flex items-center justify-between text-[10px] font-mono mb-2">
+              <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/20">
+                NODE-002
+              </span>
+              <span className="flex items-center gap-1 text-emerald-400 font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                SLOT OPEN
+              </span>
+            </div>
+
+            <div className="font-mono text-sm font-semibold text-white group-hover:text-emerald-300 transition-colors">
+              claim-slot-002.xyz
+            </div>
+            <div className="text-xs text-zinc-400 font-sans mt-0.5">
+              Awaiting Council Review
+            </div>
+
+            <div className="text-[11px] font-mono text-zinc-400 mt-2 line-clamp-2">
+              Have a personal domain and a proud build? Submit your domain to claim Node #002.
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-emerald-400">
+            <span>Apply in #council-review</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+          </div>
+        </Link>
       </div>
 
       {filtered.length === 0 && (

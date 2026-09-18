@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import type { Member } from '../data/members';
 import { sound } from '../utils/audio';
 import { ExternalLink, Sparkles, Compass, ShieldCheck, ArrowLeft, ArrowRight, CornerDownLeft } from 'lucide-react';
@@ -25,13 +26,38 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
   // Background starfield dust
   const starsRef = useRef<Array<{ x: number; y: number; size: number; alpha: number; speed: number }>>([]);
 
-  const activeMember = members[activeNodeIndex];
+  // Virtualize ring to at least 8 celestial nodes so the 3D orbit remains intact with open candidate slots
+  const displayNodes = useMemo(() => {
+    if (members.length >= 8) return members;
+    const slots: Member[] = [...members];
+    for (let i = members.length; i < 8; i++) {
+      slots.push({
+        id: `NODE-00${i + 1}`,
+        name: `Candidate Slot #${i + 1}`,
+        handle: 'open_slot',
+        domain: `slot-00${i + 1}.open`,
+        url: '/apply',
+        field: 'Awaiting Council Admission in #council-review',
+        bio: 'This sovereign slot is unassigned. Apply via Kavyon #council-review with your personal domain and proof of work to claim it.',
+        proofOfWork: 'Open for admitted polymaths.',
+        proofUrl: '/apply',
+        tags: ['Open Slot', 'Awaiting Admission'],
+        joinDate: '2026',
+        verified: false,
+        ringPosition: i + 1,
+        status: 'reviewing',
+      });
+    }
+    return slots;
+  }, [members]);
+
+  const activeMember = displayNodes[activeNodeIndex] || displayNodes[0];
 
   // Rotate smoothly towards a specific node
   const focusNode = useCallback((index: number) => {
     sound.playClick();
     setActiveNodeIndex(index);
-    const total = members.length;
+    const total = displayNodes.length;
     // We want the node to align with the front center (theta = Math.PI / 2)
     const targetTheta = Math.PI / 2 - (index / total) * Math.PI * 2;
     // Normalize target angle
@@ -40,17 +66,17 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
     let target = targetTheta % (Math.PI * 2);
     if (target < 0) target += Math.PI * 2;
     targetAngleRef.current = targetTheta;
-  }, [members.length]);
+  }, [displayNodes.length]);
 
   const nextNode = useCallback(() => {
-    const nextIdx = (activeNodeIndex + 1) % members.length;
+    const nextIdx = (activeNodeIndex + 1) % displayNodes.length;
     focusNode(nextIdx);
-  }, [activeNodeIndex, members.length, focusNode]);
+  }, [activeNodeIndex, displayNodes.length, focusNode]);
 
   const prevNode = useCallback(() => {
-    const prevIdx = (activeNodeIndex - 1 + members.length) % members.length;
+    const prevIdx = (activeNodeIndex - 1 + displayNodes.length) % displayNodes.length;
     focusNode(prevIdx);
-  }, [activeNodeIndex, members.length, focusNode]);
+  }, [activeNodeIndex, displayNodes.length, focusNode]);
 
   // Keyboard navigation listeners: [ for prev, ] for next, Space for pause, Enter for dossier
   useEffect(() => {
@@ -175,8 +201,8 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       ctx.fill();
 
       // Calculate node positions
-      const total = members.length;
-      const nodes = members.map((m, i) => {
+      const total = displayNodes.length;
+      const nodes = displayNodes.map((m: Member, i: number) => {
         const theta = angleRef.current + (i / total) * Math.PI * 2;
         const x = centerX + Math.cos(theta) * radiusX;
         const y = centerY + Math.sin(theta) * radiusY;
@@ -278,7 +304,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationId);
     };
-  }, [members, hoveredMember, isRotating, activeNodeIndex]);
+  }, [displayNodes, hoveredMember, isRotating, activeNodeIndex]);
 
   // Mouse hover detection
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -302,7 +328,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
     const radiusX = Math.min(rect.width, rect.height) * 0.40;
     const radiusY = radiusX * 0.50;
 
-    const total = members.length;
+    const total = displayNodes.length;
     let found: Member | null = null;
     let foundIdx = -1;
 
@@ -313,7 +339,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       const dist = Math.hypot(x - nodeX, y - nodeY);
 
       if (dist < 20) {
-        found = members[i];
+        found = displayNodes[i];
         foundIdx = i;
         break;
       }
@@ -425,7 +451,9 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
         {/* Bottom Orbit Status */}
         <div className="absolute bottom-3 inset-x-4 z-10 flex items-center justify-between text-[11px] font-mono text-zinc-500 pointer-events-none">
           <div>PULSE: CIRCULAR WAVE PACKETS ACTIVE</div>
-          <div className="hidden sm:block">12 NODES LINKED IN CLOSED GRAVITY</div>
+          <div className="hidden sm:block">
+            {members.length} VERIFIED NODE &bull; {Math.max(0, displayNodes.length - members.length)} OPEN CANDIDATE SLOTS
+          </div>
         </div>
       </div>
 
@@ -452,7 +480,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 font-mono text-xs">
-              <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-white/5 text-[10px]">
+              <span className={`px-1.5 py-0.5 rounded text-[10px] ${activeMember.verified ? 'bg-zinc-900 text-zinc-400 border border-white/5' : 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/20'}`}>
                 {activeMember.id}
               </span>
               <span className="font-semibold text-white">
@@ -468,26 +496,39 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
         {/* Right Actions: Inspect & External Link */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <button
-            onClick={() => {
-              sound.playClick();
-              onSelectMember(activeMember);
-            }}
-            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-md text-xs font-mono text-zinc-200 hover:text-white transition-colors cursor-pointer"
-          >
-            <span>Dossier</span>
-            <CornerDownLeft className="w-3 h-3 text-zinc-500" />
-          </button>
+          {activeMember.verified ? (
+            <>
+              <button
+                onClick={() => {
+                  sound.playClick();
+                  onSelectMember(activeMember);
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-md text-xs font-mono text-zinc-200 hover:text-white transition-colors cursor-pointer"
+              >
+                <span>Dossier</span>
+                <CornerDownLeft className="w-3 h-3 text-zinc-500" />
+              </button>
 
-          <a
-            href={activeMember.url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-md text-xs font-mono transition-transform hover:scale-[1.02]"
-          >
-            <span>Visit Site</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
+              <a
+                href={activeMember.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-md text-xs font-mono transition-transform hover:scale-[1.02]"
+              >
+                <span>Visit Site</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </>
+          ) : (
+            <Link
+              to="/apply"
+              onClick={() => sound.playClick()}
+              className="flex items-center gap-1 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-md text-xs font-mono transition-transform hover:scale-[1.02] cursor-pointer"
+            >
+              <span>Claim {activeMember.id}</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          )}
         </div>
       </div>
     </div>
