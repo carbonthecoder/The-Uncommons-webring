@@ -13,7 +13,7 @@ export const HomePage: React.FC = () => {
   return (
     <div className="space-y-16 sm:space-y-20 w-full">
       {/* 1. Hero Section (Full width, bold, effortless) */}
-      <section className="text-center space-y-6 pt-4 sm:pt-8 max-w-3xl mx-auto px-2">
+      <section className="text-center space-y-6 pt-4 sm:pt-8 max-w-4xl mx-auto px-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-[11px] sm:text-xs font-mono text-zinc-300">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <span>THE UNCOMMONS // CLOSED WEBRING</span>
@@ -21,7 +21,7 @@ export const HomePage: React.FC = () => {
           <span className="text-zinc-400 hidden sm:inline">{MEMBERS.length} VETTED NODES</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight text-white leading-[1.12] text-balance max-w-3xl mx-auto">
+        <h1 className="font-syne text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] sm:leading-[1.15] text-balance max-w-4xl mx-auto">
           A private constellation of the web&apos;s rarest minds.
         </h1>
 

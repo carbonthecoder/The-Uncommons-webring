@@ -29,6 +29,10 @@ body {
   font-family: var(--font-display) !important;
 }
 
+.font-syne {
+  font-family: 'Syne', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
 code, pre, kbd, .font-mono {
   font-family: var(--font-mono) !important;
 }
