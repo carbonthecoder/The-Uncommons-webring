@@ -21,7 +21,7 @@ export const HomePage: React.FC = () => {
           <span className="text-zinc-400 hidden sm:inline">{MEMBERS.length} VETTED NODES</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-extrabold tracking-tight text-white leading-[1.08] sm:leading-[1.05] text-balance max-w-4xl mx-auto break-words">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight text-white leading-[1.12] text-balance max-w-3xl mx-auto">
           A private constellation of the web&apos;s rarest minds.
         </h1>
 
@@ -74,66 +74,56 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Three Simple Truths (Clean vertical line alignment) */}
-      <section className="space-y-8 pt-4 max-w-3xl mx-auto px-4">
+      {/* 3. Three Simple Truths (Full-width 3-column layout, zero empty left space, zero cards) */}
+      <section className="space-y-8 pt-6 max-w-5xl mx-auto px-4">
         <div className="space-y-1.5 border-b border-white/[0.08] pb-4">
           <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500 uppercase tracking-widest">
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>HOW IT WORKS</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-display font-extrabold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
             Three simple truths.
           </h2>
         </div>
 
-        {/* Clean vertical aligned spine */}
-        <div className="relative border-l border-white/15 pl-6 sm:pl-8 ml-2 sm:ml-4 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
           {/* Truth 1 */}
-          <div className="relative group">
-            <div className="absolute -left-[31px] sm:-left-[39px] top-1 w-3 h-3 rounded-full bg-black border-2 border-white/40 group-hover:border-white transition-colors" />
-            <div className="space-y-1.5">
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider">
-                01 // SOVEREIGNTY
-              </span>
-              <h3 className="text-base sm:text-xl font-display font-bold text-white tracking-tight">
-                You own your spot
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed max-w-2xl">
-                You host your precious projects, writings, and experiments on a personal site or dev garden you actually own. No social media algorithms controlling your reach.
-              </p>
-            </div>
+          <div className="space-y-2 border-l border-white/15 pl-4 sm:pl-5">
+            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block">
+              01 // SOVEREIGNTY
+            </span>
+            <h3 className="text-base sm:text-lg font-display font-semibold text-white tracking-tight">
+              You own your spot
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
+              You host your precious projects, writings, and experiments on a personal site or dev garden you actually own. No social media algorithms controlling your reach.
+            </p>
           </div>
 
           {/* Truth 2 */}
-          <div className="relative group">
-            <div className="absolute -left-[31px] sm:-left-[39px] top-1 w-3 h-3 rounded-full bg-black border-2 border-white/40 group-hover:border-white transition-colors" />
-            <div className="space-y-1.5">
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider">
-                02 // THE EMBED
-              </span>
-              <h3 className="text-base sm:text-xl font-display font-bold text-white tracking-tight">
-                You wear the seal
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed max-w-2xl">
-                You place our quiet, minimal badge in your site footer. When someone clicks <code className="text-zinc-200 px-1.5 py-0.5 rounded bg-zinc-900 border border-white/10 text-xs font-mono">Next</code>, it hops them to another cracked peer in the ring.
-              </p>
-            </div>
+          <div className="space-y-2 border-l border-white/15 pl-4 sm:pl-5">
+            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block">
+              02 // THE EMBED
+            </span>
+            <h3 className="text-base sm:text-lg font-display font-semibold text-white tracking-tight">
+              You wear the seal
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
+              You place our quiet, minimal badge in your site footer. When someone clicks <code className="text-zinc-200 px-1.5 py-0.5 rounded bg-zinc-900 border border-white/10 text-xs font-mono">Next</code>, it hops them to another cracked peer in the ring.
+            </p>
           </div>
 
           {/* Truth 3 */}
-          <div className="relative group">
-            <div className="absolute -left-[31px] sm:-left-[39px] top-1 w-3 h-3 rounded-full bg-black border-2 border-white/40 group-hover:border-white transition-colors" />
-            <div className="space-y-1.5">
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider">
-                03 // HUMAN CIRCULATION
-              </span>
-              <h3 className="text-base sm:text-xl font-display font-bold text-white tracking-tight">
-                Real eyes, zero noise
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed max-w-2xl">
-                Curious visitors who appreciate high-effort work circulate continuously between our sites. Pure human discovery with zero advertising or engagement farming.
-              </p>
-            </div>
+          <div className="space-y-2 border-l border-white/15 pl-4 sm:pl-5">
+            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block">
+              03 // HUMAN DISCOVERY
+            </span>
+            <h3 className="text-base sm:text-lg font-display font-semibold text-white tracking-tight">
+              Real eyes, zero noise
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
+              Curious visitors who appreciate high-effort work circulate continuously between our sovereign sites. Pure human discovery with zero advertising or engagement farming.
+            </p>
           </div>
         </div>
       </section>
