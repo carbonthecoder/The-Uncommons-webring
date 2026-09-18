@@ -139,8 +139,10 @@ export const dispatchApplicationToDiscord = async (
     };
   }
 
-  // Webhook URL from environment (e.g. VITE_DISCORD_WEBHOOK_URL)
-  const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
+  // Webhook URL from environment or default official council webhook
+  const webhookUrl =
+    import.meta.env.VITE_DISCORD_WEBHOOK_URL ||
+    'https://discord.com/api/webhooks/1550549714200432670/615z4ghViOaJw_oKrRPiT2DnK1WJjzZeSTDuLLy66O1QreXn8VfMf0X58MX24AtT5O6a';
   const embedPayload = createDiscordEmbedPayload(data, ticketId);
 
   // Compile formatted Markdown ticket
