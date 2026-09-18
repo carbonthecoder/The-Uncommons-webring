@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { sound } from '../utils/audio';
 import confetti from 'canvas-confetti';
 import { Disc, Copy, Check, Terminal, ExternalLink, Sparkles } from 'lucide-react';
@@ -51,7 +51,7 @@ DATE: "${new Date().toISOString().split('T')[0]}"
           <Terminal className="w-3.5 h-3.5 text-zinc-400" />
           <span>COUNCIL ADMISSIONS // CONVERSATIONAL VETTING</span>
         </div>
-        <h1 className="text-3xl font-mono font-bold text-white tracking-tight">
+        <h1 className="text-3xl font-display font-bold text-white tracking-tight">
           Apply to The Uncommons
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto leading-relaxed">

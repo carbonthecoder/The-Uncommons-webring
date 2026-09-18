@@ -1,7 +1,8 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { sound } from '../utils/audio';
 import { Volume2, VolumeX, Disc, Lock } from 'lucide-react';
+import { FontSelector } from './FontSelector';
 
 interface NavbarProps {
   nodeCount: number;
@@ -95,6 +96,9 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Font Selector */}
+          <FontSelector />
+
           {/* Sound Toggle */}
           <button
             onClick={toggleSound}

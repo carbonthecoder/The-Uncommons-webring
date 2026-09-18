@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MEMBERS } from '../data/members';
 import type { Member } from '../data/members';
@@ -21,7 +21,7 @@ export const HomePage: React.FC = () => {
           <span className="text-zinc-400 hidden sm:inline">{MEMBERS.length} VETTED NODES</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-mono font-bold tracking-tight text-white leading-tight break-words">
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-bold tracking-tight text-white leading-tight break-words">
           A private constellation of the web&apos;s rarest minds.
         </h1>
 
@@ -80,7 +80,7 @@ export const HomePage: React.FC = () => {
           <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
             HOW IT WORKS
           </span>
-          <h2 className="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
             Three simple truths.
           </h2>
         </div>
@@ -119,7 +119,7 @@ export const HomePage: React.FC = () => {
       <section className="p-6 sm:p-8 bg-zinc-950 border border-white/[0.08] rounded-2xl space-y-4 max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1 max-w-xl">
-            <h3 className="text-lg sm:text-xl font-mono font-bold text-white tracking-tight">
+            <h3 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight">
               Think you belong in the ring?
             </h3>
             <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { sound } from '../utils/audio';
 import { Terminal, ArrowRight } from 'lucide-react';
@@ -12,7 +12,7 @@ export const ManifestoPage: React.FC = () => {
           <Terminal className="w-3.5 h-3.5 text-zinc-400" />
           <span>CANONICAL ESSAY // THE UNCOMMONS</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-mono font-bold text-white tracking-tight">
+        <h1 className="text-3xl sm:text-5xl font-display font-bold text-white tracking-tight">
           The Manifesto
         </h1>
         <p className="text-sm font-mono text-zinc-400">

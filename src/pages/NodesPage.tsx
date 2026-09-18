@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MEMBERS } from '../data/members';
 import type { Member } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
@@ -38,7 +38,7 @@ export const NodesPage: React.FC = () => {
           <Terminal className="w-3.5 h-3.5 text-zinc-400" />
           <span>REGISTRY // {MEMBERS.length} VETTED SOVEREIGN NODES</span>
         </div>
-        <h1 className="text-3xl font-mono font-bold text-white tracking-tight">
+        <h1 className="text-3xl font-display font-bold text-white tracking-tight">
           Vetted Nodes
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-zinc-400 font-sans max-w-xl leading-relaxed">
