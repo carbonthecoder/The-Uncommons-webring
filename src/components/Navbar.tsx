@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { NavLink, Link } from 'react-router-dom';
 import { sound } from '../utils/audio';
 import { Volume2, VolumeX, Disc } from 'lucide-react';
 
@@ -14,17 +15,21 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
     setIsMuted(!unmuted);
   };
 
-  const scrollToSection = (id: string) => {
-    sound.playClick();
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const navClass = ({ isActive }: { isActive: boolean }) =>
+    `px-3.5 py-1.5 rounded-full transition-all text-xs font-mono cursor-pointer ${
+      isActive
+        ? 'bg-zinc-800 text-white font-medium shadow-sm border border-white/10'
+        : 'text-zinc-400 hover:text-white'
+    }`;
+
+  const mobileNavClass = ({ isActive }: { isActive: boolean }) =>
+    `px-2.5 py-1 transition-colors text-[11px] font-mono cursor-pointer ${
+      isActive ? 'text-white font-bold' : 'text-zinc-400'
+    }`;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-black/85 backdrop-blur-md">
-      {/* Micro announcement bar */}
+      {/* Top micro announcement bar */}
       <div className="flex items-center justify-between px-4 py-1 text-[11px] font-mono tracking-wider text-zinc-500 border-b border-white/[0.04]">
         <div className="flex items-center gap-2">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
@@ -35,23 +40,22 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
           <span className="hidden sm:inline text-zinc-400">ACCEPTANCE:</span> <span className="hidden sm:inline text-zinc-300">&lt; 3%</span>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => scrollToSection('apply')}
+          <Link
+            to="/apply"
+            onClick={() => sound.playClick()}
             className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
           >
-            <span>ADMISSIONS ROUND IV OPEN</span>
-          </button>
+            <span>DISCORD COUNCIL QUEUE OPEN</span>
+          </Link>
         </div>
       </div>
 
       {/* Main navigation row */}
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14">
         {/* Brand */}
-        <div 
-          onClick={() => {
-            sound.playClick();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }} 
+        <Link 
+          to="/" 
+          onClick={() => sound.playClick()} 
           className="flex items-center gap-3 cursor-pointer group select-none"
         >
           <div className="relative w-7 h-7 flex items-center justify-center border border-white/20 rounded-full group-hover:border-white/50 transition-colors bg-zinc-950">
@@ -66,41 +70,23 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
               SOVEREIGN WEBRING
             </span>
           </div>
-        </div>
+        </Link>
 
-        {/* Section Navigation Links */}
-        <nav className="hidden md:flex items-center p-1 bg-zinc-950/80 border border-white/[0.08] rounded-full text-xs font-mono">
-          <button
-            onClick={() => scrollToSection('orbit')}
-            className="px-3.5 py-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          >
-            Constellation
-          </button>
-          <button
-            onClick={() => scrollToSection('manifesto')}
-            className="px-3.5 py-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          >
-            What Is It
-          </button>
-          <button
-            onClick={() => scrollToSection('dossiers')}
-            className="px-3.5 py-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          >
-            Dossiers ({nodeCount})
-          </button>
-          <button
-            onClick={() => scrollToSection('seal-section')}
-            className="px-3.5 py-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          >
-            Member Seal
-          </button>
-          <button
-            onClick={() => scrollToSection('apply')}
-            className="px-3.5 py-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80"></span>
-            Discord Vetting
-          </button>
+        {/* Navigation Tabs (Vercel Pill style) */}
+        <nav className="hidden md:flex items-center p-1 bg-zinc-950/80 border border-white/[0.08] rounded-full">
+          <NavLink to="/" end className={navClass} onClick={() => sound.playClick()}>
+            The Ring
+          </NavLink>
+          <NavLink to="/members" className={navClass} onClick={() => sound.playClick()}>
+            Directory ({nodeCount})
+          </NavLink>
+          <NavLink to="/seal" className={navClass} onClick={() => sound.playClick()}>
+            The Seal
+          </NavLink>
+          <NavLink to="/apply" className={navClass} onClick={() => sound.playClick()}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
+            Apply via Discord
+          </NavLink>
         </nav>
 
         {/* Right Controls */}
@@ -125,14 +111,31 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
           </button>
 
           {/* Join Council CTA */}
-          <button
-            onClick={() => scrollToSection('apply')}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-md transition-all shadow-md cursor-pointer"
+          <Link
+            to="/apply"
+            onClick={() => sound.playClick()}
+            className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-mono bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-md transition-all shadow-md cursor-pointer"
           >
             <Disc className="w-3.5 h-3.5" />
-            <span>Join Council</span>
-          </button>
+            <span>Apply</span>
+          </Link>
         </div>
+      </div>
+
+      {/* Mobile nav bar */}
+      <div className="md:hidden flex items-center justify-around px-2 py-2 border-t border-white/[0.04] bg-zinc-950/90">
+        <NavLink to="/" end className={mobileNavClass} onClick={() => sound.playClick()}>
+          The Ring
+        </NavLink>
+        <NavLink to="/members" className={mobileNavClass} onClick={() => sound.playClick()}>
+          Directory
+        </NavLink>
+        <NavLink to="/seal" className={mobileNavClass} onClick={() => sound.playClick()}>
+          The Seal
+        </NavLink>
+        <NavLink to="/apply" className={mobileNavClass} onClick={() => sound.playClick()}>
+          Apply
+        </NavLink>
       </div>
     </header>
   );
