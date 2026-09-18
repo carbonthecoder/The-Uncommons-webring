@@ -12,31 +12,31 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      {/* Minimal Hero */}
+      {/* Minimal Hero with Combo Tagline */}
       <section className="text-center max-w-3xl mx-auto space-y-5 pt-4 sm:pt-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-xs font-mono text-zinc-300">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>THE UNCOMMONS // SOVEREIGN WEBRING</span>
+          <span>THE UNCOMMONS</span>
           <span className="text-zinc-600">&bull;</span>
-          <span className="text-zinc-400">{MEMBERS.length} VETTED NODES</span>
+          <span className="text-zinc-400">CLOSED WEBRING // {MEMBERS.length} VETTED NODES</span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
-          A sovereign webring for rare intellects.
+          A private constellation of the web&apos;s rarest minds.
         </h1>
 
         <p className="text-sm sm:text-base text-zinc-400 font-sans max-w-xl mx-auto leading-relaxed">
-          The internet lost its depth to algorithmic feeds. The Uncommons connects exceptional builders, polymaths, and independent researchers across sovereign personal domains.
+          A closed webring for the 1% who still build sovereign real estate. Obsessive craft. Zero algorithms.
         </p>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-center gap-3 pt-1 flex-wrap">
+        <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
           <Link
-            to="/members"
+            to="/nodes"
             onClick={() => sound.playClick()}
             className="px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-md transition-all shadow-md flex items-center gap-2"
           >
-            <span>Explore Members ({MEMBERS.length})</span>
+            <span>Explore Nodes ({MEMBERS.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
 
@@ -50,11 +50,11 @@ export const HomePage: React.FC = () => {
           </Link>
 
           <Link
-            to="/seal"
+            to="/manifesto"
             onClick={() => sound.playClick()}
             className="px-4 py-2.5 text-zinc-400 hover:text-white font-mono text-xs transition-colors"
           >
-            <span>The Member Seal &rarr;</span>
+            <span>Read Manifesto &rarr;</span>
           </Link>
         </div>
       </section>
@@ -66,14 +66,14 @@ export const HomePage: React.FC = () => {
           onSelectMember={setSelectedMember}
         />
         <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 px-1">
-          <span>Click any node to inspect their proof of work</span>
-          <Link to="/members" className="hover:text-zinc-300 transition-colors">
-            View full directory &rarr;
+          <span>Drag orbit to rotate &bull; Click any node to view proof</span>
+          <Link to="/nodes" className="hover:text-zinc-300 transition-colors">
+            View full node registry &rarr;
           </Link>
         </div>
       </section>
 
-      {/* 3 Ultra-Clean Tenets (Fast to scan) */}
+      {/* 3 Ultra-Clean Tenets (Fast 10-second scan) */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
         <div className="p-5 bg-zinc-950 border border-white/[0.08] rounded-xl space-y-2">
           <div className="flex items-center gap-2 text-white font-mono text-xs font-semibold">
@@ -101,7 +101,7 @@ export const HomePage: React.FC = () => {
             <span>3. Discord Dialogue</span>
           </div>
           <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-            No automated gatekeeping. You talk directly with the founders on Discord to ensure mutual resonance.
+            No automated gatekeeping. You speak directly with the founders on Discord to ensure mutual resonance.
           </p>
         </div>
       </section>

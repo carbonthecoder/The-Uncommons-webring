@@ -2,9 +2,10 @@
 import { MEMBERS } from './data/members';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
-import { MembersPage } from './pages/MembersPage';
+import { NodesPage } from './pages/NodesPage';
 import { SealPage } from './pages/SealPage';
 import { ApplyPage } from './pages/ApplyPage';
+import { ManifestoPage } from './pages/ManifestoPage';
 import { GoPage } from './pages/GoPage';
 
 export default function App() {
@@ -18,9 +19,11 @@ export default function App() {
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/members" element={<MembersPage />} />
+            <Route path="/nodes" element={<NodesPage />} />
+            <Route path="/members" element={<NodesPage />} />
             <Route path="/seal" element={<SealPage />} />
             <Route path="/apply" element={<ApplyPage />} />
+            <Route path="/manifesto" element={<ManifestoPage />} />
             <Route path="/go" element={<GoPage />} />
             <Route path="*" element={<HomePage />} />
           </Routes>
@@ -34,7 +37,7 @@ export default function App() {
                 The Uncommons Webring
               </div>
               <div className="text-zinc-400">
-                A sovereign network for rare intellects &bull; Est. MMXXVI
+                A private sovereign network for rare intellects &bull; Est. MMXXVI
               </div>
             </div>
 
@@ -42,8 +45,11 @@ export default function App() {
               <Link to="/" className="hover:text-white transition-colors">
                 The Ring
               </Link>
-              <Link to="/members" className="hover:text-white transition-colors">
-                Directory
+              <Link to="/nodes" className="hover:text-white transition-colors">
+                Nodes
+              </Link>
+              <Link to="/manifesto" className="hover:text-white transition-colors">
+                Manifesto
               </Link>
               <Link to="/seal" className="hover:text-white transition-colors">
                 The Seal
