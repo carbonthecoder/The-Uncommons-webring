@@ -5,15 +5,15 @@ import type { Member } from '../data/members';
 import { ConstellationCanvas } from '../components/ConstellationCanvas';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
-import { ArrowRight, Disc, BookOpen, Sparkles, ExternalLink } from 'lucide-react';
+import { ArrowRight, Disc, BookOpen, ExternalLink } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   return (
-    <div className="space-y-16 sm:space-y-20 max-w-4xl mx-auto px-2 sm:px-4">
-      {/* 1. Hero Section */}
-      <section className="text-center space-y-5 pt-4 sm:pt-8">
+    <div className="space-y-16 sm:space-y-20 w-full">
+      {/* 1. Hero Section (Full width, bold, effortless) */}
+      <section className="text-center space-y-6 pt-4 sm:pt-8 max-w-3xl mx-auto px-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-[11px] sm:text-xs font-mono text-zinc-300">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <span>THE UNCOMMONS // CLOSED WEBRING</span>
@@ -21,11 +21,11 @@ export const HomePage: React.FC = () => {
           <span className="text-zinc-400 hidden sm:inline">{MEMBERS.length} VETTED NODES</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-mono font-bold tracking-tight text-white leading-tight break-words">
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-mono font-bold tracking-tight text-white leading-tight break-words">
           A private constellation of the web&apos;s rarest minds.
         </h1>
 
-        <p className="text-xs sm:text-sm md:text-base text-zinc-400 font-sans max-w-2xl mx-auto leading-relaxed break-words">
+        <p className="text-sm sm:text-base text-zinc-400 font-sans max-w-2xl mx-auto leading-relaxed break-words">
           The Uncommons is an invite-only webring connecting personal sites, dev gardens, and deep research logs into one closed loop. A place for cracked builders and rare thinkers to showcase their most precious, obsessive work and who they actually are &mdash; zero algorithms, no engagement farming, and no corporate slop.
         </p>
 
@@ -67,41 +67,27 @@ export const HomePage: React.FC = () => {
           onSelectMember={setSelectedMember}
         />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] font-mono text-zinc-500 px-1 text-center sm:text-left">
-          <span>Drag orbit to rotate &bull; Click any node to view proof &bull; [ and ] to surf</span>
+          <span>Drag orbit to rotate &bull; Click any node to view proof &bull; Use [ and ] to surf</span>
           <Link to="/nodes" className="hover:text-zinc-300 transition-colors">
             View full node registry ({MEMBERS.length}) &rarr;
           </Link>
         </div>
       </section>
 
-      {/* 3. What We're Cooking (Single Pure Sentence, NO CARDS!) */}
-      <section className="text-center py-6 border-y border-white/[0.08] space-y-3 px-2">
-        <div className="inline-flex items-center gap-2 text-xs font-mono text-amber-400">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span className="uppercase tracking-widest font-semibold">The Mindset</span>
-        </div>
-        <p className="text-sm sm:text-lg md:text-xl font-mono text-zinc-200 leading-relaxed max-w-3xl mx-auto break-words font-medium">
-          &ldquo;We&apos;re young, curious, and upskilling every single day &mdash; leveraging AI, low-level code, and relentless curiosity to build literally anything we set our minds to.&rdquo;
-        </p>
-        <p className="text-xs sm:text-sm text-zinc-500 font-sans max-w-xl mx-auto">
-          No corporate gatekeeping, no cringe tech clout. Just young builders who stay up late obsessed with what they can create next.
-        </p>
-      </section>
-
-      {/* 4. How The Ring Works (Flowing Typography, NO CARDS!) */}
-      <section className="space-y-6 px-2">
+      {/* 3. Three Simple Truths (Full width, clean editorial typography, zero sus vibes) */}
+      <section className="space-y-6 pt-4 max-w-4xl mx-auto px-2">
         <div className="space-y-1">
           <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
             HOW IT WORKS
           </span>
-          <h2 className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight">
             Three simple truths.
           </h2>
         </div>
 
-        <div className="space-y-4 text-xs sm:text-sm text-zinc-300 font-sans leading-relaxed divide-y divide-white/[0.04]">
-          <div className="pt-2 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-            <span className="font-mono text-xs text-white font-semibold shrink-0 sm:w-44">
+        <div className="space-y-5 text-sm sm:text-base text-zinc-300 font-sans leading-relaxed divide-y divide-white/[0.06]">
+          <div className="pt-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6">
+            <span className="font-mono text-xs sm:text-sm text-white font-semibold shrink-0 sm:w-52">
               1. You own your spot
             </span>
             <p className="text-zinc-400">
@@ -109,8 +95,8 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-            <span className="font-mono text-xs text-white font-semibold shrink-0 sm:w-44">
+          <div className="pt-5 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6">
+            <span className="font-mono text-xs sm:text-sm text-white font-semibold shrink-0 sm:w-52">
               2. You wear the seal
             </span>
             <p className="text-zinc-400">
@@ -118,8 +104,8 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-            <span className="font-mono text-xs text-white font-semibold shrink-0 sm:w-44">
+          <div className="pt-5 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6">
+            <span className="font-mono text-xs sm:text-sm text-white font-semibold shrink-0 sm:w-52">
               3. Real eyes, zero noise
             </span>
             <p className="text-zinc-400">
@@ -129,11 +115,11 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. How to Join (Direct, Conversational) */}
-      <section className="p-6 sm:p-8 bg-zinc-950 border border-white/[0.08] rounded-2xl space-y-4 text-center sm:text-left">
+      {/* 4. How to Join (Direct, Conversational) */}
+      <section className="p-6 sm:p-8 bg-zinc-950 border border-white/[0.08] rounded-2xl space-y-4 max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1 max-w-xl">
-            <h3 className="text-lg font-mono font-bold text-white tracking-tight">
+            <h3 className="text-lg sm:text-xl font-mono font-bold text-white tracking-tight">
               Think you belong in the ring?
             </h3>
             <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
@@ -154,7 +140,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 6. Exit Quote */}
+      {/* 5. Exit Quote */}
       <section className="text-center py-4 space-y-1">
         <p className="font-mono text-xs sm:text-sm text-zinc-400 italic">
           &ldquo;The web didn&apos;t lose its genius. It just retreated to personal domains.&rdquo;
