@@ -11,6 +11,12 @@ export interface FontOption {
 
 export const FONT_OPTIONS: FontOption[] = [
   {
+    id: 'syne',
+    name: 'Syne',
+    label: 'Primary / Signature (Avant-Garde)',
+    sampleFamily: "'Syne', sans-serif",
+  },
+  {
     id: 'space-grotesk',
     name: 'Space Grotesk',
     label: 'Option 3 (Bespoke Tech)',
@@ -34,17 +40,11 @@ export const FONT_OPTIONS: FontOption[] = [
     label: 'Crisp Geometric',
     sampleFamily: "'Plus Jakarta Sans', sans-serif",
   },
-  {
-    id: 'syne',
-    name: 'Syne',
-    label: 'Avant-Garde Bold',
-    sampleFamily: "'Syne', sans-serif",
-  },
 ];
 
 export const FontSelector: React.FC = () => {
   const [activeFont, setActiveFont] = useState<string>(() => {
-    return localStorage.getItem('uncommons_font') || 'space-grotesk';
+    return localStorage.getItem('uncommons_font') || 'syne';
   });
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
