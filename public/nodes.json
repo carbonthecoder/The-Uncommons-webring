@@ -9,7 +9,12 @@
     "bio": "Founder of The Uncommons. Architect of distributed cognitive loops, high-autonomy agents, and sovereign digital gardens.",
     "proofOfWork": "Agentic orchestration engines & persistent local-first knowledge systems.",
     "proofUrl": "https://github.com/carbonthecoder",
-    "tags": ["Founder", "Systems", "AI Agents", "Architecture"],
+    "tags": [
+      "Founder",
+      "Systems",
+      "AI Agents",
+      "Architecture"
+    ],
     "joinDate": "2026-01-01",
     "verified": true,
     "ringPosition": 1,
@@ -17,19 +22,23 @@
   },
   {
     "id": "NODE-002",
-    "name": "Awaiting Council Review",
-    "handle": "vacant",
-    "domain": "unclaimed-slot-002.xyz",
-    "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open to polymaths, systems hackers & sovereign creators",
-    "bio": "Genesis vacancy slot #2. Applications open via #council-review in Kavyon Discord.",
-    "proofOfWork": "Awaiting candidate build submission.",
-    "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": ["Genesis", "Vacancy"],
-    "joinDate": "2026-01-01",
-    "verified": false,
+    "name": "Priyanshu (Aero)",
+    "handle": "the_priyxnshu_",
+    "domain": "aero.build",
+    "url": "https://aero.build",
+    "field": "Distributed Systems & Low-Level Agent Runtimes",
+    "bio": "Architecting deterministic multi-agent systems and compiler IR pipelines.",
+    "proofOfWork": "High-throughput agent orchestration engine with zero IPC overhead.",
+    "proofUrl": "https://github.com/carbonthecoder/The-Uncommons-webring",
+    "tags": [
+      "Systems",
+      "Rust",
+      "Compilers",
+      "AI"
+    ],
     "ringPosition": 2,
-    "status": "reviewing"
+    "status": "online",
+    "verified": true
   },
   {
     "id": "NODE-003",
@@ -41,7 +50,10 @@
     "bio": "Genesis vacancy slot #3. Applications open via #council-review in Kavyon Discord.",
     "proofOfWork": "Awaiting candidate build submission.",
     "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": ["Genesis", "Vacancy"],
+    "tags": [
+      "Genesis",
+      "Vacancy"
+    ],
     "joinDate": "2026-01-01",
     "verified": false,
     "ringPosition": 3,
@@ -57,7 +69,10 @@
     "bio": "Genesis vacancy slot #4. Applications open via #council-review in Kavyon Discord.",
     "proofOfWork": "Awaiting candidate build submission.",
     "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": ["Genesis", "Vacancy"],
+    "tags": [
+      "Genesis",
+      "Vacancy"
+    ],
     "joinDate": "2026-01-01",
     "verified": false,
     "ringPosition": 4,
@@ -73,7 +88,10 @@
     "bio": "Genesis vacancy slot #5. Applications open via #council-review in Kavyon Discord.",
     "proofOfWork": "Awaiting candidate build submission.",
     "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": ["Genesis", "Vacancy"],
+    "tags": [
+      "Genesis",
+      "Vacancy"
+    ],
     "joinDate": "2026-01-01",
     "verified": false,
     "ringPosition": 5,
@@ -89,7 +107,10 @@
     "bio": "Genesis vacancy slot #6. Applications open via #council-review in Kavyon Discord.",
     "proofOfWork": "Awaiting candidate build submission.",
     "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": ["Genesis", "Vacancy"],
+    "tags": [
+      "Genesis",
+      "Vacancy"
+    ],
     "joinDate": "2026-01-01",
     "verified": false,
     "ringPosition": 6,
@@ -105,7 +126,10 @@
     "bio": "Genesis vacancy slot #7. Applications open via #council-review in Kavyon Discord.",
     "proofOfWork": "Awaiting candidate build submission.",
     "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": ["Genesis", "Vacancy"],
+    "tags": [
+      "Genesis",
+      "Vacancy"
+    ],
     "joinDate": "2026-01-01",
     "verified": false,
     "ringPosition": 7,
@@ -121,7 +145,10 @@
     "bio": "Genesis vacancy slot #8. Applications open via #council-review in Kavyon Discord.",
     "proofOfWork": "Awaiting candidate build submission.",
     "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": ["Genesis", "Vacancy"],
+    "tags": [
+      "Genesis",
+      "Vacancy"
+    ],
     "joinDate": "2026-01-01",
     "verified": false,
     "ringPosition": 8,

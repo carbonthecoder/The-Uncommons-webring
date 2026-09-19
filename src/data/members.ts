@@ -34,24 +34,39 @@ export const MEMBERS: Member[] = [
   }
 ];
 
+export function getAllMembers(): Member[] {
+  const custom = getCustomActiveNodes();
+  const map = new Map<string, Member>();
+  for (const m of MEMBERS) {
+    map.set(m.id, m);
+  }
+  for (const c of custom) {
+    map.set(c.id, c);
+  }
+  return Array.from(map.values()).sort((a, b) => a.ringPosition - b.ringPosition);
+}
+
 export function getNextMember(currentDomain: string): Member {
+  const members = getAllMembers();
   const clean = currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
-  const index = MEMBERS.findIndex(m => m.domain.toLowerCase() === clean);
-  if (index === -1) return MEMBERS[0];
-  return MEMBERS[(index + 1) % MEMBERS.length];
+  const index = members.findIndex(m => m.domain.toLowerCase() === clean);
+  if (index === -1) return members[0];
+  return members[(index + 1) % members.length];
 }
 
 export function getPrevMember(currentDomain: string): Member {
+  const members = getAllMembers();
   const clean = currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
-  const index = MEMBERS.findIndex(m => m.domain.toLowerCase() === clean);
-  if (index === -1) return MEMBERS[MEMBERS.length - 1];
-  return MEMBERS[(index - 1 + MEMBERS.length) % MEMBERS.length];
+  const index = members.findIndex(m => m.domain.toLowerCase() === clean);
+  if (index === -1) return members[members.length - 1];
+  return members[(index - 1 + members.length) % members.length];
 }
 
 export function getRandomMember(currentDomain?: string): Member {
+  const members = getAllMembers();
   const clean = currentDomain ? currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase() : '';
-  const filtered = currentDomain ? MEMBERS.filter(m => m.domain.toLowerCase() !== clean) : MEMBERS;
-  const pool = filtered.length > 0 ? filtered : MEMBERS;
+  const filtered = currentDomain ? members.filter(m => m.domain.toLowerCase() !== clean) : members;
+  const pool = filtered.length > 0 ? filtered : members;
   const randomIndex = Math.floor(Math.random() * pool.length);
   return pool[randomIndex];
 }

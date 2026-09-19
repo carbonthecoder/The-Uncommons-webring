@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { MEMBERS, GENESIS_TOTAL_SLOTS } from '../data/members';
+import { MEMBERS, GENESIS_TOTAL_SLOTS, getAllMembers } from '../data/members';
 import type { Member } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
@@ -26,15 +26,27 @@ export const NodesPage: React.FC = () => {
   const [filterMode, setFilterMode] = useState<'all' | 'verified' | 'vacant'>('all');
   const [viewFormat, setViewFormat] = useState<'table' | 'json'>('table');
   const [copiedJson, setCopiedJson] = useState(false);
+  const [version, setVersion] = useState(0);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const handleStorage = () => setVersion(v => v + 1);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('unc_nodes_updated', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('unc_nodes_updated', handleStorage);
+    };
+  }, []);
+
   // Construct full genesis 8-node registry list
   const fullRegistry = useMemo(() => {
+    const all = getAllMembers();
     const list: Array<{ id: string; member?: Member; isVacant: boolean }> = [];
     for (let i = 1; i <= GENESIS_TOTAL_SLOTS; i++) {
       const slotId = `NODE-00${i}`;
-      const found = MEMBERS.find(m => m.id === slotId || m.ringPosition === i);
+      const found = all.find(m => m.id === slotId || m.ringPosition === i);
       if (found) {
         list.push({ id: slotId, member: found, isVacant: false });
       } else {
@@ -42,7 +54,7 @@ export const NodesPage: React.FC = () => {
       }
     }
     return list;
-  }, []);
+  }, [version]);
 
   // Filtered registry based on query and filter mode
   const filteredRegistry = useMemo(() => {

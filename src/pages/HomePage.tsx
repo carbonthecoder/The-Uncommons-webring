@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MEMBERS } from '../data/members';
+import { MEMBERS, getAllMembers } from '../data/members';
 import type { Member } from '../data/members';
 import { ConstellationCanvas } from '../components/ConstellationCanvas';
 import { MemberDossierModal } from '../components/MemberDossierModal';
@@ -9,6 +9,7 @@ import { ArrowRight, Disc, BookOpen, ExternalLink } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const allMembers = getAllMembers();
 
   return (
     <div className="space-y-16 sm:space-y-20 w-full">
@@ -18,7 +19,7 @@ export const HomePage: React.FC = () => {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <span>THE UNCOMMONS // CLOSED WEBRING</span>
           <span className="text-zinc-600 hidden sm:inline">&bull;</span>
-          <span className="text-zinc-400 hidden sm:inline">{MEMBERS.length === 1 ? '1 VETTED NODE' : `${MEMBERS.length} VETTED NODES`}</span>
+          <span className="text-zinc-400 hidden sm:inline">{allMembers.length === 1 ? '1 VETTED NODE' : `${allMembers.length} VETTED NODES`}</span>
         </div>
 
         <h1 className="font-syne text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] sm:leading-[1.15] text-balance max-w-4xl mx-auto">

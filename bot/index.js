@@ -357,6 +357,50 @@ app.post('/api/create-ticket', async (req, res) => {
   }
 });
 
+// 3. Save / Update Node in public/nodes.json
+app.post('/api/save-node', async (req, res) => {
+  const { node, key } = req.body;
+  if (!node || !node.id) {
+    return res.status(400).json({ success: false, error: 'Node data with valid slot ID required.' });
+  }
+
+  // Verify Ring Key format
+  const cleanKey = (key || '').trim().toUpperCase();
+  if (!cleanKey.startsWith('UNC-')) {
+    return res.status(403).json({ success: false, error: 'Valid Ring Key required to publish node.' });
+  }
+
+  try {
+    const publicNodesPath = path.resolve(__dirname, '../public/nodes.json');
+    let nodesList = [];
+    if (fs.existsSync(publicNodesPath)) {
+      nodesList = JSON.parse(fs.readFileSync(publicNodesPath, 'utf8'));
+    }
+
+    const slotIndex = nodesList.findIndex(n => n.id === node.id);
+    const updatedNode = {
+      ...node,
+      verified: true,
+      status: node.status || 'online',
+    };
+
+    if (slotIndex !== -1) {
+      nodesList[slotIndex] = updatedNode;
+    } else {
+      nodesList.push(updatedNode);
+    }
+
+    // Write back to public/nodes.json
+    fs.writeFileSync(publicNodesPath, JSON.stringify(nodesList, null, 2), 'utf8');
+
+    console.log(`📡 Node ${node.id} (${node.handle} - ${node.domain}) updated and saved to public/nodes.json`);
+    return res.json({ success: true, node: updatedNode, nodes: nodesList });
+  } catch (err) {
+    console.error('Error saving node to disk:', err);
+    return res.status(500).json({ success: false, error: 'Failed to write node to disk.' });
+  }
+});
+
 // ============================================================================
 // DISCORD INTERACTION LISTENER (BUTTONS)
 // ============================================================================
