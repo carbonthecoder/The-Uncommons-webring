@@ -55,3 +55,45 @@ export function getRandomMember(currentDomain?: string): Member {
   const randomIndex = Math.floor(Math.random() * pool.length);
   return pool[randomIndex];
 }
+
+export const GENESIS_TOTAL_SLOTS = 8;
+
+export function getCustomActiveNodes(): Member[] {
+  try {
+    const raw = localStorage.getItem('unc_custom_nodes');
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomNode(newMember: Member) {
+  try {
+    const existing = getCustomActiveNodes();
+    const updated = [...existing.filter(m => m.id !== newMember.id), newMember];
+    localStorage.setItem('unc_custom_nodes', JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
+export function validateActivationKey(key: string): { valid: boolean; targetSlot: string; error?: string } {
+  const cleanKey = key.trim().toUpperCase();
+  if (!cleanKey) return { valid: false, targetSlot: '', error: 'Please enter an activation key.' };
+  
+  // Format matching UNC-NODE-00X-XXXX or UNC-ALPHA-2026 or UNC-KEY-XXXX
+  if (cleanKey.startsWith('UNC-NODE-') || cleanKey.startsWith('UNC-ALPHA-') || cleanKey.startsWith('UNC-KEY-')) {
+    // Extract slot if specified, e.g. UNC-NODE-002-8F9A -> NODE-002
+    const match = cleanKey.match(/NODE-(00[2-8])/);
+    const targetSlot = match ? `NODE-${match[1]}` : 'NODE-002';
+    return { valid: true, targetSlot };
+  }
+
+  return { 
+    valid: false, 
+    targetSlot: '', 
+    error: 'Invalid activation key. Obtain key in Discord #council-review after ratification.' 
+  };
+}
+

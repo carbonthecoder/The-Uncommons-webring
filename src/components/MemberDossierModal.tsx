@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import type { Member } from '../data/members';
 import { getNextMember, getPrevMember } from '../data/members';
 import { sound } from '../utils/audio';
@@ -58,7 +58,7 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
             </div>
             <span className="text-zinc-700 text-xs hidden sm:inline">|</span>
             <span className="text-xs font-mono text-zinc-500 hidden sm:inline">
-              RING POS: #{member.ringPosition} / 12
+              RING POS: #{member.ringPosition} / 8
             </span>
           </div>
 
@@ -94,6 +94,18 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
               <Cpu className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
               {member.field}
             </p>
+
+            {/* Sovereign Stack & Telemetry Strip */}
+            <div className="flex items-center gap-3 pt-2 text-[11px] font-mono text-zinc-500 border-t border-white/[0.04] flex-wrap">
+              <span className="flex items-center gap-1 text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                PING: 24ms
+              </span>
+              <span>&bull;</span>
+              <span>TLS 1.3 / HTTP3</span>
+              <span>&bull;</span>
+              <span>SOVEREIGN ARCHITECTURE</span>
+            </div>
           </div>
 
           {/* Bio statement */}

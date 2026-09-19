@@ -194,3 +194,44 @@ STATUS: "AWAITING MANUAL COUNCIL VERIFICATION"
     formattedEmbed: formattedTicket,
   };
 };
+
+// Dispatch function for Node Activation Event (When a member enters their key)
+export const dispatchNodeActivationToDiscord = async (nodeId: string, domain: string, name: string, field: string): Promise<boolean> => {
+  const webhookUrl =
+    import.meta.env.VITE_DISCORD_WEBHOOK_URL ||
+    'https://discord.com/api/webhooks/1550549714200432670/615z4ghViOaJw_oKrRPiT2DnK1WJjzZeSTDuLLy66O1QreXn8VfMf0X58MX24AtT5O6a';
+
+  if (!webhookUrl || !webhookUrl.startsWith('https://discord.com/api/webhooks/')) return false;
+
+  const payload = {
+    username: 'The Uncommons — Node Activation Service',
+    avatar_url: 'https://raw.githubusercontent.com/carbonthecoder/The-Uncommons-webring/main/public/favicon.svg',
+    embeds: [
+      {
+        title: `🟢 GENESIS NODE RATIFIED & ACTIVATED: ${nodeId}`,
+        description: `Candidate **${name}** has successfully redeemed their activation key and claimed slot **${nodeId}** on the sovereign ledger!`,
+        color: 0x10b981,
+        fields: [
+          { name: '🌐 Sovereign Domain', value: `\`https://${normalizeDomain(domain)}\``, inline: true },
+          { name: '🔑 Node Slot ID', value: `\`${nodeId}\``, inline: true },
+          { name: '⚡ Focus Field', value: field, inline: false },
+          { name: '📜 Webring Seal', value: 'Webring widget embed code generated and issued.', inline: false }
+        ],
+        footer: { text: `The Uncommons × Kavyon Ecosystem` },
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
