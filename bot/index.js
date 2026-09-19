@@ -6,7 +6,8 @@ import {
   ActionRowBuilder, 
   ButtonBuilder, 
   ButtonStyle, 
-  EmbedBuilder 
+  EmbedBuilder,
+  Events
 } from 'discord.js';
 import express from 'express';
 import cors from 'cors';
@@ -21,14 +22,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configPath = path.join(__dirname, 'config.json');
 let config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-// Initialize Discord Client
+// Initialize Discord Client with valid, non-privileged Gateway intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages,
   ],
 });
 
@@ -51,22 +49,32 @@ function generateTicketId() {
 async function findGuildMember(guild, rawUsername) {
   const clean = rawUsername.trim().replace(/^@/, '').toLowerCase();
   
-  // 1. Check guild members cache
+  // 1. Check if direct user ID was supplied
+  if (/^\d{17,20}$/.test(clean)) {
+    try {
+      const memberById = await guild.members.fetch(clean);
+      if (memberById) return memberById;
+    } catch {}
+  }
+
+  // 2. Check guild members cache
   let member = guild.members.cache.find(m => 
     m.user.username.toLowerCase() === clean || 
     m.user.tag.toLowerCase() === clean ||
-    (m.nickname && m.nickname.toLowerCase() === clean)
+    (m.nickname && m.nickname.toLowerCase() === clean) ||
+    (m.user.globalName && m.user.globalName.toLowerCase() === clean)
   );
 
   if (member) return member;
 
-  // 2. Fetch query from Discord API
+  // 3. Fetch query from Discord API
   try {
-    const fetched = await guild.members.fetch({ query: clean, limit: 10 });
+    const fetched = await guild.members.fetch({ query: clean, limit: 15 });
     member = fetched.find(m => 
       m.user.username.toLowerCase() === clean || 
       m.user.tag.toLowerCase() === clean ||
-      (m.nickname && m.nickname.toLowerCase() === clean)
+      (m.nickname && m.nickname.toLowerCase() === clean) ||
+      (m.user.globalName && m.user.globalName.toLowerCase() === clean)
     );
     if (member) return member;
   } catch (err) {
@@ -221,6 +229,54 @@ app.post('/api/create-ticket', async (req, res) => {
       });
     }
 
+    // Pick random staff reviewer from staff role or moderators
+    let assignedStaff = null;
+    let staffPingText = '';
+
+    try {
+      await guild.members.fetch().catch(() => {});
+      
+      let candidateReviewers = [];
+      if (config.staffRoleId) {
+        candidateReviewers = guild.members.cache.filter(m => m.roles.cache.has(config.staffRoleId) && !m.user.bot && m.id !== member.id);
+      }
+      
+      if (candidateReviewers.size === 0 && config.seniorStaffRoleId) {
+        candidateReviewers = guild.members.cache.filter(m => m.roles.cache.has(config.seniorStaffRoleId) && !m.user.bot && m.id !== member.id);
+      }
+
+      if (candidateReviewers.size === 0) {
+        candidateReviewers = guild.members.cache.filter(m => 
+          !m.user.bot && m.id !== member.id && 
+          (m.permissions.has(PermissionFlagsBits.ManageChannels) || m.permissions.has(PermissionFlagsBits.Administrator))
+        );
+      }
+
+      if (candidateReviewers.size > 0) {
+        const staffArray = Array.from(candidateReviewers.values());
+        assignedStaff = staffArray[Math.floor(Math.random() * staffArray.length)];
+        staffPingText = `<@${assignedStaff.id}>`;
+        
+        // Grant assigned staff member direct view & talk permissions
+        permissionOverwrites.push({
+          id: assignedStaff.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.AttachFiles,
+            PermissionFlagsBits.EmbedLinks,
+          ],
+        });
+      }
+    } catch (e) {
+      console.warn('Could not pick random staff member:', e.message);
+    }
+
+    if (!staffPingText) {
+      staffPingText = config.staffRoleId ? `<@&${config.staffRoleId}>` : 'Staff';
+    }
+
     // Create the private channel
     const channelOptions = {
       name: channelName,
@@ -274,10 +330,12 @@ app.post('/api/create-ticket', async (req, res) => {
         .setStyle(ButtonStyle.Danger)
     );
 
-    // Send ticket card and staff ping in channel
-    const staffPing = config.staffRoleId ? `<@&${config.staffRoleId}>` : 'Staff';
+    // Send ticket card and reviewer notification in channel
     await ticketChannel.send({
-      content: `🔔 **New Ticket Created:** <@${member.id}> & ${staffPing} — Initial review in progress.`,
+      content: `🔔 **Council Review Ticket Created**\n` +
+               `Applicant: <@${member.id}>\n` +
+               `Assigned Reviewer: ${staffPingText}\n\n` +
+               `*Welcome <@${member.id}>! Your designated reviewer ${staffPingText} has been assigned to inspect your sovereign domain and proof of work.*`,
       embeds: [embed],
       components: [row],
     });
@@ -287,6 +345,7 @@ app.post('/api/create-ticket', async (req, res) => {
       ticketId,
       channelId: ticketChannel.id,
       channelUrl: `https://discord.com/channels/${guild.id}/${ticketChannel.id}`,
+      assignedReviewer: assignedStaff ? { id: assignedStaff.id, username: assignedStaff.user.username } : null,
       applicant: {
         id: member.id,
         username: member.user.username,
@@ -301,7 +360,7 @@ app.post('/api/create-ticket', async (req, res) => {
 // ============================================================================
 // DISCORD INTERACTION LISTENER (BUTTONS)
 // ============================================================================
-client.on('interactionCreate', async (interaction) => {
+client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
 
   const [action, applicantId, ticketId] = interaction.customId.split(':');
@@ -312,7 +371,7 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.deferReply();
     const seniorPing = config.seniorStaffRoleId ? `<@&${config.seniorStaffRoleId}>` : 'Senior Staff';
     await interaction.editReply({
-      content: `📢 **Senior Review Requested:** ${seniorPing}, reviewer <@${interaction.user.id}> has completed initial checks on ticket \`${ticketId}\` for <@${applicantId}>. Please verify and confirm ratification.`,
+      content: `📢 **Senior Review Requested:** ${seniorPing}, reviewer <@${interaction.user.id}> has completed initial checks on ticket \`${ticketId}\` for candidate <@${applicantId}>. Please verify and confirm ratification.`,
     });
     return;
   }
@@ -331,6 +390,7 @@ client.on('interactionCreate', async (interaction) => {
     // Fetch applicant
     try {
       const applicantUser = await client.users.fetch(applicantId);
+      let dmSuccess = true;
       
       // DM Ring Key to applicant
       const dmEmbed = new EmbedBuilder()
@@ -338,7 +398,7 @@ client.on('interactionCreate', async (interaction) => {
         .setDescription(
           `Congratulations! Your sovereign domain and proof of work have been ratified by Council for **The Uncommons Webring**.\n\n` +
           `### 🔑 Your Official Ring Key:\n\`\`\`text\n${config.ringKey}\n\`\`\`\n\n` +
-          `**Next Step:**\n` +
+          `**Next Steps:**\n` +
           `1. Head to [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)\n` +
           `2. Enter your key to unlock your official Webring Seal script snippet.\n` +
           `3. Embed the badge in your personal domain footer!`
@@ -346,24 +406,43 @@ client.on('interactionCreate', async (interaction) => {
         .setColor(0x10b981)
         .setFooter({ text: 'Welcome to the closed constellation of rare minds.' });
 
-      await applicantUser.send({ embeds: [dmEmbed] }).catch(() => {
-        console.warn(`Could not DM user ${applicantId}, DMs may be closed.`);
-      });
+      try {
+        await applicantUser.send({ embeds: [dmEmbed] });
+      } catch (dmErr) {
+        dmSuccess = false;
+        console.warn(`Could not DM user ${applicantId}:`, dmErr.message);
+      }
 
-      await interaction.editReply({
-        content: `🟢 **Ticket Ratified & Approved by <@${interaction.user.id}>!**\n` +
-                 `The official Ring Key (\`${config.ringKey}\`) has been dispatched to <@${applicantId}>'s DM.\n\n` +
-                 `⏳ **This ticket channel will self-destruct in 10 seconds...**`,
-      });
+      if (dmSuccess) {
+        await interaction.editReply({
+          content: `🟢 **Ticket Ratified & Approved by <@${interaction.user.id}>!**\n` +
+                   `The official Ring Key (\`${config.ringKey}\`) has been dispatched directly to <@${applicantId}>'s DM.\n\n` +
+                   `⏳ **This ticket channel will self-destruct in 10 seconds...**`,
+        });
 
-      // Self-destruct channel in 10 seconds
-      setTimeout(async () => {
-        try {
-          await interaction.channel.delete('Ticket resolved and verified by Senior Staff');
-        } catch (delErr) {
-          console.error('Failed to delete ticket channel:', delErr);
-        }
-      }, 10000);
+        setTimeout(async () => {
+          try {
+            await interaction.channel.delete('Ticket resolved and verified by Senior Staff');
+          } catch (delErr) {
+            console.error('Failed to delete ticket channel:', delErr);
+          }
+        }, 10000);
+      } else {
+        await interaction.editReply({
+          content: `🟢 **Ticket Ratified & Approved by <@${interaction.user.id}>!**\n` +
+                   `⚠️ *Note: Applicant has Discord Direct Messages disabled in privacy settings.* \n` +
+                   `<@${applicantId}>, your official Ring Key is: \`${config.ringKey}\` (copy it now!).\n\n` +
+                   `⏳ **This channel will self-destruct in 30 seconds so you have time to save your key...**`,
+        });
+
+        setTimeout(async () => {
+          try {
+            await interaction.channel.delete('Ticket resolved and verified by Senior Staff');
+          } catch (delErr) {
+            console.error('Failed to delete ticket channel:', delErr);
+          }
+        }, 30000);
+      }
 
     } catch (err) {
       console.error('Error during ratification:', err);
@@ -389,7 +468,7 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 // Bot Ready Event
-client.once('ready', () => {
+client.once(Events.ClientReady, () => {
   console.log(`🤖 The Uncommons Council Bot is live as ${client.user.tag}!`);
   console.log(`📡 Connected to Guild: ${config.guildId}`);
 });
