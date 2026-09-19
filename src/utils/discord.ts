@@ -64,20 +64,19 @@ export const recordSubmission = () => {
 export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: string) => {
   const cleanDomain = normalizeDomain(data.domain);
   const now = new Date();
-  const suggestedKey = `UNC-NODE-002-${ticketId.replace('UNC-', '')}`;
 
   return {
     username: 'The Uncommons — Admissions Ticket Desk',
     avatar_url: 'https://raw.githubusercontent.com/carbonthecoder/The-Uncommons-webring/main/public/favicon.svg',
     embeds: [
       {
-        title: `🎫 COUNCIL REVIEW TICKET // #${ticketId}`,
-        description: `Candidate application received for **The Uncommons Sovereign Webring** (Kavyon Ecosystem).`,
+        title: `🎫 COUNCIL REVIEW TICKET // #${ticketId} — @${data.discordHandle.trim().replace(/^@/, '')}`,
+        description: `Candidate admission ticket received for **The Uncommons Sovereign Webring** (Kavyon Community).`,
         color: 0x10b981, // Emerald Green
         fields: [
           {
-            name: '📋 Ticket Status',
-            value: '`STATUS: OPEN // AWAITING COUNCIL RATIFICATION`',
+            name: '📋 Ticket Metadata',
+            value: `**Status**: \`PENDING REVIEW\`\n**Target**: \`GENESIS WEBRING\`\n**Review SLA**: \`2-3 hours (Active Hours)\``,
             inline: false,
           },
           {
@@ -87,7 +86,7 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
           },
           {
             name: '👤 Discord Applicant',
-            value: `\`${data.discordHandle.trim()}\``,
+            value: `\`@${data.discordHandle.trim().replace(/^@/, '')}\``,
             inline: true,
           },
           {
@@ -96,7 +95,7 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
             inline: true,
           },
           {
-            name: '🔨 Verified Build / Proof of Work',
+            name: '🔨 Shipped Build / Proof of Work',
             value: data.proof.trim().startsWith('http') 
               ? `[Inspect Build Evidence](${data.proof.trim()})\n\`${data.proof.trim()}\`` 
               : data.proof.trim(),
@@ -104,17 +103,17 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
           },
           {
             name: '💡 Obsession & Craft',
-            value: data.focus?.trim() || 'Young builder with curious mindset upskilling daily.',
+            value: data.focus?.trim() || 'Young builder obsessed with upskilling daily.',
             inline: false,
           },
           {
-            name: '🔑 Council Action // Suggested Activation Key',
-            value: `If ratified, issue key: \`${suggestedKey}\`\nCandidate redeems directly on [the-uncommons.vercel.app/nodes](https://the-uncommons.vercel.app/nodes).`,
+            name: '🛡️ Moderator Instructions',
+            value: `Verify domain ownership and proof. If candidate qualifies for the ring, reply in this thread or ping \`@${data.discordHandle.trim().replace(/^@/, '')}\` with their Ring Key (\`UNC-ALPHA-2026\`).`,
             inline: false,
           },
         ],
         footer: {
-          text: `The Uncommons × Kavyon Admissions Ticket Desk • Manual Founder Review Required`,
+          text: `Ticket #${ticketId} • One application per applicant enforced • Review time: 2-3 hours on active hours`,
         },
         timestamp: now.toISOString(),
       },

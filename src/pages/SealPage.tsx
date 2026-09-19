@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { sound } from '../utils/audio';
 import confetti from 'canvas-confetti';
-import { Lock, Unlock, Key, Copy, Check, Terminal, ShieldCheck, ArrowRight, ArrowLeft, Disc, Send } from 'lucide-react';
-import { dispatchKeyIssuanceToDiscord } from '../utils/discord';
+import { Lock, Unlock, Key, Copy, Check, Terminal, ShieldCheck, ArrowRight, ArrowLeft, Disc } from 'lucide-react';
 
 export const SealPage: React.FC = () => {
   const [passcode, setPasscode] = useState('');
@@ -13,15 +12,7 @@ export const SealPage: React.FC = () => {
   const [nodeDomain, setNodeDomain] = useState('yourdomain.xyz');
   const [activeSnippetTab, setActiveSnippetTab] = useState<'script' | 'html'>('script');
 
-  // Council Key Authority State
-  const [councilSlot, setCouncilSlot] = useState('NODE-002');
-  const [candidateHandle, setCandidateHandle] = useState('');
-  const [generatedKey, setGeneratedKey] = useState('');
-  const [copiedKeyMsg, setCopiedKeyMsg] = useState(false);
-  const [isDispatchingKey, setIsDispatchingKey] = useState(false);
-  const [dispatchedKeySuccess, setDispatchedKeySuccess] = useState(false);
-
-  // Recognized valid Ring Keys (Demo keys + standard format)
+  // Recognized valid Ring Keys (Issued on Discord in #council-review)
   const validKeys = ['UNC-ALPHA-2026', 'UNC-VOID-77', 'UNC-COUNCIL-01', 'UNC-GENIUS-99'];
 
   const handleUnlock = (e: React.FormEvent) => {
@@ -275,138 +266,8 @@ export const SealPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* ========================================================================= */}
-      {/* COUNCIL KEY AUTHORITY (FOUNDER/ADMIN TOKEN GENERATOR) */}
-      {/* ========================================================================= */}
-      <div className="pt-8 border-t border-white/[0.08] space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <div className="text-[11px] font-mono text-zinc-500 flex items-center gap-1.5 uppercase tracking-widest">
-              <Key className="w-3.5 h-3.5 text-emerald-400" />
-              <span>COUNCIL KEY AUTHORITY // TOKEN ISSUER</span>
-            </div>
-            <h3 className="font-syne text-lg font-bold text-white">
-              Issue Sovereign Genesis Keys
-            </h3>
-          </div>
-          <span className="text-[11px] font-mono text-zinc-500 hidden sm:inline">
-            Admissions Desk &bull; Kavyon Council
-          </span>
-        </div>
-
-        <div className="p-5 bg-zinc-950 border border-white/10 rounded-xl space-y-4 text-xs font-mono">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Slot selector */}
-            <div>
-              <label className="block text-zinc-400 mb-1">Target Ring Slot</label>
-              <select
-                value={councilSlot}
-                onChange={(e) => setCouncilSlot(e.target.value)}
-                className="w-full px-3 py-2 bg-black border border-white/15 rounded text-zinc-200 focus:outline-none focus:border-emerald-500/50"
-              >
-                <option value="NODE-002">NODE-002 (Genesis Vacancy)</option>
-                <option value="NODE-003">NODE-003 (Genesis Vacancy)</option>
-                <option value="NODE-004">NODE-004 (Genesis Vacancy)</option>
-                <option value="NODE-005">NODE-005 (Genesis Vacancy)</option>
-                <option value="NODE-006">NODE-006 (Genesis Vacancy)</option>
-                <option value="NODE-007">NODE-007 (Genesis Vacancy)</option>
-                <option value="NODE-008">NODE-008 (Genesis Vacancy)</option>
-              </select>
-            </div>
-
-            {/* Candidate handle */}
-            <div>
-              <label className="block text-zinc-400 mb-1">Candidate Discord Handle / Name</label>
-              <input
-                type="text"
-                value={candidateHandle}
-                onChange={(e) => setCandidateHandle(e.target.value)}
-                placeholder="e.g. @alex or BuilderName"
-                className="w-full px-3 py-2 bg-black border border-white/15 rounded text-zinc-200 focus:outline-none focus:border-emerald-500/50"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <button
-              onClick={() => {
-                sound.playClick();
-                const chars = '0123456789ABCDEF';
-                let rand = '';
-                for (let i = 0; i < 4; i++) {
-                  rand += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                const key = `UNC-${councilSlot}-${rand}`;
-                setGeneratedKey(key);
-                setDispatchedKeySuccess(false);
-              }}
-              className="px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-950 font-bold rounded cursor-pointer transition-all shadow"
-            >
-              Generate Activation Key &rarr;
-            </button>
-          </div>
-
-          {/* Key Result Box */}
-          {generatedKey && (
-            <div className="pt-3 border-t border-white/[0.08] space-y-3 animate-in fade-in duration-150">
-              <div className="p-3 bg-black border border-emerald-500/30 rounded-lg flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-zinc-500 text-[11px]">GENERATED KEY:</span>
-                  <span className="text-emerald-300 font-bold text-sm tracking-wider select-all">
-                    {generatedKey}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* Copy candidate invitation DM */}
-                  <button
-                    onClick={() => {
-                      sound.playClick();
-                      const msg = `🌌 THE UNCOMMONS // COUNCIL RATIFICATION\nCandidate: ${candidateHandle || '@builder'}\nAllocated Slot: ${councilSlot}\nActivation Key: \`${generatedKey}\`\n\nInstructions:\n1. Visit https://the-uncommons.vercel.app/nodes\n2. Click [Claim Slot] on ${councilSlot}\n3. Enter your Activation Key to publish your node live to the ledger and generate your Webring Seal script!`;
-                      navigator.clipboard.writeText(msg);
-                      setCopiedKeyMsg(true);
-                      setTimeout(() => setCopiedKeyMsg(false), 2000);
-                    }}
-                    className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded text-zinc-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    {copiedKeyMsg ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKeyMsg ? 'Copied Invitation' : 'Copy Invitation Message'}</span>
-                  </button>
-
-                  {/* Dispatch to Discord */}
-                  <button
-                    disabled={isDispatchingKey || dispatchedKeySuccess}
-                    onClick={async () => {
-                      sound.playClick();
-                      setIsDispatchingKey(true);
-                      const ok = await dispatchKeyIssuanceToDiscord(generatedKey, councilSlot, candidateHandle || '@candidate');
-                      setIsDispatchingKey(false);
-                      if (ok) {
-                        setDispatchedKeySuccess(true);
-                        sound.playHarmonic();
-                      }
-                    }}
-                    className={`px-3 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer ${
-                      dispatchedKeySuccess
-                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
-                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    }`}
-                  >
-                    {dispatchedKeySuccess ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
-                    <span>{dispatchedKeySuccess ? 'Broadcasted to #council-review' : 'Dispatch to Discord'}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-[11px] text-zinc-500">
-                Candidate can enter this key directly on <code className="text-zinc-300">/nodes</code> by clicking <strong>[ Claim Slot ]</strong> on {councilSlot}.
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
+
 
