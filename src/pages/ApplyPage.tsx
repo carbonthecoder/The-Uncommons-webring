@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { sound } from '../utils/audio';
 import confetti from 'canvas-confetti';
 import { Disc, Copy, Check, Terminal, ExternalLink, Sparkles, Send, ShieldAlert, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
-import { dispatchApplicationToDiscord, checkCooldown, DISCORD_LINKS } from '../utils/discord';
+import { dispatchApplicationToDiscord, checkCooldown, checkDiscordServerMembership, DISCORD_LINKS } from '../utils/discord';
 
 interface StoredTicket {
   ticketId: string;
@@ -81,6 +81,14 @@ export const ApplyPage: React.FC = () => {
 
     setIsSubmitting(true);
     sound.playClick();
+
+    // Check server membership
+    const memberCheck = await checkDiscordServerMembership(cleanHandle);
+    if (memberCheck.checked && !memberCheck.exists) {
+      setErrorMsg(`Discord user @${cleanHandle} was not found in the Kavyon server. You must join the server first before submitting!`);
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const result = await dispatchApplicationToDiscord({

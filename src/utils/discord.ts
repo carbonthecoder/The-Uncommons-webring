@@ -122,11 +122,38 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
 };
 
 // Dispatch function (Dispatches to webhook if configured, with resilient client-side fallback)
+// Check if applicant is member of Kavyon Discord server
+export const checkDiscordServerMembership = async (
+  username: string
+): Promise<{ checked: boolean; exists: boolean; message?: string }> => {
+  const clean = username.trim().replace(/^@/, '');
+  if (!clean) return { checked: true, exists: false, message: 'Username is required' };
+
+  const botApiUrl = import.meta.env.VITE_BOT_API_URL || 'http://localhost:3001';
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`${botApiUrl}/api/check-member?username=${encodeURIComponent(clean)}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      return { checked: true, exists: !!data.exists, message: data.error };
+    }
+  } catch {
+    // Bot API is offline or client is standalone, proceed with webhook fallback
+  }
+  return { checked: false, exists: true };
+};
+
+// Dispatch function (Dispatches to Bot API for private ticket channel, with resilient webhook fallback)
 export const dispatchApplicationToDiscord = async (
   data: ApplicationData
 ): Promise<DispatchResult> => {
   const ticketId = generateTicketId();
   const cleanDomain = normalizeDomain(data.domain);
+  const cleanHandle = data.discordHandle.trim().replace(/^@/, '');
 
   // Check rate limit
   const cooldown = checkCooldown();
@@ -139,7 +166,49 @@ export const dispatchApplicationToDiscord = async (
     };
   }
 
-  // Webhook URL from environment or default official council webhook
+  // 1. First, check if Bot API is online & verify server membership
+  const botApiUrl = import.meta.env.VITE_BOT_API_URL || 'http://localhost:3001';
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const botRes = await fetch(`${botApiUrl}/api/create-ticket`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        domain: cleanDomain,
+        proof: data.proof.trim(),
+        discordHandle: cleanHandle,
+        focus: data.focus?.trim(),
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    const botData = await botRes.json();
+    if (botRes.status === 403) {
+      // User is strictly NOT in the server!
+      return {
+        success: false,
+        message: botData.error || `Applicant @${cleanHandle} was not found in Kavyon server. You must join first!`,
+        directDiscordUrl: DISCORD_LINKS.kavyonServer,
+        ticketId,
+      };
+    }
+
+    if (botRes.ok && botData.success) {
+      recordSubmission();
+      return {
+        success: true,
+        message: `Private ticket channel #${cleanHandle} created on Discord! You and staff can chat directly in the channel.`,
+        directDiscordUrl: botData.channelUrl || DISCORD_LINKS.councilReview,
+        ticketId: botData.ticketId || ticketId,
+      };
+    }
+  } catch {
+    // Bot API is not running, proceed to standard webhook delivery below
+  }
+
+  // 2. Webhook Dispatch Fallback
   const webhookUrl =
     import.meta.env.VITE_DISCORD_WEBHOOK_URL ||
     'https://discord.com/api/webhooks/1550549714200432670/615z4ghViOaJw_oKrRPiT2DnK1WJjzZeSTDuLLy66O1QreXn8VfMf0X58MX24AtT5O6a';
@@ -151,7 +220,7 @@ export const dispatchApplicationToDiscord = async (
 ID: "${ticketId}"
 DOMAIN: "https://${cleanDomain}"
 PROOF_OF_WORK: "${data.proof.trim()}"
-DISCORD_HANDLE: "${data.discordHandle.trim()}"
+DISCORD_HANDLE: "@${cleanHandle}"
 OBSESSION: "${data.focus?.trim() || 'Curious builder / upskilling daily'}"
 TARGET_CHANNEL: "#council-review (Kavyon Community)"
 DATE: "${new Date().toISOString()}"
@@ -173,18 +242,17 @@ STATUS: "AWAITING MANUAL COUNCIL VERIFICATION"
         recordSubmission();
         return {
           success: true,
-          message: `Application dispatched directly into #council-review in Kavyon.`,
+          message: `Application ticket dispatched to #council-review in Kavyon.`,
           directDiscordUrl: DISCORD_LINKS.councilReview,
           ticketId,
           formattedEmbed: formattedTicket,
         };
       }
     } catch {
-      // Fallback below if webhook fails (CORS or network error)
+      // Fallback below
     }
   }
 
-  // Resilient fallback (stores cooldown and provides direct channel jump)
   recordSubmission();
   return {
     success: true,
