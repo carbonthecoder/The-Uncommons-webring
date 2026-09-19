@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { sound } from '../utils/audio';
 import confetti from 'canvas-confetti';
-import { Disc, Copy, Check, Terminal, ExternalLink, Sparkles, Send, ShieldAlert, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
-import { dispatchApplicationToDiscord, checkCooldown, checkDiscordServerMembership, DISCORD_LINKS } from '../utils/discord';
+import { Disc, Copy, Check, Terminal, ExternalLink, Sparkles, Send, ShieldAlert, CheckCircle2, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { dispatchApplicationToDiscord, checkCooldown, checkDiscordServerMembership, DISCORD_LINKS, type DiscordMemberCheck } from '../utils/discord';
 
 interface StoredTicket {
   ticketId: string;
@@ -26,6 +26,67 @@ export const ApplyPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [existingTicket, setExistingTicket] = useState<StoredTicket | null>(null);
+
+  // Live Server Membership Sync State
+  const [liveCheckStatus, setLiveCheckStatus] = useState<'idle' | 'checking' | 'verified' | 'not_found'>('idle');
+  const [liveCheckUser, setLiveCheckUser] = useState<DiscordMemberCheck['user'] | null>(null);
+
+  // Live sync check on Discord username change (debounced 400ms)
+  useEffect(() => {
+    const clean = discordHandle.trim().replace(/^@/, '');
+    if (!clean || clean.length < 2) {
+      setLiveCheckStatus('idle');
+      setLiveCheckUser(null);
+      return;
+    }
+
+    setLiveCheckStatus('checking');
+
+    const debounceTimer = setTimeout(async () => {
+      try {
+        const check = await checkDiscordServerMembership(clean);
+        if (check.checked) {
+          if (check.exists && check.user) {
+            setLiveCheckStatus('verified');
+            setLiveCheckUser(check.user);
+          } else if (!check.exists) {
+            setLiveCheckStatus('not_found');
+            setLiveCheckUser(null);
+          }
+        } else {
+          // Bot API offline / standalone mode
+          setLiveCheckStatus('idle');
+        }
+      } catch {
+        setLiveCheckStatus('idle');
+      }
+    }, 400);
+
+    return () => clearTimeout(debounceTimer);
+  }, [discordHandle]);
+
+  const triggerManualRecheck = async () => {
+    const clean = discordHandle.trim().replace(/^@/, '');
+    if (!clean) return;
+    setLiveCheckStatus('checking');
+    sound.playClick();
+    try {
+      const check = await checkDiscordServerMembership(clean);
+      if (check.checked) {
+        if (check.exists && check.user) {
+          setLiveCheckStatus('verified');
+          setLiveCheckUser(check.user);
+          sound.playHarmonic();
+        } else {
+          setLiveCheckStatus('not_found');
+          setLiveCheckUser(null);
+          sound.playTick();
+        }
+      }
+    } catch {
+      setLiveCheckStatus('idle');
+    }
+  };
 
   // Check cooldown & existing ticket on mount
   useEffect(() => {
@@ -296,20 +357,107 @@ export const ApplyPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-                3. YOUR DISCORD USERNAME (MUST BE IN KAVYON SERVER) *
-              </label>
-              <input
-                type="text"
-                required
-                value={discordHandle}
-                onChange={(e) => setDiscordHandle(e.target.value)}
-                placeholder="e.g. yourusername (without @)"
-                className="w-full px-3.5 py-2.5 bg-black border border-white/15 rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50"
-              />
-              <span className="text-[10px] font-mono text-zinc-500 mt-1 block">
-                Our mods ping this username directly in <code className="text-zinc-400">#council-review</code>.
-              </span>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-mono text-zinc-400">
+                  3. YOUR DISCORD USERNAME (MUST BE IN KAVYON SERVER) *
+                </label>
+                {liveCheckStatus === 'checking' && (
+                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 animate-spin text-emerald-400" />
+                    <span>Live syncing with Kavyon...</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={discordHandle}
+                  onChange={(e) => setDiscordHandle(e.target.value)}
+                  placeholder="e.g. carbonthecoder (without @)"
+                  className={`w-full px-3.5 py-2.5 bg-black border rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none transition-colors ${
+                    liveCheckStatus === 'verified'
+                      ? 'border-emerald-500/70 focus:border-emerald-400'
+                      : liveCheckStatus === 'not_found'
+                      ? 'border-rose-500/70 focus:border-rose-400'
+                      : 'border-white/15 focus:border-emerald-500/50'
+                  }`}
+                />
+                {liveCheckStatus === 'verified' && (
+                  <div className="absolute right-3 top-2.5 flex items-center gap-1.5 text-emerald-400 text-xs font-mono">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                )}
+                {liveCheckStatus === 'not_found' && (
+                  <div className="absolute right-3 top-2.5 flex items-center gap-1.5 text-rose-400 text-xs font-mono">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                )}
+              </div>
+
+              {/* LIVE SYNC STATUS BADGES */}
+              {liveCheckStatus === 'verified' && liveCheckUser && (
+                <div className="mt-2 p-2.5 bg-emerald-950/40 border border-emerald-500/40 rounded-md text-xs font-mono text-emerald-300 flex items-center justify-between animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2">
+                    {liveCheckUser.avatar ? (
+                      <img 
+                        src={liveCheckUser.avatar} 
+                        alt={liveCheckUser.displayName} 
+                        className="w-5 h-5 rounded-full border border-emerald-400/50 object-cover"
+                      />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    )}
+                    <span>
+                      Yep! You&apos;re in the server as <strong className="text-white">@{liveCheckUser.username}</strong>
+                      {liveCheckUser.displayName && liveCheckUser.displayName !== liveCheckUser.username ? (
+                        <span className="text-emerald-400/80 ml-1">({liveCheckUser.displayName})</span>
+                      ) : null}
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-900/60 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30 uppercase tracking-wider font-bold">
+                    VERIFIED
+                  </span>
+                </div>
+              )}
+
+              {liveCheckStatus === 'not_found' && (
+                <div className="mt-2 p-2.5 bg-rose-950/40 border border-rose-500/40 rounded-md text-xs font-mono text-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>
+                      User <strong className="text-white">@{discordHandle.trim().replace(/^@/, '')}</strong> is not in the Kavyon server.
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={triggerManualRecheck}
+                      title="Re-check server membership"
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Re-check</span>
+                    </button>
+                    <a
+                      href={DISCORD_LINKS.kavyonServer}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 px-2.5 py-1 rounded transition-colors shadow"
+                    >
+                      <span>Join Kavyon Server &rarr;</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {liveCheckStatus === 'idle' && (
+                <span className="text-[10px] font-mono text-zinc-500 mt-1 block">
+                  Live syncs with Kavyon server. Must be an existing member to qualify.
+                </span>
+              )}
             </div>
 
             <div>
@@ -327,9 +475,9 @@ export const ApplyPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting || cooldownRemaining > 0}
+              disabled={isSubmitting || cooldownRemaining > 0 || liveCheckStatus === 'not_found' || liveCheckStatus === 'checking'}
               className={`w-full py-3 font-mono text-xs font-semibold rounded-md transition-all shadow flex items-center justify-center gap-2 cursor-pointer mt-3 ${
-                cooldownRemaining > 0
+                cooldownRemaining > 0 || liveCheckStatus === 'not_found' || liveCheckStatus === 'checking'
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                   : 'bg-zinc-100 hover:bg-white text-zinc-950 shadow-emerald-500/10'
               }`}
@@ -343,6 +491,16 @@ export const ApplyPage: React.FC = () => {
                 <>
                   <Clock className="w-4 h-4" />
                   <span>Cooldown Active ({cooldownRemaining}s)</span>
+                </>
+              ) : liveCheckStatus === 'checking' ? (
+                <>
+                  <Sparkles className="w-4 h-4 animate-spin" />
+                  <span>Verifying Server Membership...</span>
+                </>
+              ) : liveCheckStatus === 'not_found' ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <span>Join Server First to Submit</span>
                 </>
               ) : (
                 <>

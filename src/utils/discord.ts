@@ -122,10 +122,22 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
 };
 
 // Dispatch function (Dispatches to webhook if configured, with resilient client-side fallback)
+export interface DiscordMemberCheck {
+  checked: boolean;
+  exists: boolean;
+  message?: string;
+  user?: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar?: string;
+  };
+}
+
 // Check if applicant is member of Kavyon Discord server
 export const checkDiscordServerMembership = async (
   username: string
-): Promise<{ checked: boolean; exists: boolean; message?: string }> => {
+): Promise<DiscordMemberCheck> => {
   const clean = username.trim().replace(/^@/, '');
   if (!clean) return { checked: true, exists: false, message: 'Username is required' };
 
@@ -139,7 +151,12 @@ export const checkDiscordServerMembership = async (
     clearTimeout(timeout);
     if (res.ok) {
       const data = await res.json();
-      return { checked: true, exists: !!data.exists, message: data.error };
+      return { 
+        checked: true, 
+        exists: !!data.exists, 
+        message: data.error,
+        user: data.user,
+      };
     }
   } catch {
     // Bot API is offline or client is standalone, proceed with webhook fallback
