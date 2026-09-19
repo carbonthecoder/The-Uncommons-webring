@@ -60,20 +60,26 @@ export const recordSubmission = () => {
   localStorage.setItem('unc_last_submission_time', Date.now().toString());
 };
 
-// Format Discord Embed Payload
+// Format Discord Embed Payload (Council Admission Ticket)
 export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: string) => {
   const cleanDomain = normalizeDomain(data.domain);
   const now = new Date();
+  const suggestedKey = `UNC-NODE-002-${ticketId.replace('UNC-', '')}`;
 
   return {
-    username: 'The Uncommons — Admissions Gateway',
+    username: 'The Uncommons — Admissions Ticket Desk',
     avatar_url: 'https://raw.githubusercontent.com/carbonthecoder/The-Uncommons-webring/main/public/favicon.svg',
     embeds: [
       {
-        title: `🌌 NEW COUNCIL ADMISSION APPLICATION [${ticketId}]`,
-        description: `A builder from the sovereign web has applied for admission into **The Uncommons Webring** (Kavyon Community).`,
+        title: `🎫 COUNCIL REVIEW TICKET // #${ticketId}`,
+        description: `Candidate application received for **The Uncommons Sovereign Webring** (Kavyon Ecosystem).`,
         color: 0x10b981, // Emerald Green
         fields: [
+          {
+            name: '📋 Ticket Status',
+            value: '`STATUS: OPEN // AWAITING COUNCIL RATIFICATION`',
+            inline: false,
+          },
           {
             name: '🌐 Sovereign Domain',
             value: `[https://${cleanDomain}](https://${cleanDomain})`,
@@ -85,14 +91,14 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
             inline: true,
           },
           {
-            name: '🎫 Application ID',
+            name: '🎫 Ticket ID',
             value: `\`${ticketId}\``,
             inline: true,
           },
           {
-            name: '🔨 Proof of Work / Project Build',
+            name: '🔨 Verified Build / Proof of Work',
             value: data.proof.trim().startsWith('http') 
-              ? `[View Proof of Work Link](${data.proof.trim()})\n\`${data.proof.trim()}\`` 
+              ? `[Inspect Build Evidence](${data.proof.trim()})\n\`${data.proof.trim()}\`` 
               : data.proof.trim(),
             inline: false,
           },
@@ -102,18 +108,13 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
             inline: false,
           },
           {
-            name: '📍 Channel & Ecosystem',
-            value: `Category: **${DISCORD_LINKS.categoryName}**\nChannel: **${DISCORD_LINKS.channelName}** in **${DISCORD_LINKS.serverName}**`,
-            inline: true,
-          },
-          {
-            name: '⚖️ Action Required',
-            value: 'Review domain & proof. If admitted, DM or reply with **Ring Key** (`UNC-ALPHA-2026`).',
+            name: '🔑 Council Action // Suggested Activation Key',
+            value: `If ratified, issue key: \`${suggestedKey}\`\nCandidate redeems directly on [the-uncommons.vercel.app/nodes](https://the-uncommons.vercel.app/nodes).`,
             inline: false,
           },
         ],
         footer: {
-          text: `The Uncommons × Kavyon • Manual Founder Review Required`,
+          text: `The Uncommons × Kavyon Admissions Ticket Desk • Manual Founder Review Required`,
         },
         timestamp: now.toISOString(),
       },
@@ -234,4 +235,45 @@ export const dispatchNodeActivationToDiscord = async (nodeId: string, domain: st
     return false;
   }
 };
+
+// Dispatch function for Council issuing an Activation Key
+export const dispatchKeyIssuanceToDiscord = async (key: string, slotId: string, candidateHandle: string): Promise<boolean> => {
+  const webhookUrl =
+    import.meta.env.VITE_DISCORD_WEBHOOK_URL ||
+    'https://discord.com/api/webhooks/1550549714200432670/615z4ghViOaJw_oKrRPiT2DnK1WJjzZeSTDuLLy66O1QreXn8VfMf0X58MX24AtT5O6a';
+
+  if (!webhookUrl || !webhookUrl.startsWith('https://discord.com/api/webhooks/')) return false;
+
+  const payload = {
+    username: 'The Uncommons — Council Key Authority',
+    avatar_url: 'https://raw.githubusercontent.com/carbonthecoder/The-Uncommons-webring/main/public/favicon.svg',
+    embeds: [
+      {
+        title: `🔑 SOVEREIGN ACTIVATION KEY ISSUED // ${slotId}`,
+        description: `Council has ratified candidate **${candidateHandle}** and granted an official Genesis Activation Key for slot **${slotId}**.`,
+        color: 0x10b981,
+        fields: [
+          { name: '🎫 Allocated Slot', value: `\`${slotId}\``, inline: true },
+          { name: '👤 Candidate', value: `\`${candidateHandle}\``, inline: true },
+          { name: '🔐 Activation Key', value: `\`${key}\``, inline: false },
+          { name: '🚀 Next Step', value: 'Candidate can navigate to [the-uncommons.vercel.app/nodes](https://the-uncommons.vercel.app/nodes), click **Claim Slot**, and enter their key.', inline: false }
+        ],
+        footer: { text: `The Uncommons × Kavyon Council Key Registry` },
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
 

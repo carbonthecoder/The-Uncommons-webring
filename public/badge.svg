@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="32" viewBox="0 0 240 32" fill="none">
+  <rect width="240" height="32" rx="6" fill="#09090b" stroke="#27272a" stroke-width="1"/>
+  <circle cx="16" cy="16" r="3.5" fill="#10b981"/>
+  <circle cx="16" cy="16" r="6" stroke="#10b981" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="32" y="20" fill="#a1a1aa" font-family="ui-monospace, monospace" font-size="11" letter-spacing="0.08em">THE UNCOMMONS</text>
+  <line x1="145" y1="9" x2="145" y2="23" stroke="#27272a" stroke-width="1"/>
+  <text x="156" y="20" fill="#10b981" font-family="ui-monospace, monospace" font-size="11" font-weight="600" letter-spacing="0.05em">VERIFIED</text>
+</svg>
