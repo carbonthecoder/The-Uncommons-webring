@@ -1,46 +1,56 @@
 # The Uncommons // Discord Council Review Bot
 
-An automated Discord Bot & Ticket Desk for **The Uncommons × Kavyon**.
+Automated Admissions Bot, Ticket Desk & Sovereign Node Vault for **The Uncommons × Kavyon**.
 
 ## Features
-- **Server Membership Verification**: Checks if applicant is joined in Kavyon. Blocks submission if not found.
-- **Private Channel Creation**: Creates `#ticket-[username]` visible only to the applicant and staff.
-- **Role-Based Escalation**: Reviewer chats with applicant and pings Senior Staff via interactive button.
-- **Direct DM Delivery**: Senior Staff ratifies candidate, bot DMs Ring Key (`UNC-ALPHA-2026`), and channel automatically deletes after 10 seconds.
-- **Configurable Staff Settings**: Zero hardcoded names — configure via role IDs or usernames in `config.json`.
+- **Server Membership Verification**: Real-time debounce check verifying applicant membership in Kavyon. Blocks non-members with direct server invite link.
+- **Private Channel Intake**: Creates `#ticket-[username]` visible only to the applicant and configured Council Reviewers.
+- **Username-Based Reviewer Registry**: No Discord roles required! Simply list usernames in `config.json`.
+- **Multi-Staff Failover & Takeover**: If the assigned lead is busy or AFK, any other configured reviewer can click `[ ⚡ Take Over Review ]` or `[ 🟢 Ratify & Forge Key ]` to continue without delay.
+- **Dynamic Unique Ring Keys**: Every ratified candidate receives a cryptographically unique key (`UNC-KEY-XXXX-2026`).
+- **Staff-Only Key Ledger**: Every issued key is permanently logged into private `#webring-key-ledger` (hidden from `@everyone`).
+- **Discord Role Automation**: Auto-awards `🌐・The Uncommons` role upon council ratification.
+- **Cyberpunk Sovereign Slang**: High-agency terminal aesthetic, sleek embeds, and hacker slang for all communications.
 
 ---
 
-## Setup & Running
+## Configuration (`bot/config.json`)
 
-### 1. Install Dependencies
+```json
+{
+  "guildId": "1372095730696716379",
+  "ticketCategoryId": "1550541993250267166",
+  "reviewerUsernames": ["carbonthecoder", "another_reviewer"],
+  "seniorStaffUsernames": ["carbonthecoder"],
+  "staffRoleId": "1534750546400116789",
+  "seniorStaffRoleId": "1534750849006567484",
+  "keyLedgerChannelId": "1551036698757038181",
+  "webringRoleId": "1551036702766796800",
+  "port": 3001
+}
+```
+
+### Adding Reviewers (No Roles Needed):
+Just add their Discord usernames or user IDs to `"reviewerUsernames"`:
+```json
+"reviewerUsernames": [
+  "carbonthecoder",
+  "your_friend_username",
+  "third_staff_handle"
+]
+```
+Anyone listed here:
+1. Is automatically added to all new ticket channels with full read/write/embed permissions.
+2. Can claim lead control via `[ ⚡ Take Over Review ]`.
+3. Can ratify applicants and forge Ring Keys via `[ 🟢 Ratify & Forge Key ]`.
+4. Can broadcast to all reviewers via `[ 📢 Signal Council ]`.
+
+---
+
+## Running the Bot
+
 ```bash
 cd bot
-npm install
-```
-
-### 2. Configure Credentials
-In `bot/.env`:
-```env
-DISCORD_BOT_TOKEN=your_bot_token_from_discord_developer_portal
-PORT=3001
-```
-
-In `bot/config.json`:
-- `guildId`: `1372095730696716379` (Kavyon Server)
-- `ticketCategoryId`: ID of the Discord Category where tickets should be created (Optional)
-- `staffRoleId`: ID of the Staff Role
-- `seniorStaffRoleId`: ID of Senior Staff / Council Role
-- `seniorStaffUsernames`: Array of usernames authorized as Senior Staff (e.g. `["carbonthecoder"]`)
-- `ringKey`: `UNC-ALPHA-2026`
-
-### 3. Required Discord Bot Intents (Developer Portal)
-Enable the following in **Discord Developer Portal -> Bot -> Privileged Gateway Intents**:
-- ✅ **Server Members Intent** (Required to check membership)
-- ✅ **Message Content Intent**
-
-### 4. Start the Bot & API
-```bash
 node index.js
 ```
-The API listens on `http://localhost:3001` and connects to the website application form!
+The Admissions API listens on `http://localhost:3001` and connects the web application (`/apply`, `/seal`) directly to Discord!

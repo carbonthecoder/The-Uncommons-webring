@@ -209,29 +209,97 @@ async function findGuildMember(guild, rawUsername) {
   return null;
 }
 
-// Check if a member is Senior Staff (dynamic role or username check, zero hardcoded names)
-function isSeniorStaff(member) {
+// Check if a member is an authorized reviewer (by username, ID, role, or Admin)
+function isReviewer(member) {
   if (!member) return false;
-  
-  // Check senior staff role if set
-  if (config.seniorStaffRoleId && member.roles.cache.has(config.seniorStaffRoleId)) {
-    return true;
-  }
 
-  // Check administrator permission
+  // 1. Administrator permission
   if (member.permissions.has(PermissionFlagsBits.Administrator)) {
     return true;
   }
 
-  // Check configured usernames
-  if (Array.isArray(config.seniorStaffUsernames)) {
-    const username = member.user.username.toLowerCase();
-    if (config.seniorStaffUsernames.some(u => u.toLowerCase() === username)) {
+  const username = member.user.username.toLowerCase();
+  const userId = member.id;
+
+  // 2. Configured reviewer usernames or IDs
+  if (Array.isArray(config.reviewerUsernames)) {
+    if (config.reviewerUsernames.some(u => {
+      const clean = u.trim().replace(/^@/, '').toLowerCase();
+      return clean === username || clean === userId;
+    })) {
       return true;
     }
   }
 
+  // 3. Configured senior staff usernames or IDs
+  if (Array.isArray(config.seniorStaffUsernames)) {
+    if (config.seniorStaffUsernames.some(u => {
+      const clean = u.trim().replace(/^@/, '').toLowerCase();
+      return clean === username || clean === userId;
+    })) {
+      return true;
+    }
+  }
+
+  // 4. Role fallbacks if set
+  if (config.seniorStaffRoleId && member.roles.cache.has(config.seniorStaffRoleId)) {
+    return true;
+  }
+  if (config.staffRoleId && member.roles.cache.has(config.staffRoleId)) {
+    return true;
+  }
+
   return false;
+}
+
+// Check if a member has senior ratification clearance
+function isSeniorStaff(member) {
+  if (!member) return false;
+  
+  if (member.permissions.has(PermissionFlagsBits.Administrator)) {
+    return true;
+  }
+
+  const username = member.user.username.toLowerCase();
+  const userId = member.id;
+
+  if (Array.isArray(config.seniorStaffUsernames) && config.seniorStaffUsernames.length > 0) {
+    if (config.seniorStaffUsernames.some(u => {
+      const clean = u.trim().replace(/^@/, '').toLowerCase();
+      return clean === username || clean === userId;
+    })) {
+      return true;
+    }
+  }
+
+  if (config.seniorStaffRoleId && member.roles.cache.has(config.seniorStaffRoleId)) {
+    return true;
+  }
+
+  // If no distinct senior staff list is populated, all authorized reviewers have ratification clearance
+  return isReviewer(member);
+}
+
+// Resolve all configured reviewer members in guild for channel permissions & alerts
+async function resolveConfiguredReviewers(guild) {
+  const combinedUsernames = new Set([
+    ...(Array.isArray(config.reviewerUsernames) ? config.reviewerUsernames : []),
+    ...(Array.isArray(config.seniorStaffUsernames) ? config.seniorStaffUsernames : []),
+  ]);
+
+  const resolvedMembers = [];
+  for (const rawName of combinedUsernames) {
+    if (!rawName) continue;
+    try {
+      const member = await findGuildMember(guild, rawName);
+      if (member && !resolvedMembers.some(m => m.id === member.id)) {
+        resolvedMembers.push(member);
+      }
+    } catch (err) {
+      console.warn(`Could not resolve reviewer ${rawName}:`, err.message);
+    }
+  }
+  return resolvedMembers;
 }
 
 // ============================================================================
@@ -354,37 +422,14 @@ app.post('/api/create-ticket', async (req, res) => {
       });
     }
 
-    // Pick random staff reviewer from staff role or moderators
-    let assignedStaff = null;
-    let staffPingText = '';
+    // Resolve all configured reviewers (by username or ID) for direct channel access
+    const configuredReviewers = await resolveConfiguredReviewers(guild);
 
-    try {
-      await guild.members.fetch().catch(() => {});
-      
-      let candidateReviewers = [];
-      if (config.staffRoleId) {
-        candidateReviewers = guild.members.cache.filter(m => m.roles.cache.has(config.staffRoleId) && !m.user.bot && m.id !== member.id);
-      }
-      
-      if (candidateReviewers.size === 0 && config.seniorStaffRoleId) {
-        candidateReviewers = guild.members.cache.filter(m => m.roles.cache.has(config.seniorStaffRoleId) && !m.user.bot && m.id !== member.id);
-      }
-
-      if (candidateReviewers.size === 0) {
-        candidateReviewers = guild.members.cache.filter(m => 
-          !m.user.bot && m.id !== member.id && 
-          (m.permissions.has(PermissionFlagsBits.ManageChannels) || m.permissions.has(PermissionFlagsBits.Administrator))
-        );
-      }
-
-      if (candidateReviewers.size > 0) {
-        const staffArray = Array.from(candidateReviewers.values());
-        assignedStaff = staffArray[Math.floor(Math.random() * staffArray.length)];
-        staffPingText = `<@${assignedStaff.id}>`;
-        
-        // Grant assigned staff member direct view & talk permissions
+    // Grant all configured reviewers full direct channel view & write permissions
+    for (const rev of configuredReviewers) {
+      if (rev.id !== member.id && !permissionOverwrites.some(p => p.id === rev.id)) {
         permissionOverwrites.push({
-          id: assignedStaff.id,
+          id: rev.id,
           allow: [
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
@@ -394,19 +439,66 @@ app.post('/api/create-ticket', async (req, res) => {
           ],
         });
       }
-    } catch (e) {
-      console.warn('Could not pick random staff member:', e.message);
     }
 
-    if (!staffPingText) {
-      staffPingText = config.staffRoleId ? `<@&${config.staffRoleId}>` : 'Staff';
+    // Determine Lead Reviewer and Standby Failover Reviewers
+    let leadReviewer = null;
+    let standbyReviewers = [];
+
+    if (configuredReviewers.length > 0) {
+      leadReviewer = configuredReviewers[0];
+      standbyReviewers = configuredReviewers.filter(r => r.id !== leadReviewer.id && r.id !== member.id);
+    } else {
+      // Fallback to role candidates or admins if no usernames configured yet
+      try {
+        await guild.members.fetch().catch(() => {});
+        let candidateReviewers = [];
+        if (config.staffRoleId) {
+          candidateReviewers = guild.members.cache.filter(m => m.roles.cache.has(config.staffRoleId) && !m.user.bot && m.id !== member.id);
+        }
+        if (candidateReviewers.size === 0 && config.seniorStaffRoleId) {
+          candidateReviewers = guild.members.cache.filter(m => m.roles.cache.has(config.seniorStaffRoleId) && !m.user.bot && m.id !== member.id);
+        }
+        if (candidateReviewers.size === 0) {
+          candidateReviewers = guild.members.cache.filter(m => 
+            !m.user.bot && m.id !== member.id && 
+            (m.permissions.has(PermissionFlagsBits.ManageChannels) || m.permissions.has(PermissionFlagsBits.Administrator))
+          );
+        }
+
+        if (candidateReviewers.size > 0) {
+          const staffArray = Array.from(candidateReviewers.values());
+          leadReviewer = staffArray[Math.floor(Math.random() * staffArray.length)];
+          standbyReviewers = staffArray.filter(s => s.id !== leadReviewer.id);
+
+          if (!permissionOverwrites.some(p => p.id === leadReviewer.id)) {
+            permissionOverwrites.push({
+              id: leadReviewer.id,
+              allow: [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory,
+                PermissionFlagsBits.AttachFiles,
+                PermissionFlagsBits.EmbedLinks,
+              ],
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not pick fallback reviewer:', e.message);
+      }
     }
 
-    // Create the private channel
+    const leadPingText = leadReviewer ? `<@${leadReviewer.id}>` : (config.staffRoleId ? `<@&${config.staffRoleId}>` : 'Council Operator');
+    const standbyPingText = standbyReviewers.length > 0 
+      ? standbyReviewers.map(r => `<@${r.id}>`).join(' ') 
+      : (config.seniorStaffRoleId ? `<@&${config.seniorStaffRoleId}>` : 'Council On-Deck');
+
+    // Create the private ticket channel
     const channelOptions = {
       name: channelName,
       type: ChannelType.GuildText,
-      topic: `Candidate Admission Ticket ${ticketId} for @${member.user.username} (Domain: ${domain})`,
+      topic: `Council Intake Docket ${ticketId} // Candidate: @${member.user.username} (Domain: ${domain})`,
       permissionOverwrites,
     };
 
@@ -416,19 +508,22 @@ app.post('/api/create-ticket', async (req, res) => {
 
     const ticketChannel = await guild.channels.create(channelOptions);
 
-    // Build Embed
+    // Build Cyberpunk Sovereign Docket Embed
     const embed = new EmbedBuilder()
-      .setTitle(`🎫 COUNCIL ADMISSION TICKET // ${ticketId}`)
-      .setDescription(`Welcome <@${member.id}>! This is your private review ticket channel for **The Uncommons Webring**.`)
+      .setTitle(`🌌 COUNCIL INGRESS // CANDIDATE DOCKET [${ticketId}]`)
+      .setDescription(
+        `Candidate <@${member.id}> has initialized a sovereign admission handshake with **The Uncommons Webring**.\n\n` +
+        `*Reviewers: inspect the cryptographic proof of work, architecture depth, and domain telemetry below.*`
+      )
       .setColor(0x10b981)
       .addFields(
         { name: '🌐 Sovereign Domain', value: `\`https://${domain.replace(/^https?:\/\//, '')}\``, inline: true },
-        { name: '👤 Applicant', value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
-        { name: '🎫 Ticket ID', value: `\`${ticketId}\``, inline: true },
-        { name: '🔨 Shipped Build / Proof of Work', value: proof.startsWith('http') ? `[Inspect Evidence Link](${proof})\n\`${proof}\`` : proof, inline: false },
-        { name: '💡 Craft & Obsession', value: focus || 'Obsessive young builder.', inline: false },
+        { name: '👤 Candidate Operative', value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
+        { name: '🎫 Docket Serial', value: `\`${ticketId}\``, inline: true },
+        { name: '🔨 Shipped Build / Proof of Work', value: proof.startsWith('http') ? `[Inspect Telemetry / Source Link](${proof})\n\`${proof}\`` : proof, inline: false },
+        { name: '💡 Craft & Obsession', value: focus || 'Obsessive builder. Sovereign mind.', inline: false },
       )
-      .setFooter({ text: 'Review SLA: 2–3 hours • Chat directly with staff here • Key issued upon approval' })
+      .setFooter({ text: 'Council Terminal • SLA: 2–3h • Real-time failover armed • Zero card slop' })
       .setTimestamp();
 
     if (problemSolved) {
@@ -439,28 +534,41 @@ app.post('/api/create-ticket', async (req, res) => {
       embed.addFields({ name: '⚡ Technical Stack', value: stack, inline: true });
     }
 
-    // Action Buttons
+    // Interactive Action Controls with Failover
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
+        .setCustomId(`claim_review:${member.id}:${ticketId}`)
+        .setLabel('⚡ Take Over Review')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
         .setCustomId(`ping_senior:${member.id}:${ticketId}`)
-        .setLabel('📢 Ping Senior Staff')
+        .setLabel('📢 Signal Council')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId(`ratify_key:${member.id}:${ticketId}`)
-        .setLabel('🟢 Ratify & Issue Key')
+        .setLabel('🟢 Ratify & Forge Key')
         .setStyle(ButtonStyle.Success),
       new ButtonBuilder()
         .setCustomId(`close_ticket:${member.id}:${ticketId}`)
-        .setLabel('❌ Reject & Close')
+        .setLabel('🛑 Purge Docket')
         .setStyle(ButtonStyle.Danger)
     );
 
-    // Send ticket card and reviewer notification in channel
+    // Channel Welcome Dispatch with Failover Guidance
+    let channelDispatch = `🛰️ **COUNCIL DOCKET INITIALIZED // LIVE FEED**\n` +
+      `Candidate: <@${member.id}>\n` +
+      `🛡️ **Active Review Lead:** ${leadPingText}\n`;
+
+    if (standbyReviewers.length > 0) {
+      channelDispatch += `📡 **Failover Standby:** ${standbyPingText}\n\n` +
+        `*Welcome <@${member.id}> to your private review terminal. Your assigned lead ${leadPingText} is inspecting your build.*\n\n` +
+        `⚡ **Council Protocol:** If lead is heads-down in code or off-grid, any Standby Reviewer can click **[ ⚡ Take Over Review ]** or **[ 🟢 Ratify & Forge Key ]** to proceed immediately without delay.*`;
+    } else {
+      channelDispatch += `\n*Welcome <@${member.id}>! Your proof of work and sovereign domain are queued for Council inspection. Chat directly with reviewers in this terminal.*`;
+    }
+
     await ticketChannel.send({
-      content: `🔔 **Council Review Ticket Created**\n` +
-               `Applicant: <@${member.id}>\n` +
-               `Assigned Reviewer: ${staffPingText}\n\n` +
-               `*Welcome <@${member.id}>! Your designated reviewer ${staffPingText} has been assigned to inspect your sovereign domain and proof of work.*`,
+      content: channelDispatch,
       embeds: [embed],
       components: [row],
     });
@@ -535,21 +643,45 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const [action, applicantId, ticketId] = interaction.customId.split(':');
   const guildMember = interaction.member;
 
-  // 1. PING SENIOR STAFF
-  if (action === 'ping_senior') {
-    await interaction.deferReply();
-    const seniorPing = config.seniorStaffRoleId ? `<@&${config.seniorStaffRoleId}>` : 'Senior Staff';
-    await interaction.editReply({
-      content: `📢 **Senior Review Requested:** ${seniorPing}, reviewer <@${interaction.user.id}> has completed initial checks on ticket \`${ticketId}\` for candidate <@${applicantId}>. Please verify and confirm ratification.`,
+  // 1. TAKE OVER / CLAIM REVIEW (Failover for busy reviewers)
+  if (action === 'claim_review') {
+    if (!isReviewer(guildMember)) {
+      return interaction.reply({
+        content: '⛔ **CLEARANCE DENIED:** Hand off the terminal. You are not registered as an authorized Council Reviewer.',
+        ephemeral: true,
+      });
+    }
+
+    await interaction.reply({
+      content: `⚡ **DOCKET TRANSFERRED // ACTIVE OPERATOR SHIFT**\n` +
+               `Council Operator <@${interaction.user.id}> has assumed primary jurisdiction over docket \`${ticketId}\` for candidate <@${applicantId}>.\n` +
+               `*Jurisdiction transferred. Reviewing proof of work and sovereign domain credentials.*`,
     });
     return;
   }
 
-  // 2. RATIFY & ISSUE KEY (Senior Staff only)
+  // 2. SIGNAL COUNCIL / PING REVIEWERS
+  if (action === 'ping_senior') {
+    await interaction.deferReply();
+    const reviewers = await resolveConfiguredReviewers(interaction.guild);
+    let pings = reviewers.map(r => `<@${r.id}>`).join(' ');
+    if (!pings) {
+      pings = config.seniorStaffRoleId ? `<@&${config.seniorStaffRoleId}>` : (config.staffRoleId ? `<@&${config.staffRoleId}>` : 'Council Reviewers');
+    }
+    await interaction.editReply({
+      content: `📢 **COUNCIL SIGNAL BROADCAST // BACKUP & SECOND REVIEW REQUESTED**\n` +
+               `Operative <@${interaction.user.id}> on docket \`${ticketId}\` (Candidate: <@${applicantId}>) has broadcasted a council signal.\n` +
+               `Calling all available reviewers: ${pings}\n` +
+               `*Second pair of eyes or docket handover requested. Jump into this terminal.*`,
+    });
+    return;
+  }
+
+  // 3. RATIFY & FORGE KEY (Any authorized reviewer or senior staff)
   if (action === 'ratify_key') {
-    if (!isSeniorStaff(guildMember)) {
+    if (!isReviewer(guildMember) && !isSeniorStaff(guildMember)) {
       return interaction.reply({
-        content: '⚠️ Only Senior Staff can ratify candidates and issue Ring Keys.',
+        content: '⛔ **CLEARANCE DENIED:** Only registered Council Reviewers or Senior Staff can ratify candidates and forge Ring Keys.',
         ephemeral: true,
       });
     }
@@ -583,19 +715,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
         ledgerChannel = await getOrCreateKeyLedgerChannel(guild);
         if (ledgerChannel) {
           const auditEmbed = new EmbedBuilder()
-            .setTitle(`🔑 WEBRING KEY ISSUED // ${uniqueKey}`)
-            .setDescription(`Official admittance granted by <@${interaction.user.id}> for **The Uncommons Webring**.`)
+            .setTitle(`💎 WEBRING KEY FORGED // ${uniqueKey}`)
+            .setDescription(`Official Council ratification executed by Operator <@${interaction.user.id}> for **The Uncommons Webring**.`)
             .setColor(0x10b981)
             .addFields(
-              { name: '👤 Candidate', value: `<@${applicantId}> (\`${applicantUser.tag}\`)`, inline: true },
-              { name: '🛡️ Approved By', value: `<@${interaction.user.id}>`, inline: true },
-              { name: '🎫 Ticket ID', value: `\`${ticketId}\``, inline: true },
-              { name: '🔑 Official Ring Key', value: `\`\`\`text\n${uniqueKey}\n\`\`\``, inline: false },
-              { name: '🎭 Webring Role', value: roleGranted && webringRole ? `<@&${webringRole.id}> (Assigned)` : (webringRole ? `<@&${webringRole.id}> (Check hierarchy)` : 'Role created'), inline: true },
-              { name: '🌐 Setup Portal', value: '[the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)', inline: true },
+              { name: '👤 Candidate Operative', value: `<@${applicantId}> (\`${applicantUser.tag}\`)`, inline: true },
+              { name: '🛡️ Ratified By', value: `<@${interaction.user.id}>`, inline: true },
+              { name: '🎫 Docket Serial', value: `\`${ticketId}\``, inline: true },
+              { name: '🔑 Cryptographic Ring Key', value: `\`\`\`text\n${uniqueKey}\n\`\`\``, inline: false },
+              { name: '🎭 Webring Discord Role', value: roleGranted && webringRole ? `<@&${webringRole.id}> (Active)` : (webringRole ? `<@&${webringRole.id}> (Hierarchy pending)` : 'Generated'), inline: true },
+              { name: '🌐 Sovereign Node Portal', value: '[the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)', inline: true },
             )
             .setTimestamp()
-            .setFooter({ text: 'Staff-Only Key Ledger • All keys cryptographically unique per candidate' });
+            .setFooter({ text: 'Staff-Only Key Ledger • Cryptographically unique key verified' });
 
           await ledgerChannel.send({ embeds: [auditEmbed] });
         }
@@ -603,19 +735,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
         console.error('Error logging to key ledger channel:', ledgerErr);
       }
 
-      // DM Unique Key to applicant
+      // DM Unique Key to applicant with elite cyberpunk dispatch
       let dmSuccess = true;
       const dmEmbed = new EmbedBuilder()
-        .setTitle('🌌 The Uncommons — Admission Ratified!')
+        .setTitle('🌌 THE UNCOMMONS // ADMISSION RATIFIED')
         .setDescription(
-          `Congratulations! Your sovereign domain and proof of work have been ratified by Council for **The Uncommons Webring**.\n\n` +
-          `### 🔑 Your Unique Ring Key:\n\`\`\`text\n${uniqueKey}\n\`\`\`\n\n` +
-          (roleGranted && webringRole ? `🛡️ **Discord Role Granted:** You have been awarded <@&${webringRole.id}> in Kavyon!\n\n` : '') +
-          `**Next Steps:**\n` +
-          `1. Head to [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)\n` +
-          `2. Enter your unique key to unlock the **Sovereign Node Studio**.\n` +
-          `3. Customize your node info with the live preview, then click **Save & Publish Node to Webring**!\n` +
-          `4. Copy your embed seal snippet and place it in your personal domain footer!`
+          `Candidate cryptographic signature authenticated. Your domain and proof of work have been ratified into **The Uncommons Webring**.\n\n` +
+          `### 🔑 Your Sovereign Ring Key:\n\`\`\`text\n${uniqueKey}\n\`\`\`\n\n` +
+          (roleGranted && webringRole ? `🛡️ **Role Awarded:** You have been granted <@&${webringRole.id}> in Kavyon!\n\n` : '') +
+          `**Deployment Sequence:**\n` +
+          `1. Access the terminal: [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)\n` +
+          `2. Inject your unique Ring Key into the **Sovereign Node Studio**.\n` +
+          `3. Tune your node dossier in real-time, then hit **Save & Publish Node to Webring**.\n` +
+          `4. Mount the circular webring seal snippet into your personal domain footer!`
         )
         .setColor(0x10b981)
         .setFooter({ text: 'Welcome to the closed constellation of rare minds.' });
@@ -627,38 +759,38 @@ client.on(Events.InteractionCreate, async (interaction) => {
         console.warn(`Could not DM user ${applicantId}:`, dmErr.message);
       }
 
-      const roleLine = roleGranted && webringRole ? `\n🎭 **Role Granted:** Assigned <@&${webringRole.id}>.` : '';
+      const roleLine = roleGranted && webringRole ? `\n🎭 **Role Awarded:** Assigned <@&${webringRole.id}>.` : '';
       const ledgerLine = ledgerChannel ? `\n🔒 **Staff Ledger:** Key permanently logged in <#${ledgerChannel.id}>.` : '';
 
       if (dmSuccess) {
         await interaction.editReply({
-          content: `🟢 **Ticket Ratified & Approved by <@${interaction.user.id}>!**\n` +
-                   `A unique Ring Key (\`${uniqueKey}\`) has been dispatched directly to <@${applicantId}>'s DM.` +
+          content: `🟢 **DOCKET RATIFIED & SEALED BY <@${interaction.user.id}>!**\n` +
+                   `Sovereign Ring Key (\`${uniqueKey}\`) dispatched to <@${applicantId}>'s direct telemetry (DM).` +
                    roleLine +
                    ledgerLine + `\n\n` +
-                   `⏳ **This ticket channel will self-destruct in 10 seconds...**`,
+                   `🧨 **Channel auto-purge sequence engaged: T-minus 10s until transmission shred...**`,
         });
 
         setTimeout(async () => {
           try {
-            await interaction.channel.delete('Ticket resolved and verified by Senior Staff');
+            await interaction.channel.delete('Ticket resolved and verified by Council');
           } catch (delErr) {
             console.error('Failed to delete ticket channel:', delErr);
           }
         }, 10000);
       } else {
         await interaction.editReply({
-          content: `🟢 **Ticket Ratified & Approved by <@${interaction.user.id}>!**\n` +
-                   `⚠️ *Note: Applicant has Discord Direct Messages disabled in privacy settings.* \n` +
-                   `<@${applicantId}>, your official Ring Key is: \`${uniqueKey}\` (copy it now!).` +
+          content: `🟢 **DOCKET RATIFIED & SEALED BY <@${interaction.user.id}>!**\n` +
+                   `⚠️ *Direct telemetry shielded (DMs disabled in applicant privacy).* \n` +
+                   `<@${applicantId}>, your Sovereign Ring Key is printed here: \`${uniqueKey}\` (copy it now!).` +
                    roleLine +
                    ledgerLine + `\n\n` +
-                   `⏳ **This channel will self-destruct in 30 seconds so you have time to save your key...**`,
+                   `⏳ **Channel auto-purge scheduled in 30s so you can save your key...**`,
         });
 
         setTimeout(async () => {
           try {
-            await interaction.channel.delete('Ticket resolved and verified by Senior Staff');
+            await interaction.channel.delete('Ticket resolved and verified by Council');
           } catch (delErr) {
             console.error('Failed to delete ticket channel:', delErr);
           }
@@ -672,19 +804,29 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return;
   }
 
-  // 3. REJECT / CLOSE TICKET
+  // 4. REJECT / PURGE TICKET
   if (action === 'close_ticket') {
+    if (!isReviewer(guildMember)) {
+      return interaction.reply({
+        content: '⛔ **CLEARANCE DENIED:** You do not have permission to purge this docket.',
+        ephemeral: true,
+      });
+    }
+
     await interaction.reply({
-      content: `❌ **Ticket closed by <@${interaction.user.id}>.** Channel will delete in 5 seconds...`,
+      content: `🛑 **DOSSIER PURGED // DOCKET TERMINATED**\n` +
+               `Review halted and docket closed by Operator <@${interaction.user.id}>.\n` +
+               `Channel memory wipe in 5 seconds...`,
     });
 
     setTimeout(async () => {
       try {
-        await interaction.channel.delete('Ticket closed');
+        await interaction.channel.delete('Ticket purged and closed');
       } catch (delErr) {
         console.error('Failed to delete channel:', delErr);
       }
     }, 5000);
+    return;
   }
 });
 
