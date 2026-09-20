@@ -30,18 +30,19 @@
         .ring-container {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 6px 12px;
+          gap: 10px;
+          padding: 6px 14px;
           background: #09090b;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 6px;
+          border: 1px solid rgba(52, 211, 153, 0.2);
+          border-radius: 4px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
           user-select: none;
-          transition: border-color 0.15s ease;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         .ring-container:hover {
-          border-color: rgba(255, 255, 255, 0.25);
+          border-color: rgba(52, 211, 153, 0.5);
+          box-shadow: 0 4px 16px rgba(52, 211, 153, 0.1);
         }
 
         a {
@@ -49,18 +50,22 @@
           text-decoration: none;
           display: inline-flex;
           align-items: center;
-          gap: 3px;
+          gap: 4px;
           transition: color 0.15s ease;
         }
 
         a:hover {
-          color: #ffffff;
+          color: #34d399;
         }
 
         .hub-link {
-          color: #f4f4f5;
+          color: #34d399;
           font-weight: 600;
           letter-spacing: 0.05em;
+        }
+
+        .hub-link:hover {
+          color: #10b981;
         }
 
         .divider {
@@ -69,24 +74,32 @@
 
         .icon {
           display: inline-block;
-          width: 8px;
-          height: 8px;
-          border: 1px solid #71717a;
+          width: 6px;
+          height: 6px;
+          background: #34d399;
           border-radius: 50%;
+          box-shadow: 0 0 8px #34d399;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0% { opacity: 0.6; box-shadow: 0 0 4px #34d399; }
+          50% { opacity: 1; box-shadow: 0 0 10px #34d399; }
+          100% { opacity: 0.6; box-shadow: 0 0 4px #34d399; }
         }
       `;
 
       this.shadowRoot.innerHTML = `
         <style>${styles}</style>
         <div class="ring-container">
-          <a href="${prevUrl}" title="Previous Node" class="nav-btn">◄ Prev</a>
-          <span class="divider">|</span>
+          <a href="${prevUrl}" title="Previous Node" class="nav-btn">[prev]</a>
+          <span class="divider"></span>
           <a href="${hubUrl}" title="The Uncommons Webring Hub" class="hub-link">
             <span class="icon"></span>
-            The Uncommons
+            [ the uncommons ]
           </a>
-          <span class="divider">|</span>
-          <a href="${nextUrl}" title="Next Node" class="nav-btn">Next ►</a>
+          <span class="divider"></span>
+          <a href="${nextUrl}" title="Next Node" class="nav-btn">[next]</a>
         </div>
       `;
     }

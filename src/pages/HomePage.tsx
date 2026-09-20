@@ -115,10 +115,10 @@ export const HomePage: React.FC = () => {
                 sound.playHarmonic();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex items-center gap-1.5 text-white font-semibold tracking-wider hover:underline underline-offset-4 cursor-pointer"
+              className="flex items-center gap-1.5 text-emerald-400 font-semibold tracking-wider hover:text-emerald-300 transition-colors cursor-pointer"
             >
-              <div className="w-2 h-2 rounded-full border border-zinc-400 animate-spin" style={{ animationDuration: '6s' }} />
-              <span>THE UNCOMMONS</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>[ THE UNCOMMONS ]</span>
             </button>
 
             <span className="text-zinc-700 select-none">|</span>
