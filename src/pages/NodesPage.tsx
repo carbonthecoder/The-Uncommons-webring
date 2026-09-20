@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { MEMBERS, GENESIS_TOTAL_SLOTS, getAllMembers } from '../data/members';
+import { GENESIS_TOTAL_SLOTS, useLiveMembers } from '../data/members';
 import type { Member } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
@@ -28,6 +28,7 @@ export const NodesPage: React.FC = () => {
   const [copiedJson, setCopiedJson] = useState(false);
   const [version, setVersion] = useState(0);
 
+  const liveMembers = useLiveMembers();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -42,11 +43,10 @@ export const NodesPage: React.FC = () => {
 
   // Construct full genesis 8-node registry list
   const fullRegistry = useMemo(() => {
-    const all = getAllMembers();
     const list: Array<{ id: string; member?: Member; isVacant: boolean }> = [];
     for (let i = 1; i <= GENESIS_TOTAL_SLOTS; i++) {
       const slotId = `NODE-00${i}`;
-      const found = all.find(m => m.id === slotId || m.ringPosition === i);
+      const found = liveMembers.find(m => m.id === slotId || m.ringPosition === i);
       if (found) {
         list.push({ id: slotId, member: found, isVacant: false });
       } else {
@@ -54,7 +54,7 @@ export const NodesPage: React.FC = () => {
       }
     }
     return list;
-  }, [version]);
+  }, [liveMembers, version]);
 
   // Filtered registry based on query and filter mode
   const filteredRegistry = useMemo(() => {
@@ -104,7 +104,7 @@ export const NodesPage: React.FC = () => {
       if (e.key.toLowerCase() === 's') {
         e.preventDefault();
         sound.playClick();
-        const verifiedOnly = MEMBERS.filter(m => m.verified);
+        const verifiedOnly = liveMembers.filter(m => m.verified);
         if (verifiedOnly.length > 0) {
           const rand = verifiedOnly[Math.floor(Math.random() * verifiedOnly.length)];
           setSelectedMember(rand);
@@ -118,17 +118,17 @@ export const NodesPage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [liveMembers]);
 
   const copyJsonManifest = () => {
     sound.playClick();
-    const jsonStr = JSON.stringify(MEMBERS, null, 2);
+    const jsonStr = JSON.stringify(liveMembers, null, 2);
     navigator.clipboard.writeText(jsonStr);
     setCopiedJson(true);
     setTimeout(() => setCopiedJson(false), 2000);
   };
 
-  const verifiedCount = MEMBERS.filter(m => m.verified).length;
+  const verifiedCount = liveMembers.filter(m => m.verified).length;
   const vacantCount = GENESIS_TOTAL_SLOTS - verifiedCount;
 
   return (
@@ -147,7 +147,7 @@ export const NodesPage: React.FC = () => {
           <button
             onClick={() => {
               sound.playClick();
-              const verifiedOnly = MEMBERS.filter(m => m.verified);
+              const verifiedOnly = liveMembers.filter(m => m.verified);
               if (verifiedOnly.length > 0) {
                 const rand = verifiedOnly[Math.floor(Math.random() * verifiedOnly.length)];
                 setSelectedMember(rand);
@@ -303,7 +303,7 @@ export const NodesPage: React.FC = () => {
             </button>
           </div>
           <pre className="p-4 bg-zinc-950 border border-white/10 rounded-lg text-xs font-mono text-emerald-400 overflow-x-auto leading-relaxed selection:bg-emerald-950">
-            {JSON.stringify(MEMBERS, null, 2)}
+            {JSON.stringify(liveMembers, null, 2)}
           </pre>
         </div>
       ) : (

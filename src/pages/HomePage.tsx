@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MEMBERS, getAllMembers } from '../data/members';
+import { useLiveMembers } from '../data/members';
 import type { Member } from '../data/members';
 import { ConstellationCanvas } from '../components/ConstellationCanvas';
 import { MemberDossierModal } from '../components/MemberDossierModal';
@@ -9,7 +9,8 @@ import { ArrowRight, Disc, BookOpen, ExternalLink } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const allMembers = getAllMembers();
+  const allMembers = useLiveMembers();
+  const verifiedCount = allMembers.filter(m => m.verified).length;
 
   return (
     <div className="space-y-16 sm:space-y-20 w-full">
@@ -19,7 +20,7 @@ export const HomePage: React.FC = () => {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <span>THE UNCOMMONS // CLOSED WEBRING</span>
           <span className="text-zinc-600 hidden sm:inline">&bull;</span>
-          <span className="text-zinc-400 hidden sm:inline">{allMembers.length === 1 ? '1 VETTED NODE' : `${allMembers.length} VETTED NODES`}</span>
+          <span className="text-zinc-400 hidden sm:inline">{verifiedCount === 1 ? '1 VETTED NODE' : `${verifiedCount} VETTED NODES`}</span>
         </div>
 
         <h1 className="font-syne text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] sm:leading-[1.15] text-balance max-w-4xl mx-auto">
@@ -37,7 +38,7 @@ export const HomePage: React.FC = () => {
             onClick={() => sound.playClick()}
             className="w-full sm:w-auto px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-md transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Explore Nodes ({MEMBERS.length})</span>
+            <span>Explore Nodes ({verifiedCount})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
 
@@ -64,13 +65,13 @@ export const HomePage: React.FC = () => {
       {/* 2. The 3D Orbital Canvas */}
       <section className="space-y-3">
         <ConstellationCanvas
-          members={MEMBERS}
+          members={allMembers}
           onSelectMember={setSelectedMember}
         />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] font-mono text-zinc-500 px-1 text-center sm:text-left">
           <span>Drag orbit to rotate &bull; Click any node to view proof &bull; Use [ and ] to surf</span>
           <Link to="/nodes" className="hover:text-zinc-300 transition-colors">
-            View full node registry ({MEMBERS.length}) &rarr;
+            View full node registry ({verifiedCount}) &rarr;
           </Link>
         </div>
       </section>

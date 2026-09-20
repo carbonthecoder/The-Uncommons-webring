@@ -57,8 +57,8 @@ export const SealPage: React.FC = () => {
   const [tagsInput, setTagsInput] = useState('Systems, AI Agents, Compilers');
   const [nodeStatus, setNodeStatus] = useState<'online' | 'dormant' | 'reviewing'>('online');
 
-  // Preview Mode: 'dossier' | 'ledger' | 'seal'
-  const [previewMode, setPreviewMode] = useState<'dossier' | 'ledger' | 'seal'>('dossier');
+  // Preview Mode: 'dossier' | 'seal'
+  const [previewMode, setPreviewMode] = useState<'dossier' | 'seal'>('dossier');
 
   // Save / Action states
   const [isSaving, setIsSaving] = useState(false);
@@ -492,17 +492,6 @@ export const SealPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setInspectModalOpen(true)}
-                className="px-3 py-1.5 text-xs font-mono rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Test Full Modal</span>
-              </button>
-            </div>
           </div>
 
           {/* Save Success Banner */}
@@ -769,20 +758,6 @@ export const SealPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       sound.playClick();
-                      setPreviewMode('ledger');
-                    }}
-                    className={`px-2 py-1 text-[10px] font-mono rounded transition-colors cursor-pointer ${
-                      previewMode === 'ledger'
-                        ? 'bg-zinc-800 text-white font-semibold'
-                        : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Ledger Row
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
                       setPreviewMode('seal');
                     }}
                     className={`px-2 py-1 text-[10px] font-mono rounded transition-colors cursor-pointer ${
@@ -892,68 +867,7 @@ export const SealPage: React.FC = () => {
                 </div>
               )}
 
-              {/* 2. LEDGER ROW PREVIEW */}
-              {previewMode === 'ledger' && (
-                <div className="space-y-2">
-                  <div className="text-[10px] font-mono text-zinc-500">
-                    &mdash; exact display on /nodes &mdash;
-                  </div>
-                  <div className="p-4 bg-black border border-emerald-500/40 rounded-lg space-y-3 shadow-xl">
-                    <div className="flex items-center justify-between flex-wrap gap-2 font-mono text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-bold">
-                          {previewMember.id}
-                        </span>
-                        <span className="text-white font-semibold">{previewMember.name}</span>
-                        <span className="text-zinc-500">(@{previewMember.handle})</span>
-                      </div>
-
-                      <span className="text-[10px] text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        VERIFIED
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between flex-wrap gap-2 text-xs font-mono">
-                      <a
-                        href={previewMember.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-emerald-300 hover:underline inline-flex items-center gap-1"
-                      >
-                        <span>https://{previewMember.domain}</span>
-                        <ExternalLink className="w-3 h-3 text-zinc-500" />
-                      </a>
-
-                      <button
-                        type="button"
-                        onClick={() => setInspectModalOpen(true)}
-                        className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-[11px] border border-white/10 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Eye className="w-3 h-3" />
-                        <span>Inspect Dossier</span>
-                      </button>
-                    </div>
-
-                    <div className="text-xs text-zinc-400 font-sans line-clamp-2">
-                      {previewMember.bio}
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {previewMember.tags.map((t, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-400 border border-white/[0.06]"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 3. SEAL PREVIEW */}
+              {/* 2. SEAL PREVIEW */}
               {previewMode === 'seal' && (
                 <div className="space-y-4">
                   <div className="text-[10px] font-mono text-zinc-500">
@@ -1102,14 +1016,19 @@ export const SealPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-zinc-500">Your domain:</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-[11px] font-mono text-zinc-400 font-semibold">TARGET LINK (HTTPS):</span>
                 <input
                   type="text"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder="yourname.xyz"
-                  className="px-2.5 py-1 bg-black border border-white/10 rounded text-xs font-mono text-zinc-200 focus:outline-none focus:border-white/30"
+                  value={url}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setUrl(val);
+                    const cleanDomain = val.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+                    if (cleanDomain) setDomain(cleanDomain);
+                  }}
+                  placeholder="https://yourname.xyz"
+                  className="w-full sm:w-80 px-2.5 py-1.5 bg-black border border-white/15 rounded text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500/60"
                 />
               </div>
 

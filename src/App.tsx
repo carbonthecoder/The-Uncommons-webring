@@ -1,5 +1,5 @@
-﻿import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { MEMBERS } from './data/members';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { useLiveMembers } from './data/members';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
 import { NodesPage } from './pages/NodesPage';
@@ -9,11 +9,14 @@ import { ManifestoPage } from './pages/ManifestoPage';
 import { GoPage } from './pages/GoPage';
 
 export default function App() {
+  const liveMembers = useLiveMembers();
+  const verifiedCount = liveMembers.filter(m => m.verified).length;
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
         {/* Top Navbar */}
-        <Navbar nodeCount={MEMBERS.length} />
+        <Navbar nodeCount={verifiedCount} />
 
         {/* Multipage Routing Container */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">

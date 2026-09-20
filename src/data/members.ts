@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 export interface Member {
   id: string;
   name: string;
@@ -31,14 +33,66 @@ export const MEMBERS: Member[] = [
     verified: true,
     ringPosition: 1,
     status: 'online'
+  },
+  {
+    id: 'NODE-002',
+    name: 'Priyanshu (Aero)',
+    handle: 'the_priyxnshu_',
+    domain: 'aero.build',
+    url: 'https://aero.build',
+    field: 'Distributed Systems & Low-Level Agent Runtimes',
+    bio: 'Architecting deterministic multi-agent systems and compiler IR pipelines.',
+    proofOfWork: 'High-throughput agent orchestration engine with zero IPC overhead.',
+    proofUrl: 'https://github.com/carbonthecoder/The-Uncommons-webring',
+    tags: ['Systems', 'Rust', 'Compilers', 'AI'],
+    joinDate: '2026-01-15',
+    verified: true,
+    ringPosition: 2,
+    status: 'online'
   }
 ];
+
+let serverNodesCache: Member[] = [];
+
+export async function syncServerNodes(): Promise<Member[]> {
+  try {
+    const res = await fetch('/nodes.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        serverNodesCache = data
+          .filter((d: any) => d.verified && d.domain && !d.domain.includes('unclaimed'))
+          .map((d: any, i: number) => ({
+            id: d.id || `NODE-00${i + 1}`,
+            name: d.name || 'Builder',
+            handle: d.handle || 'builder',
+            domain: d.domain,
+            url: d.url || (d.domain.startsWith('http') ? d.domain : `https://${d.domain}`),
+            field: d.field || 'Sovereign Systems & Web',
+            bio: d.bio || 'Verified member of The Uncommons webring.',
+            proofOfWork: d.proofOfWork || 'Shipped verified production runtime.',
+            proofUrl: d.proofUrl || `https://github.com/${d.handle}`,
+            tags: d.tags || ['Verified', 'Systems'],
+            joinDate: d.joinDate || '2026-01-01',
+            verified: true,
+            ringPosition: d.ringPosition || (i + 1),
+            status: d.status || 'online',
+          }));
+        window.dispatchEvent(new Event('unc_nodes_updated'));
+      }
+    }
+  } catch {}
+  return getAllMembers();
+}
 
 export function getAllMembers(): Member[] {
   const custom = getCustomActiveNodes();
   const map = new Map<string, Member>();
   for (const m of MEMBERS) {
     map.set(m.id, m);
+  }
+  for (const s of serverNodesCache) {
+    map.set(s.id, s);
   }
   for (const c of custom) {
     map.set(c.id, c);
@@ -110,5 +164,26 @@ export function validateActivationKey(key: string): { valid: boolean; targetSlot
     targetSlot: '', 
     error: 'Invalid activation key. Obtain key in Discord #council-review after ratification.' 
   };
+}
+
+export function useLiveMembers(): Member[] {
+  const [members, setMembers] = useState<Member[]>(() => getAllMembers());
+
+  useEffect(() => {
+    syncServerNodes().then(m => setMembers(m));
+
+    const handleUpdate = () => {
+      setMembers(getAllMembers());
+    };
+
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('unc_nodes_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('unc_nodes_updated', handleUpdate);
+    };
+  }, []);
+
+  return members;
 }
 

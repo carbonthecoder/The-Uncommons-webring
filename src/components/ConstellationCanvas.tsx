@@ -177,28 +177,59 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       }
 
       // Circulation wave progression
-      pulseProgress = (pulseProgress + 0.008) % 1;
+      pulseProgress = (pulseProgress + 0.006) % 1;
 
-      // 2. Draw Subtle Background Orbital Rings
+      // 2. Pulsing Cosmic Sovereign Core & Central Reticle
+      const corePulse = 0.85 + Math.sin(Date.now() * 0.0025) * 0.15;
+      const coreGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 60 * corePulse);
+      coreGlow.addColorStop(0, 'rgba(16, 185, 129, 0.20)');
+      coreGlow.addColorStop(0.4, 'rgba(6, 182, 212, 0.06)');
+      coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = coreGlow;
       ctx.beginPath();
-      ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.arc(centerX, centerY, 60 * corePulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Central Reticle Crosshairs
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
       ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(centerX - 10, centerY);
+      ctx.lineTo(centerX + 10, centerY);
+      ctx.moveTo(centerX, centerY - 10);
+      ctx.lineTo(centerX, centerY + 10);
       ctx.stroke();
 
-      // Outer faint aura
       ctx.beginPath();
-      ctx.ellipse(centerX, centerY, radiusX * 1.18, radiusY * 1.18, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
-      ctx.setLineDash([4, 12]);
+      ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#10b981';
+      ctx.fill();
+
+      // 3. Layered Concentric Orbital Rings
+      // Outer Telemetry Boundary
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, radiusX * 1.16, radiusY * 1.16, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 10]);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Inner hub core
+      // Inner Counter-Resonance Ring
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-      ctx.fill();
+      ctx.ellipse(centerX, centerY, radiusX * 0.80, radiusY * 0.80, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 15]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Primary Sovereign Orbital Track (Dual Glow)
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.22)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
       // Calculate node positions
       const total = displayNodes.length;
@@ -210,7 +241,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
         return { member: m, x, y, depth, theta, originalIndex: i };
       });
 
-      // 3. Draw Connecting Ring Threads (Sequential webring cycle)
+      // 4. Draw Connecting Ring Threads & Luminous Energy Comets
       for (let i = 0; i < total; i++) {
         const current = nodes[i];
         const next = nodes[(i + 1) % total];
@@ -218,79 +249,132 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
         const isCurrentActive = activeNodeIndex === current.originalIndex || activeNodeIndex === next.originalIndex;
         const isHoveredEdge = hoveredMember && (hoveredMember.id === current.member.id || hoveredMember.id === next.member.id);
 
+        // Thread Line
         ctx.beginPath();
         ctx.moveTo(current.x, current.y);
         ctx.lineTo(next.x, next.y);
         ctx.strokeStyle = isHoveredEdge
-          ? 'rgba(255, 255, 255, 0.5)'
+          ? 'rgba(52, 211, 153, 0.65)'
           : isCurrentActive
-          ? 'rgba(255, 255, 255, 0.25)'
-          : 'rgba(255, 255, 255, 0.07)';
+          ? 'rgba(16, 185, 129, 0.35)'
+          : 'rgba(255, 255, 255, 0.08)';
         ctx.lineWidth = isHoveredEdge || isCurrentActive ? 1.5 : 1;
         ctx.stroke();
 
-        // 4. Wave Packets (Light pulses traveling along the ring threads)
-        const waveX = current.x + (next.x - current.x) * pulseProgress;
-        const waveY = current.y + (next.y - current.y) * pulseProgress;
+        // Dual Streaming Comets with Light Trails
+        for (let c = 0; c < 2; c++) {
+          const streamOffset = c * 0.5;
+          const prog = (pulseProgress + streamOffset) % 1;
+          const cometX = current.x + (next.x - current.x) * prog;
+          const cometY = current.y + (next.y - current.y) * prog;
+          const tailProg = Math.max(0, prog - 0.08);
+          const tailX = current.x + (next.x - current.x) * tailProg;
+          const tailY = current.y + (next.y - current.y) * tailProg;
 
-        ctx.beginPath();
-        ctx.arc(waveX, waveY, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.fill();
+          const grad = ctx.createLinearGradient(tailX, tailY, cometX, cometY);
+          grad.addColorStop(0, 'rgba(16, 185, 129, 0)');
+          grad.addColorStop(1, 'rgba(52, 211, 153, 0.7)');
+
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(cometX, cometY);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(cometX, cometY, 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+        }
       }
 
-      // Sort by depth for correct back-to-front rendering
+      // Sort by depth for correct 3D back-to-front rendering
       const sortedNodes = [...nodes].sort((a, b) => a.depth - b.depth);
 
-      // 5. Draw Nodes
+      // 5. Draw Celestial Nodes
       sortedNodes.forEach((node) => {
         const isHovered = hoveredMember?.id === node.member.id;
         const isActive = activeNodeIndex === node.originalIndex;
         const isFounder = node.member.id === 'NODE-001';
+        const isVerified = node.member.verified;
 
-        const baseSize = 3 + node.depth * 3;
-        let size = isHovered || isActive ? baseSize + 3.5 : baseSize;
+        const baseSize = 3.5 + node.depth * 3.5;
+        const size = isHovered || isActive ? baseSize + 3.5 : baseSize;
 
-        // Founder Node Beacon (Distinct dual-ring pulse for NODE-001)
-        if (isFounder) {
+        // Verified Outer Resonant Rings
+        if (isVerified) {
           ctx.beginPath();
           ctx.arc(node.x, node.y, size + 4, 0, Math.PI * 2);
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+          ctx.strokeStyle = isFounder ? 'rgba(16, 185, 129, 0.5)' : 'rgba(6, 182, 212, 0.4)';
           ctx.lineWidth = 1;
-          ctx.setLineDash([2, 4]);
           ctx.stroke();
-          ctx.setLineDash([]);
         }
 
-        // Active/Hover Halo Glow
-        if (isHovered || isActive || node.depth > 0.75) {
-          const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 3.5);
-          glow.addColorStop(0, isHovered || isActive ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)');
-          glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        // Active / Hovered Sci-Fi HUD Targeting Brackets
+        if (isHovered || isActive) {
+          const bSize = size + 7;
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.arc(node.x, node.y, size * 3.5, 0, Math.PI * 2);
+          // Top-left
+          ctx.moveTo(node.x - bSize, node.y - bSize + 5);
+          ctx.lineTo(node.x - bSize, node.y - bSize);
+          ctx.lineTo(node.x - bSize + 5, node.y - bSize);
+          // Top-right
+          ctx.moveTo(node.x + bSize - 5, node.y - bSize);
+          ctx.lineTo(node.x + bSize, node.y - bSize);
+          ctx.lineTo(node.x + bSize, node.y - bSize + 5);
+          // Bottom-left
+          ctx.moveTo(node.x - bSize, node.y + bSize - 5);
+          ctx.lineTo(node.x - bSize, node.y + bSize);
+          ctx.lineTo(node.x - bSize + 5, node.y + bSize);
+          // Bottom-right
+          ctx.moveTo(node.x + bSize - 5, node.y + bSize);
+          ctx.lineTo(node.x + bSize, node.y + bSize);
+          ctx.lineTo(node.x + bSize, node.y + bSize - 5);
+          ctx.stroke();
+        }
+
+        // Radiant Halo Glow
+        if (isHovered || isActive || (isVerified && node.depth > 0.65)) {
+          const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 4);
+          glow.addColorStop(0, isHovered || isActive ? 'rgba(52, 211, 153, 0.5)' : 'rgba(16, 185, 129, 0.15)');
+          glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, size * 4, 0, Math.PI * 2);
           ctx.fillStyle = glow;
           ctx.fill();
         }
 
-        // Main Node Circle
+        // Main Node Orb
         ctx.beginPath();
         ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
         ctx.fillStyle = isHovered || isActive
           ? '#ffffff'
           : isFounder
           ? '#10b981'
+          : isVerified
+          ? '#34d399'
           : node.depth > 0.5
-          ? `rgba(240, 240, 240, ${0.4 + node.depth * 0.5})`
-          : `rgba(160, 160, 160, ${0.2 + node.depth * 0.3})`;
+          ? `rgba(220, 220, 220, ${0.35 + node.depth * 0.45})`
+          : `rgba(120, 120, 120, ${0.15 + node.depth * 0.25})`;
         ctx.fill();
 
-        // Node Label (Front, active, or hovered)
-        if (isHovered || isActive || node.depth > 0.88) {
+        // Node Monospace Telemetry Label (Front, active, or hovered)
+        if (isHovered || isActive || node.depth > 0.86) {
           ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
-          ctx.fillStyle = isHovered || isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.5)';
+          ctx.fillStyle = isHovered || isActive ? '#ffffff' : (isVerified ? '#34d399' : 'rgba(255, 255, 255, 0.5)');
           ctx.textAlign = 'center';
-          ctx.fillText(node.member.domain, node.x, node.y - size - 6);
+          
+          const labelPrefix = isVerified ? '◉ ' : '○ ';
+          ctx.fillText(`${labelPrefix}${node.member.domain}`, node.x, node.y - size - 8);
+
+          if (isHovered || isActive) {
+            ctx.font = '8px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+            ctx.fillStyle = isVerified ? '#10b981' : '#a1a1aa';
+            ctx.fillText(`[${node.member.id} // ${isVerified ? 'VERIFIED' : 'OPEN SLOT'}]`, node.x, node.y - size - 20);
+          }
         }
       });
 
