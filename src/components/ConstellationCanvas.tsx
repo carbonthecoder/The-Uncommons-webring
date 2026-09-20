@@ -59,19 +59,24 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
   const activeMember = displayNodes[activeNodeIndex] || displayNodes[0];
 
-  // Rotate smoothly towards a specific node
+  // Rotate smoothly towards a specific node (Shortest Path)
   const focusNode = useCallback((index: number) => {
     sound.playClick();
     setActiveNodeIndex(index);
     const total = displayNodes.length;
-    // We want the node to align with the front center (theta = Math.PI / 2)
-    const targetTheta = Math.PI / 2 - (index / total) * Math.PI * 2;
-    // Normalize target angle
-    let current = angleRef.current % (Math.PI * 2);
-    if (current < 0) current += Math.PI * 2;
-    let target = targetTheta % (Math.PI * 2);
-    if (target < 0) target += Math.PI * 2;
-    targetAngleRef.current = targetTheta;
+    
+    // The angle we want the node to be at (front center)
+    const desiredTheta = Math.PI / 2 - (index / total) * Math.PI * 2;
+    
+    // Get current target or actual angle
+    const currentTheta = targetAngleRef.current !== null ? targetAngleRef.current : angleRef.current;
+    
+    // Find the shortest angular distance
+    let diff = (desiredTheta - currentTheta) % (Math.PI * 2);
+    if (diff > Math.PI) diff -= Math.PI * 2;
+    if (diff < -Math.PI) diff += Math.PI * 2;
+    
+    targetAngleRef.current = currentTheta + diff;
   }, [displayNodes.length]);
 
   const nextNode = useCallback(() => {
@@ -112,6 +117,14 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [prevNode, nextNode, activeNodeIndex, displayNodes, onSelectMember]);
 
+  // Scroll Parallax Tracking
+  const scrollYRef = useRef<number>(0);
+  useEffect(() => {
+    const handleScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Canvas rendering loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,12 +143,12 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
       // Generate starfield dust
       if (starsRef.current.length === 0) {
-        starsRef.current = Array.from({ length: 65 }, () => ({
+        starsRef.current = Array.from({ length: 120 }, () => ({ // More stars
           x: Math.random() * rect.width,
           y: Math.random() * rect.height,
-          size: Math.random() * 1.2 + 0.3,
+          size: Math.random() * 1.5 + 0.5,
           alpha: Math.random() * 0.4 + 0.1,
-          speed: Math.random() * 0.005 + 0.002,
+          speed: Math.random() * 0.01 + 0.002, // faster twinkle
         }));
       }
     };
@@ -160,27 +173,36 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      // Parallax Calculations based on Scroll
+      const scrollY = scrollYRef.current;
+      const parallaxY = scrollY * 0.1; // Shift the whole canvas center slightly up as we scroll down
+      const tiltOffset = Math.min(scrollY * 0.15, 60); // Tilt the 3D ring as we scroll
+      
       const centerX = width / 2;
-      const centerY = height / 2;
+      const centerY = (height / 2) - parallaxY;
       const radiusX = Math.min(width, height) * 0.40;
-      const radiusY = radiusX * 0.50; // Perspective ellipse
+      const radiusY = (radiusX * 0.50) + tiltOffset; // Perspective ellipse widens based on scroll
 
-      // 0. Deep Space Nebula Background
-      const nebula = ctx.createRadialGradient(centerX * 0.8, centerY * 0.8, 0, centerX, centerY, Math.max(width, height) * 0.8);
-      nebula.addColorStop(0, '#0a0518'); // subtle deep space purple/blue
-      nebula.addColorStop(0.4, '#05020a');
-      nebula.addColorStop(1, '#000000');
-      ctx.fillStyle = nebula;
+      // 0. Deep Space Background (Pure Black Aesthetic)
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, width, height);
 
-      // 1. Draw Starfield Dust
+      // 1. Draw Starfield Dust (Shiny & Dynamic)
       starsRef.current.forEach((star) => {
         star.alpha += star.speed;
-        const currentAlpha = 0.15 + Math.abs(Math.sin(star.alpha)) * 0.35;
+        const currentAlpha = 0.2 + Math.abs(Math.sin(star.alpha)) * 0.8;
         ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        
+        // Star Parallax
+        const sx = star.x;
+        const sy = (star.y - scrollY * 0.05 + height) % height; // Stars move slower than ring
+        
+        ctx.arc(sx, sy, star.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha})`;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+        ctx.shadowBlur = star.size * 4;
         ctx.fill();
+        ctx.shadowBlur = 0;
       });
 
       // Smooth interpolation if user clicked next/prev
