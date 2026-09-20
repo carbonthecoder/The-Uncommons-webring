@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { GENESIS_TOTAL_SLOTS, useLiveMembers, useGenesisSlots } from '../data/members';
+import { GENESIS_TOTAL_SLOTS, useLiveMembers, useGenesisSlots, ensureHttps } from '../data/members';
 import type { Member } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
@@ -335,7 +335,7 @@ export const NodesPage: React.FC = () => {
                       </h3>
                       
                       <a
-                        href={m.url}
+                        href={ensureHttps(m.url || m.domain)}
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -380,7 +380,7 @@ export const NodesPage: React.FC = () => {
                       </button>
 
                       <a
-                        href={m.url}
+                        href={ensureHttps(m.url || m.domain)}
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}

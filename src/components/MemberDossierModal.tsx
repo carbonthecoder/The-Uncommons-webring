@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import type { Member } from '../data/members';
-import { getNextMember, getPrevMember } from '../data/members';
+import { getNextMember, getPrevMember, ensureHttps } from '../data/members';
 import { sound } from '../utils/audio';
 import { ExternalLink, X, ArrowRight, ArrowLeft } from 'lucide-react';
 
@@ -36,6 +36,8 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
 
   const prevNode = getPrevMember(member.domain);
   const nextNode = getNextMember(member.domain);
+  const targetUrl = ensureHttps(member.url || member.domain);
+  const proofUrl = ensureHttps(member.proofUrl || `https://github.com/${member.handle}`);
 
   return (
     <div 
@@ -76,7 +78,7 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
         {/* Identity & Domain (No nested box cards) */}
         <div className="space-y-1.5">
           <a
-            href={member.url}
+            href={targetUrl}
             target="_blank"
             rel="noreferrer"
             className="font-mono text-lg sm:text-xl font-bold text-white hover:text-emerald-300 transition-colors inline-flex items-center gap-1.5 hover:underline underline-offset-4"
@@ -106,7 +108,7 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
             <div className="flex items-center justify-between font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
               <span>VERIFIED PROOF OF WORK</span>
               <a
-                href={member.proofUrl}
+                href={proofUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="text-zinc-400 hover:text-white flex items-center gap-1 transition-colors hover:underline"
@@ -150,7 +152,7 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
           </button>
 
           <a
-            href={member.url}
+            href={targetUrl}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-1.5 text-xs font-mono rounded bg-zinc-100 hover:bg-white text-zinc-950 font-bold flex items-center gap-1.5 shadow"

@@ -455,10 +455,7 @@ export async function getAllNodes(bypassCache = false) {
       if (docs && docs.length > 0) {
         for (const doc of docs) {
           const { _id, ...cleanNode } = doc;
-          nodeMap.set(cleanNode.id, {
-            ...nodeMap.get(cleanNode.id),
-            ...cleanNode,
-          });
+          nodeMap.set(cleanNode.id, cleanNode);
         }
       }
     }
@@ -574,8 +571,9 @@ export async function batchUpdateNodes(updatedNodesList) {
   // 4. Commit full list directly to GitHub Repository
   await commitToGitHubRepo(allNodes, 'chore(registry): batch reorder ring positions [skip ci]');
 
-  // Invalidate memory cache
-  memoryCacheNodes = null;
+  // Update memory cache immediately
+  memoryCacheNodes = allNodes;
+  memoryCacheExpiry = Date.now() + CACHE_TTL_MS;
 
   return allNodes;
 }

@@ -19,6 +19,7 @@ import {
   vacateCustomNode, 
   syncServerNodes, 
   broadcastRingUpdate, 
+  ensureHttps,
   type Member 
 } from '../data/members';
 import { MongoSaveOverlay } from './MongoSaveOverlay';
@@ -499,14 +500,27 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
   }, [pushHistory]);
 
   // Handle Save Node Form
-  const handleSaveNode = useCallback(async (updatedNode: Member) => {
+  const handleSaveNode = useCallback(async (rawNode: Member) => {
     sound.playClick();
     setStatusMsg(null);
 
-    if (!updatedNode.domain.trim()) {
-      setStatusMsg({ type: 'error', text: 'Domain is required.' });
+    const isVacantOrUnclaimed = !rawNode.domain.trim() || rawNode.domain.includes('unclaimed') || rawNode.handle === 'vacant';
+
+    if (rawNode.status === 'online' && isVacantOrUnclaimed) {
+      setStatusMsg({
+        type: 'error',
+        text: `⛔ Node ${rawNode.id} is unclaimed. Fill in a valid domain, handle, and builder moniker before setting status to Online.`,
+      });
+      sound.playTick();
       return;
     }
+
+    const updatedNode: Member = {
+      ...rawNode,
+      domain: rawNode.domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase(),
+      url: ensureHttps(rawNode.url || rawNode.domain),
+      proofUrl: ensureHttps(rawNode.proofUrl || `https://github.com/${rawNode.handle}`),
+    };
 
     pushHistory();
 

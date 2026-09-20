@@ -294,6 +294,13 @@ export function getAllMembers(): Member[] {
     .filter((s) => s.verified && s.domain && !s.domain.includes('unclaimed') && s.handle !== 'vacant')
     .sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
 }
+export function ensureHttps(urlOrDomain?: string, fallback: string = 'https://theuncommons.vercel.app'): string {
+  if (!urlOrDomain) return fallback;
+  const clean = urlOrDomain.trim();
+  if (!clean) return fallback;
+  if (/^https?:\/\//i.test(clean)) return clean;
+  return `https://${clean}`;
+}
 
 export async function syncServerNodes(bypassCache: boolean = false): Promise<Member[]> {
   try {
@@ -310,16 +317,20 @@ export async function syncServerNodes(bypassCache: boolean = false): Promise<Mem
         const mergedSlots: Member[] = data.map((d: any, i: number) => {
           const slotId = d.id || `NODE-00${i + 1}`;
           const isClaimed = !!d.verified && !d.domain?.includes('unclaimed') && d.handle !== 'vacant';
+          const cleanDomain = d.domain ? d.domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase() : `unclaimed-slot-00${i + 1}.xyz`;
+          const formattedUrl = isClaimed ? ensureHttps(d.url || cleanDomain) : 'https://theuncommons.vercel.app/apply';
+          const formattedProofUrl = isClaimed ? ensureHttps(d.proofUrl || `https://github.com/${d.handle || 'builder'}`) : 'https://theuncommons.vercel.app/apply';
+
           return {
             id: slotId,
             name: d.name || 'Awaiting Candidate',
             handle: d.handle || 'vacant',
-            domain: d.domain || `unclaimed-slot-00${i + 1}.xyz`,
-            url: d.url || (isClaimed ? (d.domain.startsWith('http') ? d.domain : `https://${d.domain}`) : 'https://the-uncommons.vercel.app/apply'),
+            domain: cleanDomain,
+            url: formattedUrl,
             field: d.field || 'Open Genesis Vacancy',
             bio: d.bio || 'Genesis slot. Applications open via Discord.',
             proofOfWork: d.proofOfWork || 'Awaiting candidate build submission.',
-            proofUrl: d.proofUrl || 'https://the-uncommons.vercel.app/apply',
+            proofUrl: formattedProofUrl,
             tags: d.tags || ['Genesis', 'Vacancy'],
             joinDate: d.joinDate || '2026-01-01',
             verified: isClaimed,
