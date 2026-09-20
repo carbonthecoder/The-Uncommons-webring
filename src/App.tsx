@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { useLiveMembers } from './data/members';
 import { Navbar } from './components/Navbar';
@@ -7,16 +8,84 @@ import { SealPage } from './pages/SealPage';
 import { ApplyPage } from './pages/ApplyPage';
 import { ManifestoPage } from './pages/ManifestoPage';
 import { GoPage } from './pages/GoPage';
+import { OwnerOrchestratorModal } from './components/OwnerOrchestratorModal';
+import { sound } from './utils/audio';
+import confetti from 'canvas-confetti';
 
 export default function App() {
   const liveMembers = useLiveMembers();
   const verifiedCount = liveMembers.filter(m => m.verified).length;
+  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+
+  // Global "owner" keyboard trigger listener
+  useEffect(() => {
+    let keyBuffer: string[] = [];
+    const targetSequence = ['o', 'w', 'n', 'e', 'r'];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keystrokes when focused in an input, textarea or contenteditable element
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      keyBuffer.push(key);
+      if (keyBuffer.length > targetSequence.length) {
+        keyBuffer.shift();
+      }
+
+      if (keyBuffer.join('') === 'owner') {
+        keyBuffer = [];
+        // Set Founder Superadmin Credentials in sessionStorage
+        sessionStorage.setItem('unc_vault_key', 'UNC-ALPHA-2026');
+        sessionStorage.setItem('unc_vault_pin', '000000');
+        sessionStorage.setItem('unc_vault_verified', 'true');
+        sessionStorage.setItem('unc_owner_mode', 'true');
+
+        // Play audio & confetti
+        sound.playOwnerChime();
+        confetti({
+          particleCount: 75,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#f59e0b', '#10b981', '#ffffff'],
+        });
+
+        window.dispatchEvent(new Event('unc_owner_activated'));
+        setIsOwnerModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Listen for manual trigger events from Navbar
+    const handleOpenModal = () => setIsOwnerModalOpen(true);
+    window.addEventListener('unc_open_owner_modal', handleOpenModal);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('unc_open_owner_modal', handleOpenModal);
+    };
+  }, []);
 
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
         {/* Top Navbar */}
         <Navbar nodeCount={verifiedCount} />
+
+        {/* Global Founder Orchestrator Modal */}
+        <OwnerOrchestratorModal
+          isOpen={isOwnerModalOpen}
+          onClose={() => setIsOwnerModalOpen(false)}
+        />
 
         {/* Multipage Routing Container */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">

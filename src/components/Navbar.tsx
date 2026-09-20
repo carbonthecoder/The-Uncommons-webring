@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { sound } from '../utils/audio';
-import { Volume2, VolumeX, Disc, Lock, Menu, X, ArrowRight, ShieldCheck, BookOpen, Globe } from 'lucide-react';
+import { Volume2, VolumeX, Disc, Lock, Menu, X, ArrowRight, ShieldCheck, BookOpen, Globe, Crown } from 'lucide-react';
 
 interface NavbarProps {
   nodeCount: number;
@@ -11,6 +11,10 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  const [isOwnerActive, setIsOwnerActive] = useState(() => {
+    return sessionStorage.getItem('unc_owner_mode') === 'true' || sessionStorage.getItem('unc_vault_key') === 'UNC-ALPHA-2026';
+  });
 
   // Auto-close mobile menu when changing pages
   useEffect(() => {
@@ -36,6 +40,20 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
         : 'text-zinc-400 hover:text-white hover:bg-zinc-900/50'
     }`;
 
+  useEffect(() => {
+    const checkOwner = () => {
+      setIsOwnerActive(
+        sessionStorage.getItem('unc_owner_mode') === 'true' || sessionStorage.getItem('unc_vault_key') === 'UNC-ALPHA-2026'
+      );
+    };
+    window.addEventListener('unc_owner_activated', checkOwner);
+    window.addEventListener('storage', checkOwner);
+    return () => {
+      window.removeEventListener('unc_owner_activated', checkOwner);
+      window.removeEventListener('storage', checkOwner);
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-black/90 backdrop-blur-md">
       {/* Top micro announcement bar */}
@@ -49,6 +67,18 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
           <span className="hidden sm:inline text-zinc-400">ACCEPTANCE:</span> <span className="hidden sm:inline text-zinc-300">&lt; 3%</span>
         </div>
         <div className="flex items-center gap-3">
+          {isOwnerActive && (
+            <button
+              onClick={() => {
+                sound.playClick();
+                window.dispatchEvent(new Event('unc_open_owner_modal'));
+              }}
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors font-bold cursor-pointer"
+            >
+              <Crown className="w-3 h-3 text-amber-400 animate-pulse" />
+              <span>OWNER MODE ACTIVE</span>
+            </button>
+          )}
           <Link
             to="/apply"
             onClick={() => sound.playClick()}
@@ -107,6 +137,20 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Owner Mode Button (if active) */}
+          {isOwnerActive && (
+            <button
+              onClick={() => {
+                sound.playClick();
+                window.dispatchEvent(new Event('unc_open_owner_modal'));
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold rounded-md transition-all shadow-md cursor-pointer"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Owner Edit</span>
+            </button>
+          )}
+
           {/* Sound Toggle */}
           <button
             onClick={toggleSound}

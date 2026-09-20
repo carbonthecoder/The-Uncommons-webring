@@ -54,13 +54,33 @@ export const MEMBERS: Member[] = [
 
 let serverNodesCache: Member[] = [];
 
-export async function syncServerNodes(): Promise<Member[]> {
+let ringChannel: BroadcastChannel | null = null;
+try {
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    ringChannel = new BroadcastChannel('unc_ring_sync');
+    ringChannel.onmessage = (event) => {
+      if (event.data?.type === 'NODES_UPDATED') {
+        syncServerNodes(true);
+      }
+    };
+  }
+} catch {}
+
+export function broadcastRingUpdate() {
+  window.dispatchEvent(new Event('unc_nodes_updated'));
+  if (ringChannel) {
+    try {
+      ringChannel.postMessage({ type: 'NODES_UPDATED', timestamp: Date.now() });
+    } catch {}
+  }
+}
+
+export async function syncServerNodes(bypassCache: boolean = false): Promise<Member[]> {
   try {
-    // 1. Try live cloud registry endpoint
-    let res = await fetch('/api/get-nodes');
+    const url = bypassCache ? '/api/get-nodes?refresh=true' : '/api/get-nodes';
+    let res = await fetch(url);
     if (!res.ok) {
-      // 2. Fallback to static public/nodes.json
-      res = await fetch('/nodes.json');
+      res = await fetch('/nodes.json?t=' + Date.now());
     }
     if (res.ok) {
       const result = await res.json();
