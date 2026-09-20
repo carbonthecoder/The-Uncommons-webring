@@ -45,6 +45,131 @@ function generateTicketId() {
   return id;
 }
 
+// Helper to generate a cryptographically unique Ring Key per candidate
+function generateUniqueRingKey() {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let rand = '';
+  for (let i = 0; i < 4; i++) {
+    rand += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  const year = new Date().getFullYear();
+  return `UNC-KEY-${rand}-${year}`;
+}
+
+// Get or auto-create private Staff-Only Key Ledger Channel
+async function getOrCreateKeyLedgerChannel(guild) {
+  if (config.keyLedgerChannelId) {
+    const existing = guild.channels.cache.get(config.keyLedgerChannelId);
+    if (existing) return existing;
+  }
+
+  // Look for channel by name
+  let ch = guild.channels.cache.find(c => c.name === 'webring-key-ledger' || c.name === 'council-key-ledger');
+  if (ch) {
+    config.keyLedgerChannelId = ch.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return ch;
+  }
+
+  // Auto-create private staff-only channel
+  try {
+    const permissionOverwrites = [
+      {
+        id: guild.id, // @everyone hidden
+        deny: [PermissionFlagsBits.ViewChannel],
+      },
+      {
+        id: client.user.id, // bot
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.EmbedLinks,
+          PermissionFlagsBits.ManageChannels,
+        ],
+      },
+    ];
+
+    if (config.staffRoleId) {
+      permissionOverwrites.push({
+        id: config.staffRoleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+        deny: [PermissionFlagsBits.SendMessages], // Read-only audit log for staff
+      });
+    }
+
+    if (config.seniorStaffRoleId && config.seniorStaffRoleId !== config.staffRoleId) {
+      permissionOverwrites.push({
+        id: config.seniorStaffRoleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+        deny: [PermissionFlagsBits.SendMessages],
+      });
+    }
+
+    const channelOptions = {
+      name: 'webring-key-ledger',
+      type: ChannelType.GuildText,
+      topic: '🔒 Staff-Only Key Ledger: Real-time record of all issued Webring Keys & approved members.',
+      permissionOverwrites,
+    };
+
+    if (config.ticketCategoryId) {
+      channelOptions.parent = config.ticketCategoryId;
+    }
+
+    ch = await guild.channels.create(channelOptions);
+    config.keyLedgerChannelId = ch.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log(`🔒 Created private staff-only key ledger channel: #${ch.name} (${ch.id})`);
+    return ch;
+  } catch (err) {
+    console.error('Failed to create key ledger channel:', err);
+    return null;
+  }
+}
+
+// Get or auto-create Webring Member Discord Role
+async function getOrCreateWebringRole(guild) {
+  if (config.webringRoleId) {
+    const existing = guild.roles.cache.get(config.webringRoleId);
+    if (existing) return existing;
+  }
+
+  // Look for role by name
+  let role = guild.roles.cache.find(r => 
+    (r.name.includes('The Uncommons') || r.name.includes('Webring')) && 
+    r.id !== client.user.id && 
+    !r.managed
+  );
+  if (role) {
+    config.webringRoleId = role.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return role;
+  }
+
+  // Auto-create role
+  try {
+    role = await guild.roles.create({
+      name: '🌐・The Uncommons',
+      color: 0x10b981, // Emerald Green
+      hoist: true, // Display role members separately in sidebar
+      reason: 'Official verified Webring member role for The Uncommons',
+    });
+    config.webringRoleId = role.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log(`🌐 Created Discord role: ${role.name} (${role.id})`);
+    return role;
+  } catch (err) {
+    console.error('Failed to auto-create webring role:', err.message);
+    return null;
+  }
+}
+
 // Find member by username in guild
 async function findGuildMember(guild, rawUsername) {
   const clean = rawUsername.trim().replace(/^@/, '').toLowerCase();
@@ -431,21 +556,66 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     await interaction.deferReply();
 
+    const guild = interaction.guild;
+
     // Fetch applicant
     try {
       const applicantUser = await client.users.fetch(applicantId);
+      const uniqueKey = generateUniqueRingKey();
+
+      // Automatically assign Webring Discord Role
+      let roleGranted = false;
+      let webringRole = null;
+      try {
+        webringRole = await getOrCreateWebringRole(guild);
+        const applicantMember = await guild.members.fetch(applicantId).catch(() => null);
+        if (applicantMember && webringRole) {
+          await applicantMember.roles.add(webringRole);
+          roleGranted = true;
+        }
+      } catch (roleErr) {
+        console.warn('Could not assign webring role:', roleErr.message);
+      }
+
+      // Record in Staff-Only Key Ledger Channel
+      let ledgerChannel = null;
+      try {
+        ledgerChannel = await getOrCreateKeyLedgerChannel(guild);
+        if (ledgerChannel) {
+          const auditEmbed = new EmbedBuilder()
+            .setTitle(`🔑 WEBRING KEY ISSUED // ${uniqueKey}`)
+            .setDescription(`Official admittance granted by <@${interaction.user.id}> for **The Uncommons Webring**.`)
+            .setColor(0x10b981)
+            .addFields(
+              { name: '👤 Candidate', value: `<@${applicantId}> (\`${applicantUser.tag}\`)`, inline: true },
+              { name: '🛡️ Approved By', value: `<@${interaction.user.id}>`, inline: true },
+              { name: '🎫 Ticket ID', value: `\`${ticketId}\``, inline: true },
+              { name: '🔑 Official Ring Key', value: `\`\`\`text\n${uniqueKey}\n\`\`\``, inline: false },
+              { name: '🎭 Webring Role', value: roleGranted && webringRole ? `<@&${webringRole.id}> (Assigned)` : (webringRole ? `<@&${webringRole.id}> (Check hierarchy)` : 'Role created'), inline: true },
+              { name: '🌐 Setup Portal', value: '[the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)', inline: true },
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Staff-Only Key Ledger • All keys cryptographically unique per candidate' });
+
+          await ledgerChannel.send({ embeds: [auditEmbed] });
+        }
+      } catch (ledgerErr) {
+        console.error('Error logging to key ledger channel:', ledgerErr);
+      }
+
+      // DM Unique Key to applicant
       let dmSuccess = true;
-      
-      // DM Ring Key to applicant
       const dmEmbed = new EmbedBuilder()
         .setTitle('🌌 The Uncommons — Admission Ratified!')
         .setDescription(
           `Congratulations! Your sovereign domain and proof of work have been ratified by Council for **The Uncommons Webring**.\n\n` +
-          `### 🔑 Your Official Ring Key:\n\`\`\`text\n${config.ringKey}\n\`\`\`\n\n` +
+          `### 🔑 Your Unique Ring Key:\n\`\`\`text\n${uniqueKey}\n\`\`\`\n\n` +
+          (roleGranted && webringRole ? `🛡️ **Discord Role Granted:** You have been awarded <@&${webringRole.id}> in Kavyon!\n\n` : '') +
           `**Next Steps:**\n` +
           `1. Head to [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)\n` +
-          `2. Enter your key to unlock your official Webring Seal script snippet.\n` +
-          `3. Embed the badge in your personal domain footer!`
+          `2. Enter your unique key to unlock the **Sovereign Node Studio**.\n` +
+          `3. Customize your node info with the live preview, then click **Save & Publish Node to Webring**!\n` +
+          `4. Copy your embed seal snippet and place it in your personal domain footer!`
         )
         .setColor(0x10b981)
         .setFooter({ text: 'Welcome to the closed constellation of rare minds.' });
@@ -457,10 +627,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
         console.warn(`Could not DM user ${applicantId}:`, dmErr.message);
       }
 
+      const roleLine = roleGranted && webringRole ? `\n🎭 **Role Granted:** Assigned <@&${webringRole.id}>.` : '';
+      const ledgerLine = ledgerChannel ? `\n🔒 **Staff Ledger:** Key permanently logged in <#${ledgerChannel.id}>.` : '';
+
       if (dmSuccess) {
         await interaction.editReply({
           content: `🟢 **Ticket Ratified & Approved by <@${interaction.user.id}>!**\n` +
-                   `The official Ring Key (\`${config.ringKey}\`) has been dispatched directly to <@${applicantId}>'s DM.\n\n` +
+                   `A unique Ring Key (\`${uniqueKey}\`) has been dispatched directly to <@${applicantId}>'s DM.` +
+                   roleLine +
+                   ledgerLine + `\n\n` +
                    `⏳ **This ticket channel will self-destruct in 10 seconds...**`,
         });
 
@@ -475,7 +650,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await interaction.editReply({
           content: `🟢 **Ticket Ratified & Approved by <@${interaction.user.id}>!**\n` +
                    `⚠️ *Note: Applicant has Discord Direct Messages disabled in privacy settings.* \n` +
-                   `<@${applicantId}>, your official Ring Key is: \`${config.ringKey}\` (copy it now!).\n\n` +
+                   `<@${applicantId}>, your official Ring Key is: \`${uniqueKey}\` (copy it now!).` +
+                   roleLine +
+                   ledgerLine + `\n\n` +
                    `⏳ **This channel will self-destruct in 30 seconds so you have time to save your key...**`,
         });
 
@@ -490,7 +667,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     } catch (err) {
       console.error('Error during ratification:', err);
-      await interaction.editReply({ content: '❌ Error dispatching DM to applicant. Please verify user permissions.' });
+      await interaction.editReply({ content: '❌ Error during ratification process. Please check console logs.' });
     }
     return;
   }
@@ -512,9 +689,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // Bot Ready Event
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
   console.log(`🤖 The Uncommons Council Bot is live as ${client.user.tag}!`);
   console.log(`📡 Connected to Guild: ${config.guildId}`);
+
+  try {
+    const guild = client.guilds.cache.get(config.guildId) || await client.guilds.fetch(config.guildId);
+    if (guild) {
+      const ledger = await getOrCreateKeyLedgerChannel(guild);
+      const role = await getOrCreateWebringRole(guild);
+      console.log(`🔒 Staff Key Ledger Channel: #${ledger?.name} (${ledger?.id})`);
+      console.log(`🎭 Webring Member Role: ${role?.name} (${role?.id})`);
+    }
+  } catch (err) {
+    console.warn('Initial readiness check warning:', err.message);
+  }
 });
 
 // Start API Server
