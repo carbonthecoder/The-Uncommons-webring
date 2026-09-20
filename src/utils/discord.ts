@@ -1,10 +1,19 @@
-// Discord Webhook Dispatcher for The Uncommons & Kavyon Council Review
 export interface ApplicationData {
-  domain: string;
-  proof: string;
   discordHandle: string;
+  age?: number | string;
+  proof: string;
+  uncommonBelief?: string;
+  domain?: string;
   focus?: string;
 }
+
+export const getBotApiUrl = (): string => {
+  if (import.meta.env.VITE_BOT_API_URL) {
+    return import.meta.env.VITE_BOT_API_URL.replace(/\/$/, '');
+  }
+  // In production / Vercel, relative path ensures HTTPS and zero mixed-content errors
+  return '';
+};
 
 export interface DispatchResult {
   success: boolean;
@@ -62,7 +71,7 @@ export const recordSubmission = () => {
 
 // Format Discord Embed Payload (Council Admission Ticket)
 export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: string) => {
-  const cleanDomain = normalizeDomain(data.domain);
+  const cleanDomain = normalizeDomain(data.domain || data.proof || 'sovereign.node');
   const now = new Date();
 
   return {
@@ -141,11 +150,11 @@ export const checkDiscordServerMembership = async (
   const clean = username.trim().replace(/^@/, '');
   if (!clean) return { checked: true, exists: false, message: 'Username is required' };
 
-  const botApiUrl = import.meta.env.VITE_BOT_API_URL || 'http://localhost:3001';
+  const baseUrl = getBotApiUrl();
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2500);
-    const res = await fetch(`${botApiUrl}/api/check-member?username=${encodeURIComponent(clean)}`, {
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`${baseUrl}/api/check-member?username=${encodeURIComponent(clean)}`, {
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -158,18 +167,18 @@ export const checkDiscordServerMembership = async (
         user: data.user,
       };
     }
-  } catch {
-    // Bot API is offline or client is standalone, proceed with webhook fallback
+  } catch (err) {
+    console.warn('Live membership check error:', err);
   }
   return { checked: false, exists: true };
 };
 
-// Dispatch function (Dispatches to Bot API for private ticket channel, with resilient webhook fallback)
+// Dispatch function (Dispatches to Bot API for private ticket channel, with resilient fallback)
 export const dispatchApplicationToDiscord = async (
   data: ApplicationData
 ): Promise<DispatchResult> => {
   const ticketId = generateTicketId();
-  const cleanDomain = normalizeDomain(data.domain);
+  const cleanDomain = data.domain ? normalizeDomain(data.domain) : (data.proof || 'sovereign.node');
   const cleanHandle = data.discordHandle.trim().replace(/^@/, '');
 
   // Check rate limit
@@ -184,17 +193,19 @@ export const dispatchApplicationToDiscord = async (
   }
 
   // 1. First, check if Bot API is online & verify server membership
-  const botApiUrl = import.meta.env.VITE_BOT_API_URL || 'http://localhost:3001';
+  const baseUrl = getBotApiUrl();
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-    const botRes = await fetch(`${botApiUrl}/api/create-ticket`, {
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const botRes = await fetch(`${baseUrl}/api/create-ticket`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         domain: cleanDomain,
-        proof: data.proof.trim(),
+        proof: data.proof?.trim() || '',
         discordHandle: cleanHandle,
+        age: data.age,
+        uncommonBelief: data.uncommonBelief?.trim() || '',
         focus: data.focus?.trim(),
       }),
       signal: controller.signal,

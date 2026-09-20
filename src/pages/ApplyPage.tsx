@@ -12,10 +12,10 @@ interface StoredTicket {
 }
 
 export const ApplyPage: React.FC = () => {
-  const [domain, setDomain] = useState('');
   const [proof, setProof] = useState('');
   const [discordHandle, setDiscordHandle] = useState('');
-  const [focus, setFocus] = useState('');
+  const [age, setAge] = useState('');
+  const [uncommonBelief, setUncommonBelief] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<{
     ticketId: string;
@@ -140,6 +140,22 @@ export const ApplyPage: React.FC = () => {
       return;
     }
 
+    const numAge = parseInt(age, 10);
+    if (!age || isNaN(numAge) || numAge < 1 || numAge > 26) {
+      setErrorMsg('The Uncommons is open to young builders up to 26 years old. Please enter your age (1–26).');
+      return;
+    }
+
+    if (!proof.trim()) {
+      setErrorMsg('Please provide a link to your work, GitHub, or write "self-taught builder".');
+      return;
+    }
+
+    if (!uncommonBelief.trim() || uncommonBelief.trim().length < 10) {
+      setErrorMsg('Please share a genuine response to the independent belief question (at least 10 characters).');
+      return;
+    }
+
     setIsSubmitting(true);
     sound.playClick();
 
@@ -153,10 +169,11 @@ export const ApplyPage: React.FC = () => {
 
     try {
       const result = await dispatchApplicationToDiscord({
-        domain,
-        proof,
+        domain: proof.trim(),
+        proof: proof.trim(),
         discordHandle: `@${cleanHandle}`,
-        focus,
+        age: numAge,
+        uncommonBelief: uncommonBelief.trim(),
       });
 
       if (!result.success) {
@@ -173,7 +190,7 @@ export const ApplyPage: React.FC = () => {
         // Store active ticket to enforce strictly one submission
         const newTicket: StoredTicket = {
           ticketId: result.ticketId,
-          domain: domain.trim(),
+          domain: proof.trim(),
           discordHandle: `@${cleanHandle}`,
           timestamp: new Date().toISOString(),
         };
@@ -328,43 +345,16 @@ export const ApplyPage: React.FC = () => {
               </div>
             )}
 
-            <div>
-              <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-                1. YOUR SOVEREIGN DOMAIN / PERSONAL WEBSITE *
-              </label>
-              <input
-                type="text"
-                required
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-                placeholder="e.g. yourname.xyz or devgarden.io"
-                className="w-full px-3.5 py-2.5 bg-black border border-white/15 rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-                2. PROOF OF WORK LINK (GITHUB REPO, LIVE APP, OR RESEARCH) *
-              </label>
-              <input
-                type="text"
-                required
-                value={proof}
-                onChange={(e) => setProof(e.target.value)}
-                placeholder="e.g. https://github.com/yourhandle/project or live build URL"
-                className="w-full px-3.5 py-2.5 bg-black border border-white/15 rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50"
-              />
-            </div>
-
+            {/* 1. DISCORD USERNAME */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[11px] font-mono text-zinc-400">
-                  3. YOUR DISCORD USERNAME (MUST BE IN KAVYON SERVER) *
+                  1. YOUR DISCORD USERNAME (MUST BE IN KAVYON SERVER) *
                 </label>
                 {liveCheckStatus === 'checking' && (
                   <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 animate-spin text-emerald-400" />
-                    <span>Live syncing with Kavyon...</span>
+                    <span>Checking server membership...</span>
                   </span>
                 )}
               </div>
@@ -410,7 +400,7 @@ export const ApplyPage: React.FC = () => {
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                     )}
                     <span>
-                      Yep! You&apos;re in the server as <strong className="text-white">@{liveCheckUser.username}</strong>
+                      Verified in Kavyon as <strong className="text-white">@{liveCheckUser.username}</strong>
                       {liveCheckUser.displayName && liveCheckUser.displayName !== liveCheckUser.username ? (
                         <span className="text-emerald-400/80 ml-1">({liveCheckUser.displayName})</span>
                       ) : null}
@@ -452,23 +442,51 @@ export const ApplyPage: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {liveCheckStatus === 'idle' && (
-                <span className="text-[10px] font-mono text-zinc-500 mt-1 block">
-                  Live syncs with Kavyon server. Must be an existing member to qualify.
-                </span>
-              )}
             </div>
 
+            {/* 2. AGE */}
             <div>
               <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-                4. WHAT ARE YOU OBSESSED WITH COOKING RIGHT NOW? (OPTIONAL)
+                2. YOUR AGE (1–26 YEARS OLD) *
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={26}
+                required
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="e.g. 19"
+                className="w-full px-3.5 py-2.5 bg-black border border-white/15 rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50"
+              />
+            </div>
+
+            {/* 3. PROOF / LINK */}
+            <div>
+              <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+                3. GITHUB, PORTFOLIO, OR PROJECT LINK *
+              </label>
+              <input
+                type="text"
+                required
+                value={proof}
+                onChange={(e) => setProof(e.target.value)}
+                placeholder="e.g. https://github.com/yourhandle or write 'self-taught builder'"
+                className="w-full px-3.5 py-2.5 bg-black border border-white/15 rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50"
+              />
+            </div>
+
+            {/* 4. THE INDEPENDENT THINKER QUESTION */}
+            <div>
+              <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+                4. WHAT IS AN OPINION OR BELIEF YOU HAVE THAT MOST PEOPLE YOUR AGE DISAGREE WITH? *
               </label>
               <textarea
-                rows={2}
-                value={focus}
-                onChange={(e) => setFocus(e.target.value)}
-                placeholder="e.g. Young builder obsessed with local AI models, autonomous agents, and compiler optimizations..."
+                rows={3}
+                required
+                value={uncommonBelief}
+                onChange={(e) => setUncommonBelief(e.target.value)}
+                placeholder="Share an original perspective, idea, or truth you strongly believe that goes against common opinion..."
                 className="w-full px-3.5 py-2.5 bg-black border border-white/15 rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 leading-relaxed"
               />
             </div>
@@ -546,10 +564,10 @@ export const ApplyPage: React.FC = () => {
               </button>
             </div>
             <p className="text-zinc-300 font-sans text-xs leading-relaxed">
-              Your application is now registered as ticket <strong className="text-white font-mono">{submissionResult.ticketId}</strong> in Kavyon&apos;s <code className="text-zinc-200">#council-review</code>. Our moderators and Ibrahim (Carbon) will review your domain and proof.
+              Your application is now active as ticket <strong className="text-white font-mono">{submissionResult.ticketId}</strong> in Discord. Reviewers will inspect your answers and chat with you directly in your private ticket channel.
             </p>
             <div className="text-[11px] text-zinc-500 pt-1 border-t border-white/[0.04]">
-              Expected turnaround: <strong>2–3 hours during active hours</strong>. Make sure you are in the server!
+              Expected turnaround: <strong>2–3 hours (rarely 4–5h)</strong>. Click below to open your ticket and complete your intake!
             </div>
           </div>
 
