@@ -12,11 +12,10 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
-  const isFounderKey = (k: string | null) => 
-    k === 'UNC-ALPHA-2026' || k === 'UNC-COUNCIL-01' || k === 'UNC-KEY-Z24R-2026' || k === 'UNC-KEY-FUVB-2026';
+
 
   const [isOwnerActive, setIsOwnerActive] = useState(() => {
-    return sessionStorage.getItem('unc_owner_mode') === 'true' || isFounderKey(sessionStorage.getItem('unc_vault_key'));
+    return sessionStorage.getItem('unc_owner_mode') === 'true';
   });
 
   // Auto-close mobile menu when changing pages
@@ -46,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   useEffect(() => {
     const checkOwner = () => {
       setIsOwnerActive(
-        sessionStorage.getItem('unc_owner_mode') === 'true' || isFounderKey(sessionStorage.getItem('unc_vault_key'))
+        sessionStorage.getItem('unc_owner_mode') === 'true'
       );
     };
     window.addEventListener('unc_owner_activated', checkOwner);
