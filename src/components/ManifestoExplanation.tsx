@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { sound } from '../utils/audio';
 import { ShieldAlert, Cpu, Terminal, Compass, Globe } from 'lucide-react';
 
@@ -130,7 +130,7 @@ export const ManifestoExplanation: React.FC<ManifestoExplanationProps> = ({ onSc
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-sans leading-relaxed pl-8">
-              Drop your generated ticket into <code className="text-zinc-200 bg-zinc-900 px-1 py-0.5 rounded">#council-review</code>. You will converse directly with the founders. No automated filters—just rare minds discussing ideas.
+              Join the Kavyon Discord community to submit your ticket. You will converse directly with the founders in a private ticket. No automated filters—just rare minds discussing ideas.
             </p>
           </div>
 

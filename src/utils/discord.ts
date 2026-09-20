@@ -28,7 +28,7 @@ export const DISCORD_LINKS = {
   councilReview: 'https://discord.gg/3PCeDNebXG',
   kavyonServer: 'https://discord.gg/8JmHjMSqJ5',
   serverName: 'Kavyon',
-  channelName: '#council-review',
+  channelName: 'Kavyon Discord Server',
   categoryName: 'the-uncommon-webring',
 };
 
@@ -250,7 +250,7 @@ DOMAIN: "https://${cleanDomain}"
 PROOF_OF_WORK: "${data.proof.trim()}"
 DISCORD_HANDLE: "@${cleanHandle}"
 OBSESSION: "${data.focus?.trim() || 'Curious builder / upskilling daily'}"
-TARGET_CHANNEL: "#council-review (Kavyon Community)"
+TARGET_CHANNEL: "Kavyon Discord Server"
 DATE: "${new Date().toISOString()}"
 STATUS: "AWAITING MANUAL COUNCIL VERIFICATION"
 ======================================================
@@ -270,8 +270,8 @@ STATUS: "AWAITING MANUAL COUNCIL VERIFICATION"
         recordSubmission();
         return {
           success: true,
-          message: `Application ticket dispatched to #council-review in Kavyon.`,
-          directDiscordUrl: DISCORD_LINKS.councilReview,
+          message: `Application ticket created in Kavyon Discord.`,
+          directDiscordUrl: DISCORD_LINKS.kavyonServer,
           ticketId,
           formattedEmbed: formattedTicket,
         };
@@ -284,8 +284,8 @@ STATUS: "AWAITING MANUAL COUNCIL VERIFICATION"
   recordSubmission();
   return {
     success: true,
-    message: `Application compiled for #council-review in Kavyon.`,
-    directDiscordUrl: DISCORD_LINKS.councilReview,
+    message: `Application compiled for Kavyon Discord.`,
+    directDiscordUrl: DISCORD_LINKS.kavyonServer,
     ticketId,
     formattedEmbed: formattedTicket,
   };

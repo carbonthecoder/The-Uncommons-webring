@@ -1237,7 +1237,7 @@ app.get('/api/check-ticket', async (req, res) => {
     status: 'under_review',
     ticketId,
     username: cleanHandle,
-    message: 'Application docket under review in #council-review.',
+    message: 'Application docket under review in Kavyon Discord.',
   });
 });
 

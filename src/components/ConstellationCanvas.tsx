@@ -43,7 +43,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
           domain: `unclaimed-slot-00${i}.xyz`,
           url: '/apply',
           field: 'Open Genesis Vacancy',
-          bio: `Genesis vacancy slot #${i}. Applications open via #council-review in Kavyon Discord.`,
+          bio: `Genesis vacancy slot #${i}. Applications open via Kavyon Discord community.`,
           proofOfWork: 'Awaiting candidate build submission.',
           proofUrl: '/apply',
           tags: ['Genesis', 'Vacancy'],

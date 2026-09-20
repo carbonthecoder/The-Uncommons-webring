@@ -65,7 +65,7 @@ export const ManifestoPage: React.FC = () => {
             We are looking for individuals who care deeply about their craft. You don't need a polished portfolio or a massive following. You just need a sovereign domain and a quiet obsession.
           </p>
           <p className="text-zinc-400 leading-relaxed">
-            To apply, join the <a href="https://discord.gg/3PCeDNebXG" target="_blank" rel="noopener noreferrer" className="text-white font-medium hover:underline underline-offset-4">#council-review</a> channel on our Discord. Speak directly with the founders and show us what you're building.
+            To apply, join the <a href="https://discord.gg/8JmHjMSqJ5" target="_blank" rel="noopener noreferrer" className="text-white font-medium hover:underline underline-offset-4">Kavyon Discord Server</a>. Speak directly with the founders and show us what you're building.
           </p>
         </section>
 

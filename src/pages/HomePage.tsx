@@ -232,18 +232,18 @@ export const HomePage: React.FC = () => {
               Think you belong in the ring?
             </h3>
             <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
-              We don&apos;t do formal resumes or automated rejections. If you have an active personal site and something you&apos;re cooking, submit your domain or hop into Kavyon&apos;s <code className="text-zinc-200">#council-review</code> to chat with Ibrahim (Carbon) and the crew. If you have that curious mindset, you get your Ring Key.
+              We don&apos;t do formal resumes or automated rejections. If you have an active personal site and something you&apos;re cooking, submit your domain or hop into the Kavyon Discord community to chat with Ibrahim (Carbon) and the crew. If you have that curious mindset, you get your Ring Key.
             </p>
           </div>
 
           <a
-            href="https://discord.gg/3PCeDNebXG"
+            href="https://discord.gg/8JmHjMSqJ5"
             target="_blank"
             rel="noreferrer"
             className="w-full sm:w-auto px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-md transition-all shadow flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
             <Disc className="w-4 h-4" />
-            <span>Join #council-review</span>
+            <span>Join Kavyon Discord</span>
             <ExternalLink className="w-3 h-3 text-zinc-600" />
           </a>
         </div>

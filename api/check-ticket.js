@@ -269,6 +269,6 @@ export default async function handler(req, res) {
     status: 'under_review',
     ticketId,
     username: cleanHandle,
-    message: 'Application docket under review in #council-review.',
+    message: 'Application docket under review in Kavyon Discord.',
   });
 }

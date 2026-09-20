@@ -301,13 +301,13 @@ export const ApplyPage: React.FC = () => {
           <div className="flex items-start gap-2">
             <span className="text-zinc-400 font-mono font-bold shrink-0">03.</span>
             <span>
-              <strong>Review SLA (2–3 Hours):</strong> Founders and moderators actively review tickets in <code className="text-emerald-300 font-mono text-[11px]">#council-review</code>. Expect a verdict within <strong>2–3 hours during active hours</strong>.
+              <strong>Review SLA (2–3 Hours):</strong> Founders and moderators actively review tickets in the Kavyon Discord server. Expect a verdict within <strong>2–3 hours during active hours</strong>.
             </span>
           </div>
         </div>
 
         <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-zinc-400">
-          <span>Target Review Channel: <code className="text-zinc-200">#council-review</code></span>
+          <span>Community Server: <code className="text-zinc-200">Kavyon Discord</code></span>
           <a
             href={DISCORD_LINKS.kavyonServer}
             target="_blank"
@@ -439,19 +439,19 @@ export const ApplyPage: React.FC = () => {
               </div>
 
               <p className="text-zinc-400 font-sans leading-relaxed">
-                You already have an active admission ticket (<strong className="text-zinc-200">{existingTicket.ticketId}</strong>) submitted for domain <code className="text-emerald-300">{existingTicket.domain}</code> ({existingTicket.discordHandle}). Our moderators review tickets in <code className="text-zinc-200">#council-review</code> within 2–3 hours.
+                You already have an active admission ticket (<strong className="text-zinc-200">{existingTicket.ticketId}</strong>) submitted for domain <code className="text-emerald-300">{existingTicket.domain}</code> ({existingTicket.discordHandle}). Our moderators review tickets in the Kavyon Discord server within 2–3 hours.
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
                 <a
-                  href={DISCORD_LINKS.councilReview}
+                  href={DISCORD_LINKS.kavyonServer}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => sound.playClick()}
                   className="w-full sm:w-auto px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer shadow"
                 >
                   <Disc className="w-3.5 h-3.5" />
-                  <span>View Ticket in #council-review</span>
+                  <span>Open Kavyon Discord Server</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
 
@@ -650,7 +650,7 @@ export const ApplyPage: React.FC = () => {
               {isSubmitting ? (
                 <>
                   <SovereignOrbitalLoader size={16} />
-                  <span>Dispatching Ticket to #council-review...</span>
+                  <span>Creating Private Ticket in Discord...</span>
                 </>
               ) : cooldownRemaining > 0 ? (
                 <>
@@ -676,7 +676,7 @@ export const ApplyPage: React.FC = () => {
             </button>
 
             <p className="text-[11px] font-mono text-zinc-500 text-center pt-1">
-              Tickets land directly in Kavyon&apos;s <code className="text-zinc-400">#council-review</code>. Response time: 2–3 hours.
+              Join the Kavyon Discord server to track your ticket and chat with the community. Response time: 2–3 hours.
             </p>
           </form>
         </div>
@@ -691,7 +691,7 @@ export const ApplyPage: React.FC = () => {
             </div>
             <div>
               <div className="text-[11px] font-mono text-emerald-400 font-semibold">
-                TICKET DISPATCHED LIVE TO #COUNCIL-REVIEW
+                TICKET CREATED LIVE IN KAVYON DISCORD
               </div>
               <h3 className="text-lg font-mono font-bold text-white">
                 Ticket [{submissionResult.ticketId}] Active
@@ -721,14 +721,14 @@ export const ApplyPage: React.FC = () => {
           {/* Action Links */}
           <div className="space-y-2.5">
             <a
-              href={DISCORD_LINKS.councilReview}
+              href={DISCORD_LINKS.kavyonServer}
               target="_blank"
               rel="noreferrer"
               onClick={() => sound.playClick()}
               className="w-full py-3 bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-mono text-xs font-bold rounded-md transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
             >
               <Disc className="w-4 h-4" />
-              <span>Jump to #council-review to See Your Ticket</span>
+              <span>Open Kavyon Discord to Access Your Ticket</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
 

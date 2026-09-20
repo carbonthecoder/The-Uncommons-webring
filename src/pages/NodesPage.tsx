@@ -480,13 +480,13 @@ export const NodesPage: React.FC = () => {
             </Link>
 
             <a
-              href={DISCORD_LINKS.councilReview}
+              href={DISCORD_LINKS.kavyonServer}
               target="_blank"
               rel="noreferrer"
               className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white font-mono text-xs rounded-md transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Disc className="w-3.5 h-3.5 text-zinc-400" />
-              <span>#council-review</span>
+              <span>Join Kavyon Discord</span>
             </a>
           </div>
         </div>
@@ -513,7 +513,7 @@ export const NodesPage: React.FC = () => {
             <div className="text-xs font-mono text-zinc-500 uppercase">03 // COUNCIL RATIFICATION</div>
             <div className="text-sm font-semibold text-white font-sans">Verified on Discord</div>
             <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-              Applications are reviewed in real-time in Kavyon&apos;s <code className="text-zinc-200">#council-review</code>. Upon approval by founders and mods, your Ring Key is issued.
+              Applications are reviewed in real-time in the Kavyon Discord community. Upon approval by founders and mods, your Ring Key is issued.
             </p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { sound } from '../utils/audio';
 import confetti from 'canvas-confetti';
 import { Disc, Copy, Check, Terminal, ExternalLink, Sparkles, MessageSquare } from 'lucide-react';
@@ -213,13 +213,13 @@ UNCOMMON_THESIS:
               </div>
 
               <a
-                href="https://discord.gg"
+                href="https://discord.gg/8JmHjMSqJ5"
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-xs font-semibold rounded-md transition-all border border-white/15 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
               >
                 <Disc className="w-4 h-4" />
-                <span>Join Discord &amp; Paste in #council-review</span>
+                <span>Join Kavyon Discord Community</span>
                 <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
               </a>
 

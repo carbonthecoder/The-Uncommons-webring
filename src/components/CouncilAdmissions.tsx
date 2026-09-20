@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { sound } from '../utils/audio';
 import confetti from 'canvas-confetti';
 import { Disc, Copy, Check, Terminal, ShieldAlert, Sparkles, MessageSquare, ExternalLink, Cpu, Compass } from 'lucide-react';
@@ -236,7 +236,7 @@ UNCOMMON_THESIS:
             </div>
 
             <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-              Once you generate your ticket, join the Discord server. We hold conversations with applicants directly in <code className="text-zinc-200 bg-zinc-900 px-1 py-0.5 rounded">#council-review</code>.
+              Once you generate your ticket, join the Discord server. We hold conversations with applicants directly in private tickets in the Kavyon Discord community.
             </p>
 
             {/* Generated ticket output */}
@@ -257,17 +257,17 @@ UNCOMMON_THESIS:
                 </div>
 
                 <a
-                  href="https://discord.gg"
+                  href="https://discord.gg/8JmHjMSqJ5"
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-xs font-semibold rounded-lg transition-all border border-white/15 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
                 >
                   <Disc className="w-4 h-4" />
-                  <span>Join The Uncommons Discord</span>
+                  <span>Join Kavyon Discord Community</span>
                   <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
                 </a>
                 <p className="text-[10px] font-mono text-center text-zinc-500">
-                  Paste the copied ticket in #council-review to initiate dialogue.
+                  Open a ticket in Kavyon Discord to initiate dialogue.
                 </p>
               </div>
             ) : (
