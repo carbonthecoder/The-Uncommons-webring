@@ -127,7 +127,7 @@ export default function App() {
                 The Uncommons Webring
               </div>
               <div className="text-zinc-400">
-                A private sovereign network for rare intellects &bull; Est. MMXXVI
+                A private sovereign network for rare intellects &bull; Est. 2026
               </div>
             </div>
 
