@@ -295,139 +295,146 @@ export const NodesPage: React.FC = () => {
           </pre>
         </div>
       ) : (
-        /* HIGH-DENSITY LEDGER DIRECTORY (ZERO CARD SLOP) */
-        <div className="border border-white/[0.08] rounded-xl overflow-hidden bg-zinc-950/80 shadow-2xl">
-          {/* Table Header (Desktop) */}
-          <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-3 bg-zinc-900/60 border-b border-white/[0.08] text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
-            <div className="col-span-2">Slot / ID</div>
-            <div className="col-span-3">Sovereign Identity</div>
-            <div className="col-span-3">Field of Obsession</div>
-            <div className="col-span-2">Network State</div>
-            <div className="col-span-2 text-right">Action</div>
-          </div>
-
-          {/* Directory Rows */}
-          <div className="divide-y divide-white/[0.06]">
+        /* CANONICAL CARD GRID DIRECTORY */
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredRegistry.map((item) => {
               if (!item.isVacant && item.member) {
                 const m = item.member;
                 return (
                   <div
                     key={m.id}
-                    className="p-4 lg:py-3.5 lg:px-4 hover:bg-zinc-900/50 transition-colors flex flex-col lg:grid lg:grid-cols-12 gap-3 items-start lg:items-center text-xs font-mono group"
+                    onClick={() => {
+                      sound.playClick();
+                      setSelectedMember(m);
+                    }}
+                    className="group relative bg-[#09090b] border border-white/10 hover:border-emerald-500/40 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-0.5 select-none overflow-hidden"
                   >
-                    {/* Slot ID */}
-                    <div className="col-span-2 flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-zinc-300 font-semibold">
-                        {m.id}
-                      </span>
-                      {m.tags.includes('Founder') && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                          FOUNDER
+                    {/* Top Row: Slot ID & Status */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-mono text-xs font-bold">
+                          {m.id}
                         </span>
-                      )}
-                    </div>
-
-                    {/* Sovereign Identity */}
-                    <div className="col-span-3 space-y-0.5">
-                      <div className="flex items-center gap-1.5 font-bold text-white group-hover:text-emerald-300 transition-colors">
-                        <a
-                          href={m.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="hover:underline flex items-center gap-1 truncate"
-                        >
-                          {m.domain}
-                          <ExternalLink className="w-3 h-3 text-zinc-500 shrink-0" />
-                        </a>
+                        {m.tags.includes('Founder') && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                            FOUNDER
+                          </span>
+                        )}
                       </div>
-                      <div className="text-[11px] text-zinc-400 font-sans">
-                        {m.name}
+                      <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-mono font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span>ONLINE &bull; VERIFIED</span>
                       </div>
                     </div>
 
-                    {/* Field of Obsession */}
-                    <div className="col-span-3 text-zinc-300 line-clamp-2 lg:line-clamp-1 font-sans text-xs">
-                      {m.field}
-                    </div>
-
-                    {/* Network State */}
-                    <div className="col-span-2 flex items-center gap-1.5 text-emerald-400 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                      <span>ONLINE &bull; VERIFIED</span>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="col-span-2 flex items-center justify-end gap-2 w-full lg:w-auto pt-2 lg:pt-0 border-t border-white/[0.04] lg:border-0">
-                      <button
-                        onClick={() => {
-                          sound.playClick();
-                          setSelectedMember(m);
-                        }}
-                        className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded text-zinc-300 hover:text-white transition-colors cursor-pointer text-[11px]"
-                      >
-                        Inspect Dossier
-                      </button>
+                    {/* Builder Profile Info */}
+                    <div className="space-y-1.5">
+                      <h3 className="font-syne text-lg font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
+                        <span>{m.name}</span>
+                      </h3>
+                      
                       <a
                         href={m.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-1 text-zinc-400 hover:text-white transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 font-mono text-xs text-zinc-400 hover:text-white transition-colors"
+                      >
+                        <span>{m.domain}</span>
+                        <ExternalLink className="w-3 h-3 text-zinc-500" />
+                      </a>
+
+                      <p className="text-xs text-zinc-400 font-sans line-clamp-2 leading-relaxed pt-1">
+                        {m.field}
+                      </p>
+                    </div>
+
+                    {/* Stack Tags */}
+                    {m.tags && m.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {m.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 rounded bg-zinc-900 border border-white/5 text-zinc-400 font-mono text-[10px]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bottom Row: Actions */}
+                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sound.playClick();
+                          setSelectedMember(m);
+                        }}
+                        className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-md text-zinc-200 hover:text-white transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
+                      >
+                        <span>Inspect Dossier</span>
+                        <ArrowRight className="w-3 h-3 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      <a
+                        href={m.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
                         title="Visit Sovereign Site"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-4 h-4" />
                       </a>
                     </div>
                   </div>
                 );
               }
 
-              // OPEN GENESIS CANDIDATE SLOT ROW (Direct Link to Apply)
+              // VACANT SLOT CARD
               return (
                 <div
                   key={item.id}
-                  className="p-4 lg:py-3.5 lg:px-4 bg-zinc-950/40 hover:bg-zinc-950 transition-colors flex flex-col lg:grid lg:grid-cols-12 gap-3 items-start lg:items-center text-xs font-mono group"
+                  className="relative bg-[#09090b]/60 border border-white/10 hover:border-amber-500/30 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 shadow-md select-none overflow-hidden"
                 >
-                  {/* Slot ID */}
-                  <div className="col-span-2 flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/20 text-amber-400 font-semibold">
-                      {item.id}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-500 border border-white/5">
-                      GENESIS
-                    </span>
+                  {/* Top Row: Slot ID & Status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-400 font-mono text-xs font-bold">
+                        {item.id}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-500 border border-white/5">
+                        GENESIS
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-amber-400 text-[10px] font-mono font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                      <span>VACANT &bull; OPEN TO APPLY</span>
+                    </div>
                   </div>
 
-                  {/* Sovereign Identity */}
-                  <div className="col-span-3 space-y-0.5">
-                    <div className="font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors italic">
+                  {/* Vacant Info */}
+                  <div className="space-y-1.5">
+                    <h3 className="font-mono text-sm font-semibold text-zinc-400 italic">
                       unclaimed-slot.xyz
-                    </div>
-                    <div className="text-[11px] text-zinc-500 font-sans">
-                      Awaiting Review in Kavyon #council-review
-                    </div>
+                    </h3>
+                    <p className="text-xs text-zinc-500 font-sans leading-relaxed">
+                      Open to polymaths, systems hackers &amp; sovereign creators. Applications reviewed in Kavyon Discord.
+                    </p>
                   </div>
 
-                  {/* Field of Obsession */}
-                  <div className="col-span-3 text-zinc-500 italic text-xs font-sans">
-                    Open to polymaths, systems hackers &amp; sovereign creators
-                  </div>
-
-                  {/* Network State */}
-                  <div className="col-span-2 flex items-center gap-1.5 text-amber-400 text-[11px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-                    <span>VACANT &bull; OPEN TO APPLY</span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="col-span-2 flex items-center justify-end gap-2 w-full lg:w-auto pt-2 lg:pt-0 border-t border-white/[0.04] lg:border-0">
+                  {/* Bottom Row: Apply Button */}
+                  <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between font-mono text-xs">
                     <Link
                       to="/apply"
                       onClick={() => sound.playClick()}
-                      className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded text-zinc-300 hover:text-white transition-colors cursor-pointer text-[11px] flex items-center gap-1"
+                      className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5"
                     >
                       <span>Apply for Slot</span>
-                      <ArrowRight className="w-3 h-3 text-zinc-400" />
+                      <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
                     </Link>
                   </div>
                 </div>
@@ -436,7 +443,7 @@ export const NodesPage: React.FC = () => {
           </div>
 
           {filteredRegistry.length === 0 && (
-            <div className="p-12 text-center font-mono text-xs text-zinc-500 space-y-2">
+            <div className="p-12 bg-zinc-950 border border-white/10 rounded-xl text-center font-mono text-xs text-zinc-500 space-y-2">
               <div>No nodes or slots matched &quot;{query}&quot;.</div>
               <button
                 onClick={() => setQuery('')}

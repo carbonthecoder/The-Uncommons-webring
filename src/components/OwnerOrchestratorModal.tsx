@@ -141,7 +141,6 @@ const SlotEditorForm: React.FC<SlotEditorFormProps> = ({
   const [bio, setBio] = useState(slot.bio || '');
   const [proofOfWork, setProofOfWork] = useState(slot.proofOfWork || '');
   const [proofUrl, setProofUrl] = useState(slot.proofUrl || '');
-  const [ringPosition, setRingPosition] = useState<number>(slot.ringPosition || 1);
   const [status, setStatus] = useState<'online' | 'dormant' | 'reviewing'>(slot.status || 'online');
 
   // Synchronize internal inputs whenever the selected slot identity changes
@@ -154,7 +153,6 @@ const SlotEditorForm: React.FC<SlotEditorFormProps> = ({
     setBio(slot.bio || '');
     setProofOfWork(slot.proofOfWork || '');
     setProofUrl(slot.proofUrl || '');
-    setRingPosition(slot.ringPosition || 1);
     setStatus(slot.status || 'online');
   }, [slot.id, slot.ringPosition]);
 
@@ -175,7 +173,7 @@ const SlotEditorForm: React.FC<SlotEditorFormProps> = ({
       proofUrl: proofUrl.trim() || (isOnline ? `https://github.com/${handle.trim()}` : 'https://the-uncommons.vercel.app/apply'),
       tags: isOnline ? ['Verified', 'Founder Edit'] : ['Genesis', 'Vacancy'],
       verified: isOnline,
-      ringPosition: ringPosition || 1,
+      ringPosition: slot.ringPosition || parseInt(slot.id.replace(/\D/g, ''), 10) || 1,
       status: status,
     };
 
@@ -244,18 +242,6 @@ const SlotEditorForm: React.FC<SlotEditorFormProps> = ({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://yourdomain.dev"
-              className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-zinc-500 mb-1">Ring Position Traversal (1-8)</label>
-            <input
-              type="number"
-              min={1}
-              max={8}
-              value={ringPosition}
-              onChange={(e) => setRingPosition(parseInt(e.target.value, 10) || 1)}
               className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
             />
           </div>

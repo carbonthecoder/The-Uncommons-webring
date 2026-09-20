@@ -100,7 +100,6 @@ export const SealPage: React.FC = () => {
   const [proofUrl, setProofUrl] = useState('');
   const [tagsInput, setTagsInput] = useState('Systems, AI Agents, Compilers');
   const [nodeStatus, setNodeStatus] = useState<'online' | 'dormant' | 'reviewing'>('online');
-  const [ringPosition, setRingPosition] = useState<number>(1);
 
   // Founder Superadmin check
   const isFounder = useMemo(() => {
@@ -209,7 +208,6 @@ export const SealPage: React.FC = () => {
       setProofUrl(existing.proofUrl || '');
       setTagsInput(existing.tags?.join(', ') || 'Systems, AI Agents, Compilers');
       setNodeStatus(existing.status || 'online');
-      setRingPosition(existing.ringPosition || parseInt(slotId.replace(/\D/g, ''), 10) || 1);
     } else {
       // Pre-fill clean defaults for new slot
       setName((prev) => (prev && prev !== 'Polymath Builder' ? prev : ''));
@@ -319,7 +317,8 @@ export const SealPage: React.FC = () => {
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
-    const ringPos = ringPosition || parseInt(slotId.replace(/\D/g, ''), 10) || 1;
+    const existingMember = liveMembers.find((m) => m.id === slotId);
+    const ringPos = existingMember?.ringPosition || parseInt(slotId.replace(/\D/g, ''), 10) || 1;
 
     return {
       id: slotId,
@@ -337,7 +336,7 @@ export const SealPage: React.FC = () => {
       ringPosition: ringPos,
       status: nodeStatus,
     };
-  }, [slotId, name, handle, domain, url, field, bio, proofOfWork, proofUrl, tagsInput, nodeStatus, ringPosition]);
+  }, [slotId, name, handle, domain, url, field, bio, proofOfWork, proofUrl, tagsInput, nodeStatus, liveMembers]);
 
   // Handle Vacating / Resetting a Slot to Genesis Vacancy (Founder Only)
   const [isVacating, setIsVacating] = useState(false);
@@ -750,21 +749,6 @@ export const SealPage: React.FC = () => {
                       <span>This slot is claimed and cannot be overwritten.</span>
                     </p>
                   )}
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-mono text-zinc-400 mb-1">
-                    RING POSITION (1-8) *
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={8}
-                    value={ringPosition}
-                    onChange={(e) => setRingPosition(Math.max(1, Math.min(8, parseInt(e.target.value, 10) || 1)))}
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
-                    placeholder="1-8"
-                  />
                 </div>
 
                 <div>
