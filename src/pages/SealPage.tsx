@@ -372,49 +372,6 @@ export const SealPage: React.FC = () => {
     }
   };
 
-  // Handle Swapping & Shifting Node Ring Positions (Founder Only)
-  const handleShiftPosition = async (currentSlotId: string, direction: 'up' | 'down') => {
-    sound.playClick();
-    setSaveError(null);
-    setSaveSuccess(null);
-
-    const currentMember = liveMembers.find((m) => m.id === currentSlotId);
-    if (!currentMember) return;
-
-    const currentPos = currentMember.ringPosition || parseInt(currentSlotId.replace(/\D/g, ''), 10) || 1;
-    const targetPos = direction === 'up' ? Math.max(1, currentPos - 1) : Math.min(8, currentPos + 1);
-    if (targetPos === currentPos) return;
-
-    // Find neighbor member at target position to swap with
-    const neighbor = liveMembers.find(
-      (m) => (m.ringPosition || parseInt(m.id.replace(/\D/g, ''), 10)) === targetPos
-    );
-
-    const updatedCurrent = { ...currentMember, ringPosition: targetPos };
-    const batch = [updatedCurrent];
-    if (neighbor) {
-      batch.push({ ...neighbor, ringPosition: currentPos });
-    }
-
-    try {
-      const res = await fetch('/api/reorder-nodes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodes: batch, key: passcode, pin }),
-      });
-      if (res.ok) {
-        await syncServerNodes();
-        setSaveSuccess(`Swapped ring positions: ${currentSlotId} moved to Position #${targetPos}.`);
-        sound.playHarmonic();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setSaveError(err.error || 'Failed to reorder nodes.');
-      }
-    } catch {
-      setSaveError('Failed to connect to backend for reordering.');
-    }
-  };
-
   // Handle Save & Publish with 2-Step Verification
   const handleSaveNode = async () => {
     sound.playClick();
