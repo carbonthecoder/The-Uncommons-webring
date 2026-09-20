@@ -19,7 +19,8 @@ import {
   Save, 
   Code, 
   CheckCircle2, 
-  AlertTriangle 
+  AlertTriangle,
+  Layers
 } from 'lucide-react';
 import type { Member } from '../data/members';
 import { saveCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
@@ -98,12 +99,20 @@ export const SealPage: React.FC = () => {
   const [proofUrl, setProofUrl] = useState('');
   const [tagsInput, setTagsInput] = useState('Systems, AI Agents, Compilers');
   const [nodeStatus, setNodeStatus] = useState<'online' | 'dormant' | 'reviewing'>('online');
+  const [ringPosition, setRingPosition] = useState<number>(1);
+  const [showOrchestrator, setShowOrchestrator] = useState(false);
+
+  // Founder Superadmin check
+  const isFounder = useMemo(() => {
+    const currentKey = passcode.trim().toUpperCase();
+    return currentKey === 'UNC-ALPHA-2026' || currentKey === 'UNC-COUNCIL-01' || currentKey === 'UNC-KEY-FUVB-2026';
+  }, [passcode]);
 
   // Dynamic slot status calculation (1 to 8)
   const slotStatusList = useMemo(() => {
     const currentKey = passcode.trim().toUpperCase();
-    const isFounder = currentKey === 'UNC-ALPHA-2026';
-    const isCouncil2 = currentKey === 'UNC-COUNCIL-01';
+    const isIbrahim = currentKey === 'UNC-ALPHA-2026';
+    const isPriyanshu = currentKey === 'UNC-COUNCIL-01' || currentKey === 'UNC-KEY-FUVB-2026';
 
     return Array.from({ length: 8 }, (_, i) => {
       const num = i + 1;
@@ -115,28 +124,31 @@ export const SealPage: React.FC = () => {
       );
 
       let isOwner = false;
-      if (id === 'NODE-001' && isFounder) isOwner = true;
-      else if (id === 'NODE-002' && (isCouncil2 || currentKey === 'UNC-KEY-FUVB-2026' || (handle && handle.toLowerCase().includes('priyxnshu')))) isOwner = true;
+      if (id === 'NODE-001' && isIbrahim) isOwner = true;
+      else if (id === 'NODE-002' && (isPriyanshu || (handle && handle.toLowerCase().includes('priyxnshu')))) isOwner = true;
       else if (memberInSlot && handle && memberInSlot.handle.toLowerCase() === handle.trim().toLowerCase()) isOwner = true;
 
       const isClaimed = !!memberInSlot;
-      const isLocked = isClaimed && !isOwner;
+      // If Founder, NO SLOT IS LOCKED! Full override access across all nodes.
+      const isLocked = isFounder ? false : (isClaimed && !isOwner);
 
       return {
         id,
         num,
         isClaimed,
         isLocked,
-        isOwner,
+        isOwner: isFounder || isOwner,
         claimedMember: memberInSlot,
         label: isClaimed
-          ? isOwner
-            ? `${id} (${memberInSlot.name} - Your Slot)`
-            : `${id} (${memberInSlot.name} - Claimed / Locked)`
+          ? isFounder
+            ? `${id} (${memberInSlot.name} • Founder Override)`
+            : isOwner
+              ? `${id} (${memberInSlot.name} - Your Slot)`
+              : `${id} (${memberInSlot.name} - Claimed / Locked)`
           : `${id} (Genesis Slot #${num} - Available)`,
       };
     });
-  }, [liveMembers, passcode, handle]);
+  }, [liveMembers, passcode, handle, isFounder]);
 
   // First available open slot (defaults new candidates to NODE-003 since NODE-001 and NODE-002 are claimed)
   const firstAvailableSlot = useMemo(() => {
@@ -155,13 +167,14 @@ export const SealPage: React.FC = () => {
     return 'NODE-003';
   });
 
-  // Auto-switch to available slot if current slot is locked / claimed by another member
+  // Auto-switch to available slot if current slot is locked / claimed by another member (candidates only)
   useEffect(() => {
+    if (isFounder) return; // Founders stay on whichever slot they select!
     const current = slotStatusList.find((s) => s.id === slotId);
     if (current && current.isLocked) {
       setSlotId(firstAvailableSlot);
     }
-  }, [slotStatusList, slotId, firstAvailableSlot]);
+  }, [slotStatusList, slotId, firstAvailableSlot, isFounder]);
 
   // Preview Mode: 'dossier' | 'seal'
   const [previewMode, setPreviewMode] = useState<'dossier' | 'seal'>('dossier');
@@ -196,6 +209,7 @@ export const SealPage: React.FC = () => {
       setProofUrl(existing.proofUrl || '');
       setTagsInput(existing.tags?.join(', ') || 'Systems, AI Agents, Compilers');
       setNodeStatus(existing.status || 'online');
+      setRingPosition(existing.ringPosition || parseInt(slotId.replace(/\D/g, ''), 10) || 1);
     } else {
       // Pre-fill clean defaults for new slot
       setName((prev) => (prev && prev !== 'Polymath Builder' ? prev : ''));
@@ -206,6 +220,7 @@ export const SealPage: React.FC = () => {
       setBio((prev) => (prev && prev !== 'Obsessed with local LLM kernels, autonomous agents, and sovereign digital gardens.' ? prev : ''));
       setProofOfWork((prev) => (prev && prev !== 'High-throughput agent orchestration runtime with zero IPC overhead.' ? prev : ''));
       setProofUrl((prev) => (prev && prev !== 'https://github.com' ? prev : ''));
+      setRingPosition(parseInt(slotId.replace(/\D/g, ''), 10) || 1);
     }
   }, [isUnlocked, slotId, liveMembers]);
 
@@ -305,7 +320,7 @@ export const SealPage: React.FC = () => {
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
-    const ringPos = parseInt(slotId.replace('NODE-00', ''), 10) || 2;
+    const ringPos = ringPosition || parseInt(slotId.replace(/\D/g, ''), 10) || 1;
 
     return {
       id: slotId,
@@ -323,7 +338,82 @@ export const SealPage: React.FC = () => {
       ringPosition: ringPos,
       status: nodeStatus,
     };
-  }, [slotId, name, handle, domain, url, field, bio, proofOfWork, proofUrl, tagsInput, nodeStatus]);
+  }, [slotId, name, handle, domain, url, field, bio, proofOfWork, proofUrl, tagsInput, nodeStatus, ringPosition]);
+
+  // Handle Vacating / Resetting a Slot to Genesis Vacancy (Founder Only)
+  const [isVacating, setIsVacating] = useState(false);
+  const handleVacateSlot = async (targetSlotId: string) => {
+    if (!window.confirm(`Are you sure you want to vacate and reset slot ${targetSlotId}? This will remove the member record and return this slot to an open Genesis vacancy.`)) {
+      return;
+    }
+    sound.playClick();
+    setIsVacating(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      const res = await fetch('/api/vacate-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: targetSlotId, key: passcode, pin }),
+      });
+      if (res.ok) {
+        await syncServerNodes();
+        setSaveSuccess(`Slot ${targetSlotId} has been successfully reset to an open Genesis vacancy in the database.`);
+        sound.playHarmonic();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setSaveError(err.error || 'Failed to vacate slot.');
+      }
+    } catch {
+      setSaveError('Could not reach backend to vacate slot.');
+    } finally {
+      setIsVacating(false);
+    }
+  };
+
+  // Handle Swapping & Shifting Node Ring Positions (Founder Only)
+  const handleShiftPosition = async (currentSlotId: string, direction: 'up' | 'down') => {
+    sound.playClick();
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    const currentMember = liveMembers.find((m) => m.id === currentSlotId);
+    if (!currentMember) return;
+
+    const currentPos = currentMember.ringPosition || parseInt(currentSlotId.replace(/\D/g, ''), 10) || 1;
+    const targetPos = direction === 'up' ? Math.max(1, currentPos - 1) : Math.min(8, currentPos + 1);
+    if (targetPos === currentPos) return;
+
+    // Find neighbor member at target position to swap with
+    const neighbor = liveMembers.find(
+      (m) => (m.ringPosition || parseInt(m.id.replace(/\D/g, ''), 10)) === targetPos
+    );
+
+    const updatedCurrent = { ...currentMember, ringPosition: targetPos };
+    const batch = [updatedCurrent];
+    if (neighbor) {
+      batch.push({ ...neighbor, ringPosition: currentPos });
+    }
+
+    try {
+      const res = await fetch('/api/reorder-nodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes: batch, key: passcode, pin }),
+      });
+      if (res.ok) {
+        await syncServerNodes();
+        setSaveSuccess(`Swapped ring positions: ${currentSlotId} moved to Position #${targetPos}.`);
+        sound.playHarmonic();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setSaveError(err.error || 'Failed to reorder nodes.');
+      }
+    } catch {
+      setSaveError('Failed to connect to backend for reordering.');
+    }
+  };
 
   // Handle Save & Publish with 2-Step Verification
   const handleSaveNode = async () => {
@@ -332,7 +422,7 @@ export const SealPage: React.FC = () => {
     setSaveSuccess(null);
 
     const currentSlot = slotStatusList.find((s) => s.id === slotId);
-    if (currentSlot && currentSlot.isLocked) {
+    if (!isFounder && currentSlot && currentSlot.isLocked) {
       setSaveError(
         `Slot ${slotId} is claimed by ${currentSlot.claimedMember?.name || 'another builder'} and is locked. Please choose an open vacant slot.`
       );
@@ -649,6 +739,144 @@ export const SealPage: React.FC = () => {
             </div>
           )}
 
+          {/* FOUNDER MASTER OVERRIDE & CONSTELLATION ORCHESTRATOR BANNER */}
+          {isFounder && (
+            <div className="bg-gradient-to-r from-amber-950/40 via-zinc-950 to-emerald-950/30 border border-amber-500/30 rounded-xl p-4 sm:p-5 space-y-4 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 text-base shadow-lg shadow-amber-500/5">
+                    👑
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs font-bold text-amber-300">
+                        FOUNDER SUPERADMIN ORCHESTRATOR
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono font-semibold border border-amber-500/30">
+                        ALL SLOTS UNLOCKED
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                      Full authority active. You can edit any node, rearrange ring places (positions 1-8), swap slots, or vacate occupied positions.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setShowOrchestrator((prev) => !prev);
+                    }}
+                    className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded font-mono text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>{showOrchestrator ? 'Hide Constellation Grid' : 'Orchestrate Constellation (8 Slots)'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* EXPANDABLE CONSTELLATION SLOTS GRID & POSITION SWAPPER */}
+              {showOrchestrator && (
+                <div className="pt-3 border-t border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono font-semibold text-zinc-300 flex items-center gap-1.5">
+                      <Terminal className="w-3.5 h-3.5 text-amber-400" />
+                      <span>CONSTELLATION SLOT REGISTRY &amp; POSITION SWAPPER</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      CLICK &quot;LOAD&quot; TO EDIT OR USE ARROWS TO SHIFT POSITIONS
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    {slotStatusList.map((slot) => {
+                      const member = liveMembers.find((m) => m.id === slot.id);
+                      const isOccupied = slot.isClaimed && member && !member.domain?.includes('unclaimed');
+                      const currentPos = member?.ringPosition || slot.num;
+
+                      return (
+                        <div
+                          key={slot.id}
+                          className={`p-3 rounded-lg border transition-all ${
+                            slotId === slot.id
+                              ? 'bg-amber-950/30 border-amber-500/50 shadow-md shadow-amber-500/10'
+                              : 'bg-black/60 border-white/10 hover:border-white/20'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-mono text-[10px] font-bold">
+                              {slot.id}
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                              Pos #{currentPos}
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5 mb-2.5">
+                            <div className="font-mono text-xs font-semibold text-white truncate">
+                              {isOccupied ? member.name : 'Awaiting Review'}
+                            </div>
+                            <div className="font-mono text-[10px] text-zinc-500 truncate">
+                              {isOccupied ? member.domain : 'Vacant Genesis Slot'}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-white/5 gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                sound.playClick();
+                                setSlotId(slot.id);
+                              }}
+                              className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded text-[10px] font-mono border border-white/10 transition-colors cursor-pointer flex-1 text-center"
+                            >
+                              Load &amp; Edit
+                            </button>
+
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                disabled={currentPos <= 1}
+                                onClick={() => handleShiftPosition(slot.id, 'up')}
+                                className="p-1 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-zinc-900 text-zinc-300 hover:text-white rounded text-[10px] font-mono border border-white/10 transition-colors cursor-pointer"
+                                title="Shift Ring Position Up"
+                              >
+                                &uarr;
+                              </button>
+                              <button
+                                type="button"
+                                disabled={currentPos >= 8}
+                                onClick={() => handleShiftPosition(slot.id, 'down')}
+                                className="p-1 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-zinc-900 text-zinc-300 hover:text-white rounded text-[10px] font-mono border border-white/10 transition-colors cursor-pointer"
+                                title="Shift Ring Position Down"
+                              >
+                                &darr;
+                              </button>
+                            </div>
+
+                            {isOccupied && (
+                              <button
+                                type="button"
+                                disabled={isVacating}
+                                onClick={() => handleVacateSlot(slot.id)}
+                                className="px-1.5 py-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded text-[10px] font-mono border border-rose-500/30 transition-colors cursor-pointer"
+                                title="Vacate &amp; reset this slot"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* DUAL COLUMN: LEFT = EDITOR, RIGHT = REAL-TIME TRIPLE LIVE PREVIEW */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* LEFT COLUMN: Input Form */}
@@ -661,8 +889,8 @@ export const SealPage: React.FC = () => {
                 <span className="text-[10px] font-mono text-zinc-500">LIVE SYNC ACTIVE</span>
               </div>
 
-              {/* Slot Selector & Status */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Slot Selector, Ring Position & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-[10px] font-mono text-zinc-400">
@@ -671,7 +899,11 @@ export const SealPage: React.FC = () => {
                     {slotStatusList.find((s) => s.id === slotId)?.isClaimed && (
                       <span className="text-[10px] font-mono text-amber-400 flex items-center gap-1">
                         <Lock className="w-3 h-3" />
-                        {slotStatusList.find((s) => s.id === slotId)?.isOwner ? 'Your Slot' : 'Claimed / Locked'}
+                        {isFounder
+                          ? 'Founder'
+                          : slotStatusList.find((s) => s.id === slotId)?.isOwner
+                          ? 'Your Slot'
+                          : 'Claimed'}
                       </span>
                     )}
                   </div>
@@ -691,12 +923,27 @@ export const SealPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  {slotStatusList.find((s) => s.id === slotId)?.isLocked && (
+                  {!isFounder && slotStatusList.find((s) => s.id === slotId)?.isLocked && (
                     <p className="mt-1 text-[11px] font-mono text-rose-400 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3 shrink-0" />
                       <span>This slot is claimed and cannot be overwritten.</span>
                     </p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                    RING POSITION (1-8) *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={8}
+                    value={ringPosition}
+                    onChange={(e) => setRingPosition(Math.max(1, Math.min(8, parseInt(e.target.value, 10) || 1)))}
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    placeholder="1-8"
+                  />
                 </div>
 
                 <div>
@@ -845,25 +1092,41 @@ export const SealPage: React.FC = () => {
               </div>
 
               {/* Save & Publish Button */}
-              <div className="pt-2">
+              <div className="pt-2 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleSaveNode}
                   disabled={isSaving}
-                  className="w-full py-3 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-md transition-all shadow flex items-center justify-center gap-2 cursor-pointer shadow-emerald-500/10"
+                  className={`flex-1 py-3 font-mono text-xs font-semibold rounded-md transition-all shadow flex items-center justify-center gap-2 cursor-pointer ${
+                    isFounder
+                      ? 'bg-amber-400 hover:bg-amber-300 text-zinc-950 shadow-amber-500/20'
+                      : 'bg-zinc-100 hover:bg-white text-zinc-950 shadow-emerald-500/10'
+                  }`}
                 >
                   {isSaving ? (
                     <>
-                      <Sparkles className="w-4 h-4 animate-spin text-emerald-600" />
-                      <span>Publishing to Ring Ledger...</span>
+                      <Sparkles className="w-4 h-4 animate-spin text-zinc-900" />
+                      <span>Saving Across Multi-Cloud DB...</span>
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      <span>Save &amp; Publish Node to Webring</span>
+                      <span>{isFounder ? `Save & Publish ${slotId} (Founder Override)` : 'Save & Publish Node to Webring'}</span>
                     </>
                   )}
                 </button>
+
+                {isFounder && slotStatusList.find((s) => s.id === slotId)?.isClaimed && (
+                  <button
+                    type="button"
+                    disabled={isVacating}
+                    onClick={() => handleVacateSlot(slotId)}
+                    className="py-3 px-4 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-mono text-xs font-semibold rounded-md border border-rose-500/30 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                    title="Vacate and reset this slot"
+                  >
+                    <span>Vacate Slot</span>
+                  </button>
+                )}
               </div>
             </div>
 

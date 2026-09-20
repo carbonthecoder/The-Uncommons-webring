@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { saveNodeRecord } from './db.js';
 
 // Helper to verify credentials
 async function isCredentialsValid(cleanKey, cleanPin) {
@@ -113,91 +114,43 @@ export default async function handler(req, res) {
     });
   }
 
-  // 2b. Slot Lockout Protection: Prevent overwriting claimed nodes
-  if (node.id === 'NODE-001' && cleanKey !== 'UNC-ALPHA-2026') {
-    return res.status(403).json({
-      success: false,
-      error: 'Slot NODE-001 is reserved for Founder Ibrahim (Carbon) and is locked.',
-    });
-  }
+  // 2b. Role Detection & Slot Protection
+  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026';
 
-  if (node.id === 'NODE-002') {
-    const isPriyanshu = cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026' || (node.handle && String(node.handle).toLowerCase().includes('priyxnshu'));
-    if (!isPriyanshu) {
+  if (!isFounder) {
+    // Non-founders (candidates) cannot overwrite claimed slots
+    if (node.id === 'NODE-001') {
       return res.status(403).json({
         success: false,
-        error: 'Slot NODE-002 is claimed by Priyanshu (Aero) and is locked. Please select an available slot (NODE-003 to NODE-008).',
+        error: 'Slot NODE-001 is permanently reserved for Founder Ibrahim (Carbon) and is locked.',
+      });
+    }
+
+    if (node.id === 'NODE-002') {
+      return res.status(403).json({
+        success: false,
+        error: 'Slot NODE-002 is permanently reserved for Priyanshu (Aero) and is locked. Please select an available slot (NODE-003 to NODE-008).',
       });
     }
   }
 
   const updatedNode = {
     ...node,
-    verified: true,
+    verified: node.verified !== undefined ? node.verified : true,
     status: node.status || 'online',
     updatedAt: new Date().toISOString(),
   };
 
-  // 3. If local file system is writable (local dev or bot), update public/nodes.json
-  try {
-    const publicNodesPath = path.resolve(process.cwd(), 'public/nodes.json');
-    if (fs.existsSync(publicNodesPath)) {
-      const nodesList = JSON.parse(fs.readFileSync(publicNodesPath, 'utf8'));
-      const idx = nodesList.findIndex((n) => n.id === updatedNode.id);
-      if (idx !== -1) {
-        nodesList[idx] = updatedNode;
-      } else {
-        nodesList.push(updatedNode);
-      }
-      fs.writeFileSync(publicNodesPath, JSON.stringify(nodesList, null, 2), 'utf8');
-    }
-  } catch (e) {
-    console.warn('Could not write to local public/nodes.json:', e.message);
-  }
-
-  // 4. Broadcast live node record to Discord Key Ledger channel
-  const token = process.env.DISCORD_BOT_TOKEN;
-  const keyLedgerChannelId = process.env.DISCORD_KEY_LEDGER_CHANNEL_ID || '1551036698757038181';
-
-  if (token && keyLedgerChannelId) {
-    try {
-      const payloadContent = `<!-- UNC_NODE_DATA: ${JSON.stringify(updatedNode)} -->`;
-      const embedPayload = {
-        title: `🛰️ SOVEREIGN NODE PUBLISHED // ${updatedNode.id}`,
-        description: `Candidate **${updatedNode.name}** (\`@${updatedNode.handle}\`) has published node slot **${updatedNode.id}** to The Uncommons webring.`,
-        color: 0x10b981,
-        fields: [
-          { name: '🌐 Sovereign Domain', value: `\`https://${updatedNode.domain}\``, inline: true },
-          { name: '👤 Handle', value: `@${updatedNode.handle}`, inline: true },
-          { name: '🎫 Slot ID', value: `\`${updatedNode.id}\``, inline: true },
-          { name: '⚡ Focus Field', value: updatedNode.field || 'Systems & Web', inline: false },
-          { name: '📜 Bio', value: updatedNode.bio || 'Verified Member', inline: false },
-          { name: '🔨 Proof of Work', value: updatedNode.proofOfWork ? `[Inspect Proof](${updatedNode.proofUrl || updatedNode.url})\n${updatedNode.proofOfWork}` : 'Verified build', inline: false },
-        ],
-        timestamp: new Date().toISOString(),
-        footer: { text: 'The Uncommons Webring • Live Node Registry' },
-      };
-
-      await fetch(`https://discord.com/api/v10/channels/${keyLedgerChannelId}/messages`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bot ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: payloadContent,
-          embeds: [embedPayload],
-        }),
-      });
-    } catch (discErr) {
-      console.error('Failed to broadcast node to Discord:', discErr);
-    }
-  }
+  // 3. Save across Unified Database Layer (MongoDB Atlas, GitHub Gist, Discord Ledger, Local Files)
+  const savedNode = await saveNodeRecord(updatedNode);
 
   return res.json({
     success: true,
-    node: updatedNode,
-    message: 'Node validated and saved successfully via 2-step authentication.',
+    node: savedNode,
+    isFounder,
+    message: isFounder 
+      ? `Founder Override: Node ${savedNode.id} updated and synced across multi-cloud database.`
+      : `Node ${savedNode.id} validated and published to the Webring.`,
   });
 }
 

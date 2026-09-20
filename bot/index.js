@@ -24,6 +24,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getAllNodes, saveNodeRecord, batchUpdateNodes, vacateSlotRecord } from './db.js';
 
 dotenv.config();
 
@@ -1022,25 +1023,23 @@ app.get('/api/check-ticket', async (req, res) => {
   });
 });
 
-// 5. Get Live Webring Nodes
-app.get('/api/get-nodes', (req, res) => {
+// 5. Get Live Webring Nodes from Multi-Cloud DB
+app.get('/api/get-nodes', async (req, res) => {
   try {
-    const publicNodesPath = path.resolve(__dirname, '../public/nodes.json');
-    let nodesList = [];
-    if (fs.existsSync(publicNodesPath)) {
-      nodesList = JSON.parse(fs.readFileSync(publicNodesPath, 'utf8'));
-    }
+    const bypassCache = req.query?.refresh === 'true';
+    const nodes = await getAllNodes(bypassCache);
     return res.json({
       success: true,
-      nodes: nodesList,
-      count: nodesList.filter(n => n.verified).length,
+      nodes,
+      count: nodes.filter(n => n.verified && n.domain && !n.domain.includes('unclaimed')).length,
+      timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Failed to read nodes list' });
+    return res.status(500).json({ success: false, error: 'Failed to read nodes from database' });
   }
 });
 
-// 6. Save / Update Node in public/nodes.json with 2-Step Verification & Discord Sync
+// 6. Save / Update Node with 2-Step Verification & Founder Superadmin Clearance
 app.post('/api/save-node', async (req, res) => {
   const { node, key, pin } = req.body || {};
   if (!node || !node.id) {
@@ -1057,85 +1056,112 @@ app.post('/api/save-node', async (req, res) => {
   }
 
   const cleanKey = String(key || '').trim().toUpperCase();
+  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026';
 
-  // Slot Lockout Protection: Prevent overwriting claimed nodes
-  if (node.id === 'NODE-001' && cleanKey !== 'UNC-ALPHA-2026') {
-    return res.status(403).json({
-      success: false,
-      error: 'Slot NODE-001 is reserved for Founder Ibrahim (Carbon) and is locked.',
-    });
-  }
-
-  if (node.id === 'NODE-002') {
-    const isPriyanshu = cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026' || (node.handle && String(node.handle).toLowerCase().includes('priyxnshu'));
-    if (!isPriyanshu) {
+  // Slot Lockout: Non-founders cannot overwrite claimed slots
+  if (!isFounder) {
+    if (node.id === 'NODE-001') {
       return res.status(403).json({
         success: false,
-        error: 'Slot NODE-002 is claimed by Priyanshu (Aero) and is locked. Please select an available slot (NODE-003 to NODE-008).',
+        error: 'Slot NODE-001 is permanently reserved for Founder Ibrahim (Carbon) and is locked.',
+      });
+    }
+
+    if (node.id === 'NODE-002') {
+      return res.status(403).json({
+        success: false,
+        error: 'Slot NODE-002 is permanently reserved for Priyanshu (Aero) and is locked. Please select an available slot (NODE-003 to NODE-008).',
       });
     }
   }
 
   try {
-    const publicNodesPath = path.resolve(__dirname, '../public/nodes.json');
-    let nodesList = [];
-    if (fs.existsSync(publicNodesPath)) {
-      nodesList = JSON.parse(fs.readFileSync(publicNodesPath, 'utf8'));
-    }
-
-    const slotIndex = nodesList.findIndex(n => n.id === node.id);
     const updatedNode = {
       ...node,
-      verified: true,
+      verified: node.verified !== undefined ? node.verified : true,
       status: node.status || 'online',
       updatedAt: new Date().toISOString(),
     };
 
-    if (slotIndex !== -1) {
-      nodesList[slotIndex] = updatedNode;
-    } else {
-      nodesList.push(updatedNode);
-    }
+    const savedNode = await saveNodeRecord(updatedNode);
+    console.log(`📡 [Multi-Cloud DB] Node ${node.id} (${node.handle} - ${node.domain}) saved. Founder mode: ${isFounder}`);
 
-    // Write back to public/nodes.json
-    fs.writeFileSync(publicNodesPath, JSON.stringify(nodesList, null, 2), 'utf8');
-    console.log(`📡 Node ${node.id} (${node.handle} - ${node.domain}) updated and saved to public/nodes.json`);
-
-    // Broadcast to Discord key ledger channel
-    try {
-      const guild = await client.guilds.fetch(config.guildId).catch(() => null);
-      if (guild) {
-        const ledgerChannel = await getOrCreateKeyLedgerChannel(guild);
-        if (ledgerChannel) {
-          await ledgerChannel.send({
-            content: `<!-- UNC_NODE_DATA: ${JSON.stringify(updatedNode)} -->`,
-            embeds: [
-              new EmbedBuilder()
-                .setTitle(`🛰️ SOVEREIGN NODE PUBLISHED // ${updatedNode.id}`)
-                .setDescription(`Candidate **${updatedNode.name}** (\`@${updatedNode.handle}\`) has published node slot **${updatedNode.id}** to The Uncommons webring.`)
-                .setColor(0x10b981)
-                .addFields(
-                  { name: '🌐 Sovereign Domain', value: `\`https://${updatedNode.domain}\``, inline: true },
-                  { name: '👤 Handle', value: `@${updatedNode.handle}`, inline: true },
-                  { name: '🎫 Slot ID', value: `\`${updatedNode.id}\``, inline: true },
-                  { name: '⚡ Focus Field', value: updatedNode.field || 'Systems & Web', inline: false },
-                  { name: '📜 Bio', value: updatedNode.bio || 'Verified Member', inline: false },
-                  { name: '🔨 Proof of Work', value: updatedNode.proofOfWork ? `[Inspect Proof](${updatedNode.proofUrl || updatedNode.url})\n${updatedNode.proofOfWork}` : 'Verified build', inline: false },
-                )
-                .setTimestamp()
-                .setFooter({ text: 'The Uncommons Webring • Live Node Registry' }),
-            ],
-          });
-        }
-      }
-    } catch (discErr) {
-      console.warn('Could not post node update to Discord ledger:', discErr.message);
-    }
-
-    return res.json({ success: true, node: updatedNode, nodes: nodesList });
+    const allNodes = await getAllNodes();
+    return res.json({ 
+      success: true, 
+      node: savedNode, 
+      nodes: allNodes, 
+      isFounder,
+      message: isFounder ? 'Founder Master Override applied and synced globally.' : 'Node published successfully.' 
+    });
   } catch (err) {
-    console.error('Error saving node to disk:', err);
-    return res.status(500).json({ success: false, error: 'Failed to write node to disk.' });
+    console.error('Error saving node to database:', err);
+    return res.status(500).json({ success: false, error: 'Failed to write node to database.' });
+  }
+});
+
+// 7. Batch Reorder / Swap Node Positions (Founder Only)
+app.post('/api/reorder-nodes', async (req, res) => {
+  const { nodes, key, pin } = req.body || {};
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    return res.status(400).json({ success: false, error: 'Array of nodes required for reordering.' });
+  }
+
+  const cleanKey = String(key || '').trim().toUpperCase();
+  const cleanPin = String(pin || '').trim();
+
+  // Founder clearance check
+  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026';
+  const isCredsValid = verifyVaultCredentials(cleanKey, cleanPin);
+
+  if (!isCredsValid || !isFounder) {
+    return res.status(403).json({
+      success: false,
+      error: '⛔ Founder Superadmin clearance required to reorder and orchestrate webring positions.',
+    });
+  }
+
+  try {
+    const updatedList = await batchUpdateNodes(nodes);
+    return res.json({
+      success: true,
+      nodes: updatedList,
+      message: 'Constellation node positions reordered successfully.',
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Failed to batch update node positions.' });
+  }
+});
+
+// 8. Vacate / Reset Slot to Open Vacancy (Founder Only)
+app.post('/api/vacate-slot', async (req, res) => {
+  const { slotId, key, pin } = req.body || {};
+  if (!slotId) {
+    return res.status(400).json({ success: false, error: 'Slot ID required.' });
+  }
+
+  const cleanKey = String(key || '').trim().toUpperCase();
+  const cleanPin = String(pin || '').trim();
+
+  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026';
+  const isCredsValid = verifyVaultCredentials(cleanKey, cleanPin);
+
+  if (!isCredsValid || !isFounder) {
+    return res.status(403).json({
+      success: false,
+      error: '⛔ Founder clearance required to vacate or reset node slots.',
+    });
+  }
+
+  try {
+    const vacated = await vacateSlotRecord(slotId);
+    return res.json({
+      success: true,
+      node: vacated,
+      message: `Slot ${slotId} has been reset to an open Genesis vacancy.`,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Failed to vacate slot.' });
   }
 });
 
@@ -1951,12 +1977,12 @@ client.once(Events.ClientReady, async () => {
     const avatarPng = path.join(__dirname, 'avatar.png');
     const avatarJpg = path.join(__dirname, 'avatar.jpg');
     const targetAvatar = fs.existsSync(avatarPng) ? avatarPng : (fs.existsSync(avatarJpg) ? avatarJpg : null);
-    if (targetAvatar) {
+    if (targetAvatar && !client.user.avatar) {
       await client.user.setAvatar(targetAvatar);
       console.log('✨ Bot avatar set to Inspector Bartholomew portrait.');
     }
   } catch (e) {
-    console.log('Avatar set note:', e.message);
+    console.log('Avatar set note (safe):', e.message);
   }
 
   try {
@@ -2044,10 +2070,18 @@ async function registerSlashCommands() {
   }
 }
 
-// Start API Server
+// Start API Server with error resilience
 const PORT = process.env.PORT || config.port || 3001;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`⚡ Admissions Bot API listening on http://localhost:${PORT}`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`⚠️ Port ${PORT} already bound. An admissions API instance is already listening.`);
+  } else {
+    console.error('Server network error:', err.message);
+  }
 });
 
 // Login Bot if token is configured

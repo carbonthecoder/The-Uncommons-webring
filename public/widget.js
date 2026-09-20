@@ -1,4 +1,4 @@
-﻿/**
+/**
  * The Uncommons Webring Embeddable Widget
  * Zero dependencies, shadow DOM isolated, Vercel-style aesthetics.
  */
@@ -12,11 +12,11 @@
     connectedCallback() {
       const site = this.getAttribute('site') || window.location.hostname;
       const theme = this.getAttribute('theme') || 'obsidian';
-      const hubUrl = this.getAttribute('hub') || window.location.origin;
+      const hubUrl = this.getAttribute('hub') || 'https://the-uncommons.vercel.app';
 
-      const nextUrl = `${hubUrl}/?from=${encodeURIComponent(site)}&action=next`;
-      const prevUrl = `${hubUrl}/?from=${encodeURIComponent(site)}&action=prev`;
-      const randomUrl = `${hubUrl}/?from=${encodeURIComponent(site)}&action=random`;
+      const nextUrl = `${hubUrl}/go?from=${encodeURIComponent(site)}&action=next`;
+      const prevUrl = `${hubUrl}/go?from=${encodeURIComponent(site)}&action=prev`;
+      const randomUrl = `${hubUrl}/go?from=${encodeURIComponent(site)}&action=random`;
 
       const styles = `
         :host {

@@ -193,21 +193,31 @@ async function broadcastToDiscordLedger(node) {
 // 4. LOCAL FILE SYSTEM BACKUP
 function getLocalFileNodes() {
   try {
-    const publicNodesPath = path.resolve(process.cwd(), 'public/nodes.json');
+    let publicNodesPath = path.resolve(process.cwd(), 'public/nodes.json');
+    if (!fs.existsSync(publicNodesPath)) {
+      publicNodesPath = path.resolve(process.cwd(), '../public/nodes.json');
+    }
     if (fs.existsSync(publicNodesPath)) {
       return JSON.parse(fs.readFileSync(publicNodesPath, 'utf8'));
     }
-  } catch {}
+  } catch (e) {
+    console.warn('Could not read local public/nodes.json:', e.message);
+  }
   return [];
 }
 
 function writeLocalFileNodes(nodesList) {
   try {
-    const publicNodesPath = path.resolve(process.cwd(), 'public/nodes.json');
+    let publicNodesPath = path.resolve(process.cwd(), 'public/nodes.json');
+    if (!fs.existsSync(publicNodesPath)) {
+      publicNodesPath = path.resolve(process.cwd(), '../public/nodes.json');
+    }
     if (fs.existsSync(publicNodesPath)) {
       fs.writeFileSync(publicNodesPath, JSON.stringify(nodesList, null, 2), 'utf8');
     }
-  } catch {}
+  } catch (e) {
+    console.warn('Could not write to local public/nodes.json:', e.message);
+  }
 }
 
 // ============================================================================
