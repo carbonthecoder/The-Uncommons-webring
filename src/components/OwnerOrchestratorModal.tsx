@@ -9,7 +9,8 @@ import {
   RotateCcw,
   CheckCircle2, 
   AlertCircle,
-  Terminal
+  Terminal,
+  RefreshCw
 } from 'lucide-react';
 import { 
   getAllGenesisSlots, 
@@ -82,24 +83,32 @@ const SlotCard = React.memo<SlotCardProps>(({
         </span>
 
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={() => onShift(slot.id, 'up')}
-            disabled={isShifting || index === 0}
-            className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-20 cursor-pointer"
-            title="Shift position up"
-          >
-            <ArrowUp className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onShift(slot.id, 'down')}
-            disabled={isShifting || index === totalCount - 1}
-            className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-20 cursor-pointer"
-            title="Shift position down"
-          >
-            <ArrowDown className="w-3.5 h-3.5" />
-          </button>
+          {isShifting ? (
+            <div className="p-1 text-zinc-400">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onShift(slot.id, 'up')}
+                disabled={isShifting || index === 0}
+                className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-20 cursor-pointer"
+                title="Shift position up"
+              >
+                <ArrowUp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onShift(slot.id, 'down')}
+                disabled={isShifting || index === totalCount - 1}
+                className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-20 cursor-pointer"
+                title="Shift position down"
+              >
+                <ArrowDown className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -581,6 +590,13 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
           </div>
 
           <div className="flex items-center gap-2">
+            {(isShifting || isSaving) && (
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-300 bg-zinc-900 border border-zinc-700/80 px-2.5 py-1 rounded select-none">
+                <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />
+                <span>CLOUD SYNCING...</span>
+              </div>
+            )}
+
             {history.length > 0 && (
               <button
                 type="button"

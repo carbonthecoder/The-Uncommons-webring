@@ -436,9 +436,12 @@ export async function getAllNodes(bypassCache = false) {
   const ledgerNodes = await fetchDiscordLedgerNodes();
   for (const ln of ledgerNodes) {
     if (ln && ln.id) {
+      const existing = nodeMap.get(ln.id);
+      const ringPos = (existing && typeof existing.ringPosition === 'number') ? existing.ringPosition : ln.ringPosition;
       nodeMap.set(ln.id, {
-        ...nodeMap.get(ln.id),
+        ...existing,
         ...ln,
+        ringPosition: ringPos,
       });
     }
   }
@@ -521,8 +524,9 @@ export async function saveNodeRecord(updatedNode) {
   // 5. Broadcast to Discord Key Ledger (live multi-cloud event log)
   await broadcastToDiscordLedger(node);
 
-  // Invalidate memory cache
-  memoryCacheNodes = null;
+  // Update memory cache with fresh state immediately
+  memoryCacheNodes = currentNodes;
+  memoryCacheExpiry = Date.now() + CACHE_TTL_MS;
 
   return node;
 }
