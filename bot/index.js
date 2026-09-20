@@ -922,9 +922,10 @@ app.post('/api/save-node', async (req, res) => {
 // DISCORD INTERACTION LISTENER (BUTTONS & MODALS)
 // ============================================================================
 client.on(Events.InteractionCreate, async (interaction) => {
-  // 1. MODAL SUBMIT HANDLER
-  if (interaction.isModalSubmit()) {
-    const [action, applicantId, ticketId] = interaction.customId.split(':');
+  try {
+    // 1. MODAL SUBMIT HANDLER
+    if (interaction.isModalSubmit()) {
+      const [action, applicantId, ticketId] = interaction.customId.split(':');
 
     if (action === 'submit_application_modal') {
       const name = interaction.fields.getTextInputValue('q_name');
@@ -963,10 +964,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const scoreBar = `\`[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}]\` **${aiResult.score}/100**`;
 
       const aiEmbed = new EmbedBuilder()
-        .setTitle(`🤖 THE UNCOMMONS // AI ADMISSIONS AUDIT`)
+        .setTitle(`🕵️ INSPECTOR BARTHOLOMEW // CANDIDATE AUDIT`)
         .setDescription(
-          `Autonomous candidate evaluation generated for <@${applicantId}> (\`${interaction.user.tag}\`).\n` +
-          `*Reviewers: inspect the alignment score and ask the candidate the generated interview prompts.*`
+          `Candidate dossier scrutiny for <@${applicantId}> (\`${interaction.user.tag}\`).\n` +
+          `> *"I review Ring applications between espresso shots and unfiltered smokes. No vibecoding allowed on my watch."*`
         )
         .setColor(0x8b5cf6)
         .addFields(
@@ -975,7 +976,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           { name: '🔍 Technical Scrutiny & Verification', value: `> *${aiResult.scrutiny}*`, inline: false },
           { name: '🎙️ Tailored AI Interview Prompts', value: aiResult.questions.map((q, i) => `**${i + 1}.** ${q}`).join('\n\n'), inline: false }
         )
-        .setFooter({ text: 'The Uncommons AI Admissions Engine • Real-time Candidate Intelligence' })
+        .setFooter({ text: 'Inspector Bartholomew • Chief Admissions Auditor & Key Ledger Warden' })
         .setTimestamp();
 
       const staffControls = new ActionRowBuilder().addComponents(
@@ -1022,63 +1023,73 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
-    const modal = new ModalBuilder()
-      .setCustomId(`submit_application_modal:${applicantId}:${ticketId}`)
-      .setTitle('The Uncommons Application');
+    if (interaction.replied || interaction.deferred) return;
 
-    const nameInput = new TextInputBuilder()
-      .setCustomId('q_name')
-      .setLabel('1. What is your name?')
-      .setStyle(TextInputStyle.Short)
-      .setPlaceholder('Your preferred name or moniker')
-      .setRequired(true)
-      .setMaxLength(100);
+    try {
+      const modal = new ModalBuilder()
+        .setCustomId(`submit_application_modal:${applicantId}:${ticketId}`)
+        .setTitle('The Uncommons Application');
 
-    const obsessionInput = new TextInputBuilder()
-      .setCustomId('q_obsession')
-      .setLabel('2. Topic you can talk for hours about?')
-      .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder('What topic never gets boring to you, and why?')
-      .setRequired(true)
-      .setMinLength(10)
-      .setMaxLength(1000);
+      const nameInput = new TextInputBuilder()
+        .setCustomId('q_name')
+        .setLabel('1. What is your name?')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('Your preferred name or moniker')
+        .setRequired(true)
+        .setMaxLength(100);
 
-    const selfTaughtInput = new TextInputBuilder()
-      .setCustomId('q_selftaught')
-      .setLabel('3. Hardest thing you taught yourself?')
-      .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder('What was it, and how did you teach yourself?')
-      .setRequired(true)
-      .setMinLength(10)
-      .setMaxLength(1000);
+      const obsessionInput = new TextInputBuilder()
+        .setCustomId('q_obsession')
+        .setLabel('2. Topic you can talk for hours about?')
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder('What topic never gets boring to you, and why?')
+        .setRequired(true)
+        .setMinLength(10)
+        .setMaxLength(1000);
 
-    const projectsInput = new TextInputBuilder()
-      .setCustomId('q_projects')
-      .setLabel('4. What have you built or experimented with?')
-      .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder('Projects, tools, experiments, or ideas you want to create')
-      .setRequired(true)
-      .setMinLength(10)
-      .setMaxLength(1000);
+      const selfTaughtInput = new TextInputBuilder()
+        .setCustomId('q_selftaught')
+        .setLabel('3. Hardest thing you taught yourself?')
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder('What was it, and how did you teach yourself?')
+        .setRequired(true)
+        .setMinLength(10)
+        .setMaxLength(1000);
 
-    const whyInput = new TextInputBuilder()
-      .setCustomId('q_why')
-      .setLabel('5. Biggest goal & why The Uncommons?')
-      .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder('What do you genuinely want to accomplish?')
-      .setRequired(true)
-      .setMinLength(10)
-      .setMaxLength(1000);
+      const projectsInput = new TextInputBuilder()
+        .setCustomId('q_projects')
+        .setLabel('4. Coolest thing you made / built / ideas?')
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder('Tell us about what you have crafted or explored')
+        .setRequired(true)
+        .setMinLength(10)
+        .setMaxLength(1000);
 
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(nameInput),
-      new ActionRowBuilder().addComponents(obsessionInput),
-      new ActionRowBuilder().addComponents(selfTaughtInput),
-      new ActionRowBuilder().addComponents(projectsInput),
-      new ActionRowBuilder().addComponents(whyInput)
-    );
+      const whyInput = new TextInputBuilder()
+        .setCustomId('q_why')
+        .setLabel('5. Biggest goal & why The Uncommons?')
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder('What do you genuinely want to accomplish?')
+        .setRequired(true)
+        .setMinLength(10)
+        .setMaxLength(1000);
 
-    await interaction.showModal(modal);
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(nameInput),
+        new ActionRowBuilder().addComponents(obsessionInput),
+        new ActionRowBuilder().addComponents(selfTaughtInput),
+        new ActionRowBuilder().addComponents(projectsInput),
+        new ActionRowBuilder().addComponents(whyInput)
+      );
+
+      await interaction.showModal(modal);
+    } catch (err) {
+      if (err.code === 40060) {
+        console.warn('⚠️ Modal interaction already acknowledged (rapid click). Safely ignored.');
+      } else {
+        console.error('⚠️ Error displaying modal:', err.message);
+      }
+    }
     return;
   }
 
@@ -1170,7 +1181,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
               { name: 'Sovereign Node Studio', value: '[the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)', inline: true },
             )
             .setTimestamp()
-            .setFooter({ text: 'Staff Key Ledger • Secret PIN withheld to protect member editing access' });
+            .setFooter({ text: 'Staff Key Ledger • Audited by Inspector Bartholomew' });
 
           await ledgerChannel.send({ embeds: [auditEmbed] });
         }
@@ -1195,7 +1206,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
               { name: '🔒 Secret 6-Digit PIN', value: `\`\`\`text\n||${secretPin}||\n\`\`\``, inline: true },
             )
             .setTimestamp()
-            .setFooter({ text: 'Founder Vault • Highly Confidential' });
+            .setFooter({ text: 'Founder Vault • Inspector Bartholomew Confidential Vault Custodian' });
 
           await founderVaultChannel.send({ embeds: [founderEmbed] });
         }
@@ -1245,7 +1256,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           `5. Copy the webring seal code and embed it into your personal website footer.`
         )
         .setColor(0x10b981)
-        .setFooter({ text: 'Welcome to The Uncommons webring.' });
+        .setFooter({ text: 'The Uncommons • Sealed by Inspector Bartholomew (Chief Admissions Auditor)' });
 
       try {
         await applicantUser.send({ embeds: [dmEmbed] });
@@ -1325,6 +1336,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }, 5000);
     return;
   }
+  } catch (err) {
+    if (err.code === 40060 || err.code === 10062) {
+      console.warn('⚠️ Safe warning: Interaction expired or was already acknowledged:', err.message);
+    } else {
+      console.error('⚠️ Error processing interaction:', err);
+    }
+  }
+});
+
+// Global Safety Listeners: Prevent any unhandled Discord/network error from crashing the bot
+process.on('unhandledRejection', (reason, promise) => {
+  console.warn('⚠️ [Safe Guard] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ [Safe Guard] Uncaught Exception:', err);
+});
+
+client.on('error', (err) => {
+  console.warn('⚠️ [Safe Guard] Discord Client Error:', err);
 });
 
 // Bot Ready Event
@@ -1332,11 +1363,13 @@ client.once(Events.ClientReady, async () => {
   console.log(`🤖 The Uncommons Council Bot is live as ${client.user.tag}!`);
   console.log(`📡 Connected to Guild: ${config.guildId}`);
 
-  // Set rotating presence
+  // Set rotating presence for Inspector Bartholomew
   const statusList = [
+    { name: 'Inspector Bartholomew', type: ActivityType.Watching },
+    { name: 'No vibecoding allowed.', type: ActivityType.Watching },
+    { name: 'espresso & unfiltered smokes', type: ActivityType.Listening },
     { name: 'the-uncommons.vercel.app', type: ActivityType.Watching },
     { name: 'over the sovereign webring', type: ActivityType.Watching },
-    { name: 'for rare 1% builders', type: ActivityType.Listening },
     { name: 'dossiers | 2-Step Gate', type: ActivityType.Watching },
   ];
 
@@ -1352,14 +1385,16 @@ client.once(Events.ClientReady, async () => {
   };
 
   updatePresence();
-  setInterval(updatePresence, 45000);
+  setInterval(updatePresence, 30000);
 
-  // Set custom avatar if available
+  // Set custom avatar (Inspector Bartholomew dog portrait)
   try {
-    const avatarPath = path.join(__dirname, 'avatar.jpg');
-    if (fs.existsSync(avatarPath)) {
-      await client.user.setAvatar(avatarPath);
-      console.log('✨ Bot avatar set to sovereign emblem.');
+    const avatarPng = path.join(__dirname, 'avatar.png');
+    const avatarJpg = path.join(__dirname, 'avatar.jpg');
+    const targetAvatar = fs.existsSync(avatarPng) ? avatarPng : (fs.existsSync(avatarJpg) ? avatarJpg : null);
+    if (targetAvatar) {
+      await client.user.setAvatar(targetAvatar);
+      console.log('✨ Bot avatar set to Inspector Bartholomew portrait.');
     }
   } catch (e) {
     console.log('Avatar set note:', e.message);
@@ -1368,6 +1403,17 @@ client.once(Events.ClientReady, async () => {
   try {
     const guild = client.guilds.cache.get(config.guildId) || await client.guilds.fetch(config.guildId);
     if (guild) {
+      // Set server nickname to "Inspector Bartholomew"
+      try {
+        const botMember = await guild.members.fetchMe();
+        if (botMember && botMember.nickname !== 'Inspector Bartholomew') {
+          await botMember.setNickname('Inspector Bartholomew');
+          console.log('✨ Server nickname updated to Inspector Bartholomew.');
+        }
+      } catch (nickErr) {
+        console.log('Server nickname note:', nickErr.message);
+      }
+
       const ledger = await getOrCreateKeyLedgerChannel(guild);
       const role = await getOrCreateWebringRole(guild);
       const vault = await getOrCreateFounderVaultChannel(guild);
