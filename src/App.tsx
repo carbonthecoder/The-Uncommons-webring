@@ -17,6 +17,27 @@ export default function App() {
   const verifiedCount = liveMembers.filter(m => m.verified).length;
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
+  const [lastTapTime, setLastTapTime] = useState(0);
+
+  // 4-tap mobile/desktop trigger handler on HASH footer element
+  const handleFooterHashClick = () => {
+    const now = Date.now();
+    sound.playClick();
+    if (now - lastTapTime > 2500) {
+      setTapCount(1);
+    } else {
+      const nextCount = tapCount + 1;
+      if (nextCount >= 4) {
+        setTapCount(0);
+        setIsPasscodeModalOpen(true);
+        sound.playHarmonic();
+      } else {
+        setTapCount(nextCount);
+      }
+    }
+    setLastTapTime(now);
+  };
 
   // Global "owner" keyboard trigger listener
   useEffect(() => {
@@ -141,7 +162,13 @@ export default function App() {
                 <span>GitHub</span>
               </a>
               <span className="text-zinc-700">|</span>
-              <span className="text-zinc-400">HASH: 0x9f7a...3c21</span>
+              <span
+                onClick={handleFooterHashClick}
+                className="text-zinc-400 hover:text-emerald-400 cursor-pointer select-none transition-colors"
+                title="Tap 4x for Founder Access"
+              >
+                HASH: 0x9f7a...3c21
+              </span>
             </div>
           </div>
         </footer>
