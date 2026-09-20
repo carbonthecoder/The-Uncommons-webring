@@ -19,7 +19,9 @@ import {
   Save, 
   Code, 
   CheckCircle2, 
-  AlertTriangle
+  AlertTriangle,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import type { Member } from '../data/members';
 import { saveCustomNode, saveGenesisSlot, vacateCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
@@ -48,6 +50,7 @@ export const SealPage: React.FC = () => {
   });
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isAudioActive, setIsAudioActive] = useState(!sound.getMuted());
 
   // 1-Click Direct Unlock via Discord DM Link (?key=...&pin=...)
   useEffect(() => {
@@ -659,6 +662,22 @@ export const SealPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const unmuted = sound.toggleSound();
+                setIsAudioActive(unmuted);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-mono text-xs flex items-center gap-2 transition-all cursor-pointer ${
+                isAudioActive
+                  ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                  : 'bg-zinc-900 text-zinc-400 border border-white/10 hover:text-white'
+              }`}
+            >
+              {isAudioActive ? <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" /> : <VolumeX className="w-3.5 h-3.5" />}
+              <span>{isAudioActive ? 'Space Hum Active (55Hz)' : 'Enable Ambient Space Hum'}</span>
+            </button>
           </div>
 
           {/* Save Success Banner */}
