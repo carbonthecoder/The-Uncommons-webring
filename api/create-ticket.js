@@ -142,9 +142,10 @@ export default async function handler(req, res) {
         {
           type: 2,
           custom_id: `close_ticket:${member.user.id}:${ticketId}`,
-          label: '🛑 Purge Docket',
+          label: '🛑 Reject / Close',
           style: 4, // Danger (Red)
         },
+
       ],
     };
 

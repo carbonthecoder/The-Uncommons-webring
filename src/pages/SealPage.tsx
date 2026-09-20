@@ -22,8 +22,9 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 import type { Member } from '../data/members';
-import { saveCustomNode, getCustomActiveNodes } from '../data/members';
+import { saveCustomNode, getCustomActiveNodes, syncServerNodes } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
+
 
 export const SealPage: React.FC = () => {
   // Authentication & 2-Step Credentials (Ring Key + Secret PIN)
@@ -36,10 +37,12 @@ export const SealPage: React.FC = () => {
   const [isUnlocked, setIsUnlocked] = useState(() => {
     const savedKey = sessionStorage.getItem('unc_vault_key');
     const savedPin = sessionStorage.getItem('unc_vault_pin');
-    return !!savedKey && !!savedPin && (savedKey.startsWith('UNC-') || savedKey === 'UNC-ALPHA-2026');
+    const isVerified = sessionStorage.getItem('unc_vault_verified') === 'true';
+    return !!savedKey && !!savedPin && (savedKey === 'UNC-ALPHA-2026' || isVerified);
   });
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
 
   // Tab View: 'studio' (Node Profile Editor) vs 'embed' (Seal Snippet)
   const [activeTab, setActiveTab] = useState<'studio' | 'embed'>('studio');
@@ -137,6 +140,7 @@ export const SealPage: React.FC = () => {
           setIsUnlocked(true);
           sessionStorage.setItem('unc_vault_key', cleanKey);
           sessionStorage.setItem('unc_vault_pin', cleanPin);
+          sessionStorage.setItem('unc_vault_verified', 'true');
           sound.playHarmonic();
 
           confetti({
@@ -156,15 +160,15 @@ export const SealPage: React.FC = () => {
         return;
       }
     } catch {
-      // 2. Standalone offline fallback: check demo keys or format
+      // 2. Offline master fallback: check only known master keys
       if (
         (cleanKey === 'UNC-ALPHA-2026' && (cleanPin === '000000' || cleanPin === '888888')) ||
-        (cleanKey === 'UNC-COUNCIL-01' && cleanPin === '111111') ||
-        (cleanKey.startsWith('UNC-') && cleanPin.length === 6)
+        (cleanKey === 'UNC-COUNCIL-01' && cleanPin === '111111')
       ) {
         setIsUnlocked(true);
         sessionStorage.setItem('unc_vault_key', cleanKey);
         sessionStorage.setItem('unc_vault_pin', cleanPin);
+        sessionStorage.setItem('unc_vault_verified', 'true');
         sound.playHarmonic();
 
         confetti({
@@ -181,6 +185,7 @@ export const SealPage: React.FC = () => {
     }
     setIsVerifying(false);
   };
+
 
   // Construct Live Preview Member Object
   const previewMember: Member = useMemo(() => {
@@ -252,7 +257,8 @@ export const SealPage: React.FC = () => {
           body: JSON.stringify({ node: previewMember, key: passcode, pin }),
         });
         if (res.ok) {
-          console.log('Successfully authenticated & written to public/nodes.json');
+          console.log('Successfully authenticated & written to cloud ledger');
+          await syncServerNodes();
         } else {
           const errData = await res.json().catch(() => ({}));
           if (errData.error) {
@@ -262,6 +268,7 @@ export const SealPage: React.FC = () => {
       } catch {
         // Backend offline or running in standalone client mode, local state is persisted
       }
+
 
       setSaveSuccess(`Node ${previewMember.id} (${previewMember.domain}) is verified and live in the Webring!`);
       sound.playHarmonic();

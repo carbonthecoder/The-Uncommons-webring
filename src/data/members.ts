@@ -56,9 +56,15 @@ let serverNodesCache: Member[] = [];
 
 export async function syncServerNodes(): Promise<Member[]> {
   try {
-    const res = await fetch('/nodes.json');
+    // 1. Try live cloud registry endpoint
+    let res = await fetch('/api/get-nodes');
+    if (!res.ok) {
+      // 2. Fallback to static public/nodes.json
+      res = await fetch('/nodes.json');
+    }
     if (res.ok) {
-      const data = await res.json();
+      const result = await res.json();
+      const data = Array.isArray(result) ? result : (result.nodes || []);
       if (Array.isArray(data)) {
         serverNodesCache = data
           .filter((d: any) => d.verified && d.domain && !d.domain.includes('unclaimed'))
@@ -81,7 +87,9 @@ export async function syncServerNodes(): Promise<Member[]> {
         window.dispatchEvent(new Event('unc_nodes_updated'));
       }
     }
-  } catch {}
+  } catch (err) {
+    console.warn('syncServerNodes error:', err);
+  }
   return getAllMembers();
 }
 
@@ -149,22 +157,34 @@ export function saveCustomNode(newMember: Member) {
 
 export function validateActivationKey(key: string): { valid: boolean; targetSlot: string; error?: string } {
   const cleanKey = key.trim().toUpperCase();
-  if (!cleanKey) return { valid: false, targetSlot: '', error: 'Please enter an activation key.' };
+  if (!cleanKey) return { valid: false, targetSlot: '', error: 'Please enter your Sovereign Ring Key.' };
   
-  // Format matching UNC-NODE-00X-XXXX or UNC-ALPHA-2026 or UNC-KEY-XXXX
-  if (cleanKey.startsWith('UNC-NODE-') || cleanKey.startsWith('UNC-ALPHA-') || cleanKey.startsWith('UNC-KEY-')) {
-    // Extract slot if specified, e.g. UNC-NODE-002-8F9A -> NODE-002
-    const match = cleanKey.match(/NODE-(00[2-8])/);
-    const targetSlot = match ? `NODE-${match[1]}` : 'NODE-002';
+  if (cleanKey === 'UNC-ALPHA-2026') {
+    return { valid: true, targetSlot: 'NODE-001' };
+  }
+  if (cleanKey === 'UNC-COUNCIL-01') {
+    return { valid: true, targetSlot: 'NODE-002' };
+  }
+
+  // Format matching candidate keys issued by bot: UNC-KEY-XXXX-YYYY
+  if (/^UNC-KEY-[A-Z0-9]{4}-\d{4}$/.test(cleanKey)) {
+    return { valid: true, targetSlot: 'NODE-003' };
+  }
+
+  // Legacy slot format UNC-NODE-00X-XXXX
+  if (/^UNC-NODE-(00[1-8])-[A-Z0-9]+$/.test(cleanKey)) {
+    const match = cleanKey.match(/NODE-(00[1-8])/);
+    const targetSlot = match ? `NODE-${match[1]}` : 'NODE-003';
     return { valid: true, targetSlot };
   }
 
   return { 
     valid: false, 
     targetSlot: '', 
-    error: 'Invalid activation key. Obtain key in Discord #council-review after ratification.' 
+    error: 'Invalid activation key format. Example: UNC-KEY-CMCX-2026' 
   };
 }
+
 
 export function useLiveMembers(): Member[] {
   const [members, setMembers] = useState<Member[]>(() => getAllMembers());

@@ -26,10 +26,13 @@ export const ApplyPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [existingTicket, setExistingTicket] = useState<StoredTicket | null>(null);
+  const [ticketStatus, setTicketStatus] = useState<'checking' | 'under_review' | 'rejected' | 'approved'>('under_review');
+  const [ticketStatusMsg, setTicketStatusMsg] = useState('');
 
   // Live Server Membership Sync State
   const [liveCheckStatus, setLiveCheckStatus] = useState<'idle' | 'checking' | 'verified' | 'not_found'>('idle');
   const [liveCheckUser, setLiveCheckUser] = useState<DiscordMemberCheck['user'] | null>(null);
+
 
   // Live sync check on Discord username change (debounced 400ms)
   useEffect(() => {
@@ -105,7 +108,36 @@ export const ApplyPage: React.FC = () => {
     }
   }, []);
 
+  // Poll live ticket status if user has an existing ticket
+  useEffect(() => {
+    if (!existingTicket) return;
+
+    let isMounted = true;
+    const checkLiveStatus = async () => {
+      try {
+        const res = await fetch(`/api/check-ticket?ticketId=${encodeURIComponent(existingTicket.ticketId)}&handle=${encodeURIComponent(existingTicket.discordHandle)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.status) {
+            setTicketStatus(data.status);
+            if (data.message) setTicketStatusMsg(data.message);
+          }
+        }
+      } catch (err) {
+        console.warn('Live ticket check error:', err);
+      }
+    };
+
+    checkLiveStatus();
+    const interval = setInterval(checkLiveStatus, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [existingTicket]);
+
   // Cooldown countdown timer
+
   useEffect(() => {
     if (cooldownRemaining <= 0) return;
     const timer = setInterval(() => {
@@ -291,48 +323,160 @@ export const ApplyPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Existing Active Ticket Banner (If already submitted) */}
+      {/* Existing Ticket Banner with Live Status (Active, Rejected, Approved) */}
       {existingTicket && !submissionResult && (
-        <div className="p-5 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-3 font-mono text-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-amber-400 font-semibold">
-              <Clock className="w-4 h-4" />
-              <span>ACTIVE TICKET UNDER REVIEW // {existingTicket.ticketId}</span>
+        <>
+          {ticketStatus === 'rejected' ? (
+            <div className="p-6 bg-zinc-950 border border-red-500/40 rounded-xl space-y-4 font-mono text-xs shadow-2xl animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-red-500/20 pb-3">
+                <div className="flex items-center gap-2 text-red-400 font-semibold text-xs">
+                  <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>ADMISSION STATUS // NOT ADMITTED IN THIS COHORT</span>
+                </div>
+                <span className="text-[10px] text-zinc-500 font-mono">DOCKET {existingTicket.ticketId}</span>
+              </div>
+
+              <div className="space-y-3 font-sans text-xs leading-relaxed text-zinc-300">
+                <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-2">
+                  <span>Candidate:</span>
+                  <span className="text-white font-bold px-2 py-0.5 rounded bg-zinc-900 border border-white/10">{existingTicket.discordHandle}</span>
+                  <span className="text-zinc-600">&bull;</span>
+                  <span className="text-zinc-400">Target Domain:</span>
+                  <span className="text-zinc-200">{existingTicket.domain}</span>
+                </div>
+
+                <div className="p-4 bg-red-950/20 border border-red-500/20 rounded-lg text-zinc-200 leading-relaxed text-xs">
+                  <p className="font-semibold text-red-300 mb-1.5 font-mono">
+                    Cohort Admission Notice // Inspector Bartholomew:
+                  </p>
+                  <p className="text-zinc-300 font-sans">
+                    {ticketStatusMsg || 'You were not admitted in this cohort. Stay active in the server, level up, build and learn new things! We actively monitor everyone in the server—even small contributions, discussions, and side projects—and may add you to the webring.'}
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                <a
+                  href={DISCORD_LINKS.kavyonServer}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => sound.playClick()}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-xs rounded border border-white/10 flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors"
+                >
+                  <Disc className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Stay Active in Kavyon Server</span>
+                  <ExternalLink className="w-3 h-3 text-zinc-500" />
+                </a>
+
+                <button
+                  onClick={() => {
+                    if (window.confirm('Reset local ticket tracker and submit a fresh application?')) {
+                      localStorage.removeItem('unc_active_ticket');
+                      setExistingTicket(null);
+                      setTicketStatus('under_review');
+                      sound.playClick();
+                    }
+                  }}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-xs rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3 text-zinc-400" />
+                  <span>Reset / Re-apply When Ready</span>
+                </button>
+              </div>
             </div>
-            <span className="text-[10px] text-zinc-500">1 SUBMISSION LIMIT</span>
-          </div>
+          ) : ticketStatus === 'approved' ? (
+            <div className="p-6 bg-zinc-950 border border-emerald-500/40 rounded-xl space-y-4 font-mono text-xs shadow-2xl animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+                <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>ADMISSION RATIFIED // DOCKET {existingTicket.ticketId}</span>
+                </div>
+                <span className="text-[10px] text-emerald-400/80 font-mono">VERIFIED BUILDER</span>
+              </div>
 
-          <p className="text-zinc-400 font-sans leading-relaxed">
-            You already have an active admission ticket (<strong className="text-zinc-200">{existingTicket.ticketId}</strong>) submitted for domain <code className="text-emerald-300">{existingTicket.domain}</code> ({existingTicket.discordHandle}). Our moderators review tickets in <code className="text-zinc-200">#council-review</code> within 2–3 hours.
-          </p>
+              <div className="space-y-3 font-sans text-xs leading-relaxed text-zinc-300">
+                <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-2">
+                  <span>Candidate:</span>
+                  <span className="text-white font-bold px-2 py-0.5 rounded bg-zinc-900 border border-emerald-500/20">{existingTicket.discordHandle}</span>
+                </div>
 
-          <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
-            <a
-              href={DISCORD_LINKS.councilReview}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => sound.playClick()}
-              className="w-full sm:w-auto px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer shadow"
-            >
-              <Disc className="w-3.5 h-3.5" />
-              <span>View Ticket in #council-review</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+                <div className="p-4 bg-emerald-950/20 border border-emerald-500/20 rounded-lg text-zinc-200 leading-relaxed text-xs">
+                  <p className="font-semibold text-emerald-300 mb-1 font-mono">
+                    Admission Granted:
+                  </p>
+                  <p className="text-zinc-300 font-sans">
+                    Congratulations! Your application has been approved by the Council. Your unique Sovereign Ring Key and secret 6-digit PIN have been dispatched directly to your Discord DM from Inspector Bartholomew.
+                  </p>
+                </div>
+              </div>
 
-            <button
-              onClick={() => {
-                if (window.confirm('Reset local ticket tracker and submit a fresh application?')) {
-                  localStorage.removeItem('unc_active_ticket');
-                  setExistingTicket(null);
-                }
-              }}
-              className="w-full sm:w-auto px-3 py-2 text-zinc-500 hover:text-zinc-300 text-[11px] cursor-pointer"
-            >
-              Reset / Re-apply
-            </button>
-          </div>
-        </div>
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                <a
+                  href="/seal"
+                  onClick={() => sound.playHarmonic()}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold font-mono text-xs rounded flex items-center justify-center gap-1.5 cursor-pointer shadow-lg"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-zinc-950" />
+                  <span>Open Sovereign Node Studio (/seal) &rarr;</span>
+                </a>
+
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('unc_active_ticket');
+                    setExistingTicket(null);
+                  }}
+                  className="w-full sm:w-auto px-3 py-2 text-zinc-500 hover:text-zinc-300 text-[11px] cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-5 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-3 font-mono text-xs shadow-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-400 font-semibold">
+                  <Clock className="w-4 h-4" />
+                  <span>ACTIVE TICKET UNDER REVIEW // {existingTicket.ticketId}</span>
+                </div>
+                <span className="text-[10px] text-zinc-500">1 SUBMISSION LIMIT</span>
+              </div>
+
+              <p className="text-zinc-400 font-sans leading-relaxed">
+                You already have an active admission ticket (<strong className="text-zinc-200">{existingTicket.ticketId}</strong>) submitted for domain <code className="text-emerald-300">{existingTicket.domain}</code> ({existingTicket.discordHandle}). Our moderators review tickets in <code className="text-zinc-200">#council-review</code> within 2–3 hours.
+              </p>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+                <a
+                  href={DISCORD_LINKS.councilReview}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => sound.playClick()}
+                  className="w-full sm:w-auto px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer shadow"
+                >
+                  <Disc className="w-3.5 h-3.5" />
+                  <span>View Ticket in #council-review</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+
+                <button
+                  onClick={() => {
+                    if (window.confirm('Reset local ticket tracker and submit a fresh application?')) {
+                      localStorage.removeItem('unc_active_ticket');
+                      setExistingTicket(null);
+                      sound.playClick();
+                    }
+                  }}
+                  className="w-full sm:w-auto px-3 py-2 text-zinc-500 hover:text-zinc-300 text-[11px] cursor-pointer"
+                >
+                  Reset / Re-apply
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
+
 
       {/* Main Submission Form */}
       {!submissionResult && !existingTicket && (

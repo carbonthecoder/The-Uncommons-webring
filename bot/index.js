@@ -103,6 +103,34 @@ function saveVaultKey(key, pin, meta = {}) {
   }
 }
 
+// Ticket Status persistence (Approved, Rejected, Under Review)
+const ticketStatusPath = path.join(__dirname, 'ticket_status.json');
+
+function loadTicketStatus() {
+  try {
+    if (fs.existsSync(ticketStatusPath)) {
+      return JSON.parse(fs.readFileSync(ticketStatusPath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('Could not read ticket_status.json:', e.message);
+  }
+  return {};
+}
+
+function saveTicketStatus(ticketId, data = {}) {
+  try {
+    const all = loadTicketStatus();
+    all[ticketId] = {
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(ticketStatusPath, JSON.stringify(all, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to save ticket status:', e);
+  }
+}
+
+
 function verifyVaultCredentials(rawKey, rawPin) {
   const cleanKey = (rawKey || '').trim().toUpperCase();
   const cleanPin = (rawPin || '').trim();
@@ -911,7 +939,108 @@ app.post('/api/verify-vault-credentials', (req, res) => {
   });
 });
 
-// 4. Save / Update Node in public/nodes.json with 2-Step Verification
+// 4. Check Application Ticket Status
+app.get('/api/check-ticket', async (req, res) => {
+  const ticketId = String(req.query?.ticketId || '').trim().toUpperCase();
+  const rawHandle = String(req.query?.handle || '').trim();
+  const cleanHandle = rawHandle.replace(/^@/, '').toLowerCase();
+
+  if (!ticketId && !cleanHandle) {
+    return res.status(400).json({ status: 'unknown', error: 'ticketId or handle required' });
+  }
+
+  // A. Check local ticket status (Rejections)
+  const ticketStatuses = loadTicketStatus();
+  const rec = ticketStatuses[ticketId] || Object.values(ticketStatuses).find(r => r.username?.toLowerCase() === cleanHandle);
+  if (rec && rec.status === 'rejected') {
+    return res.json({
+      status: 'rejected',
+      ticketId: rec.ticketId || ticketId,
+      username: rec.username || cleanHandle,
+      message: 'You were not admitted in this cohort. Stay active in the server, level up, and learn new things! We actively monitor everyone in the server—even small contributions and builds—and may add you to the webring.',
+    });
+  }
+
+  // B. Check vault keys (Approved)
+  const vaultKeys = loadVaultKeys();
+  for (const [k, v] of Object.entries(vaultKeys)) {
+    if ((ticketId && v.ticketId === ticketId) || (cleanHandle && v.username?.toLowerCase() === cleanHandle)) {
+      return res.json({
+        status: 'approved',
+        ticketId: v.ticketId || ticketId,
+        username: v.username || cleanHandle,
+        key: k,
+        message: 'Application approved! Sovereign Ring credentials dispatched to your Discord DM.',
+      });
+    }
+  }
+
+  // C. Check Guild Channels
+  try {
+    const guild = await client.guilds.fetch(config.guildId).catch(() => null);
+    if (guild) {
+      const channels = await guild.channels.fetch();
+      const activeTicketChannel = channels.find(c => {
+        if (!c || c.parentId !== config.ticketCategoryId) return false;
+        if (ticketId && (c.topic || '').includes(ticketId)) return true;
+        if (cleanHandle) {
+          const sanitizedHandle = cleanHandle.replace(/[^a-z0-9_-]/g, '');
+          if (c.name === `ticket-${sanitizedHandle}` || c.name.startsWith(`ticket-${sanitizedHandle.slice(0, 10)}`)) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      if (activeTicketChannel) {
+        return res.json({
+          status: 'under_review',
+          ticketId,
+          username: cleanHandle,
+          channelId: activeTicketChannel.id,
+          channelUrl: `https://discord.com/channels/${guild.id}/${activeTicketChannel.id}`,
+          message: 'Application docket is currently active and under review by admissions auditors.',
+        });
+      } else {
+        return res.json({
+          status: 'rejected',
+          ticketId,
+          username: cleanHandle,
+          message: 'You were not admitted in this cohort. Stay active in the server, level up, and learn new things! We actively monitor everyone in the server—even small contributions and builds—and may add you to the webring.',
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Error checking guild channels in bot check-ticket:', e.message);
+  }
+
+  return res.json({
+    status: 'under_review',
+    ticketId,
+    username: cleanHandle,
+    message: 'Application docket under review in #council-review.',
+  });
+});
+
+// 5. Get Live Webring Nodes
+app.get('/api/get-nodes', (req, res) => {
+  try {
+    const publicNodesPath = path.resolve(__dirname, '../public/nodes.json');
+    let nodesList = [];
+    if (fs.existsSync(publicNodesPath)) {
+      nodesList = JSON.parse(fs.readFileSync(publicNodesPath, 'utf8'));
+    }
+    return res.json({
+      success: true,
+      nodes: nodesList,
+      count: nodesList.filter(n => n.verified).length,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Failed to read nodes list' });
+  }
+});
+
+// 6. Save / Update Node in public/nodes.json with 2-Step Verification & Discord Sync
 app.post('/api/save-node', async (req, res) => {
   const { node, key, pin } = req.body || {};
   if (!node || !node.id) {
@@ -939,6 +1068,7 @@ app.post('/api/save-node', async (req, res) => {
       ...node,
       verified: true,
       status: node.status || 'online',
+      updatedAt: new Date().toISOString(),
     };
 
     if (slotIndex !== -1) {
@@ -949,14 +1079,46 @@ app.post('/api/save-node', async (req, res) => {
 
     // Write back to public/nodes.json
     fs.writeFileSync(publicNodesPath, JSON.stringify(nodesList, null, 2), 'utf8');
-
     console.log(`📡 Node ${node.id} (${node.handle} - ${node.domain}) updated and saved to public/nodes.json`);
+
+    // Broadcast to Discord key ledger channel
+    try {
+      const guild = await client.guilds.fetch(config.guildId).catch(() => null);
+      if (guild) {
+        const ledgerChannel = await getOrCreateKeyLedgerChannel(guild);
+        if (ledgerChannel) {
+          await ledgerChannel.send({
+            content: `<!-- UNC_NODE_DATA: ${JSON.stringify(updatedNode)} -->`,
+            embeds: [
+              new EmbedBuilder()
+                .setTitle(`🛰️ SOVEREIGN NODE PUBLISHED // ${updatedNode.id}`)
+                .setDescription(`Candidate **${updatedNode.name}** (\`@${updatedNode.handle}\`) has published node slot **${updatedNode.id}** to The Uncommons webring.`)
+                .setColor(0x10b981)
+                .addFields(
+                  { name: '🌐 Sovereign Domain', value: `\`https://${updatedNode.domain}\``, inline: true },
+                  { name: '👤 Handle', value: `@${updatedNode.handle}`, inline: true },
+                  { name: '🎫 Slot ID', value: `\`${updatedNode.id}\``, inline: true },
+                  { name: '⚡ Focus Field', value: updatedNode.field || 'Systems & Web', inline: false },
+                  { name: '📜 Bio', value: updatedNode.bio || 'Verified Member', inline: false },
+                  { name: '🔨 Proof of Work', value: updatedNode.proofOfWork ? `[Inspect Proof](${updatedNode.proofUrl || updatedNode.url})\n${updatedNode.proofOfWork}` : 'Verified build', inline: false },
+                )
+                .setTimestamp()
+                .setFooter({ text: 'The Uncommons Webring • Live Node Registry' }),
+            ],
+          });
+        }
+      }
+    } catch (discErr) {
+      console.warn('Could not post node update to Discord ledger:', discErr.message);
+    }
+
     return res.json({ success: true, node: updatedNode, nodes: nodesList });
   } catch (err) {
     console.error('Error saving node to disk:', err);
     return res.status(500).json({ success: false, error: 'Failed to write node to disk.' });
   }
 });
+
 
 // ============================================================================
 // DISCORD INTERACTION LISTENER (COMMANDS, SELECT MENUS, BUTTONS & MODALS)
@@ -1231,9 +1393,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId(`close_ticket:${applicantId}:${ticketId}`)
-          .setLabel('🛑 Purge Docket')
+          .setLabel('🛑 Reject / Close')
           .setStyle(ButtonStyle.Danger)
       );
+
 
       await interaction.channel.send({
         content: `📥 **NEW APPLICATION SUBMITTED** by <@${applicantId}>:`,
@@ -1478,7 +1641,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setTimestamp()
             .setFooter({ text: 'Staff Key Ledger • Audited by Inspector Bartholomew' });
 
-          await ledgerChannel.send({ embeds: [auditEmbed] });
+          await ledgerChannel.send({
+            content: `<!-- UNC_KEY_ISSUED: ${JSON.stringify({ key: uniqueKey, username: applicantUser.username, applicantId, ticketId, issuedAt: new Date().toISOString() })} -->`,
+            embeds: [auditEmbed],
+          });
         }
       } catch (ledgerErr) {
         console.error('Error logging to key ledger channel:', ledgerErr);
@@ -1503,11 +1669,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setTimestamp()
             .setFooter({ text: 'Founder Vault • Inspector Bartholomew Confidential Vault Custodian' });
 
-          await founderVaultChannel.send({ embeds: [founderEmbed] });
+          await founderVaultChannel.send({
+            content: `<!-- UNC_CREDENTIAL: ${JSON.stringify({ key: uniqueKey, pin: secretPin, username: applicantUser.username, applicantId, ticketId, issuedAt: new Date().toISOString() })} -->`,
+            embeds: [founderEmbed],
+          });
         }
       } catch (founderErr) {
         console.error('Error logging to founder vault channel:', founderErr);
       }
+
+      // Update local ticket status
+      saveTicketStatus(ticketId, {
+        status: 'approved',
+        applicantId,
+        username: applicantUser.username,
+        key: uniqueKey,
+      });
 
       const issuedDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       const asciiCert = 
@@ -1609,28 +1786,96 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return;
   }
 
-  // REJECT / PURGE TICKET
-  if (action === 'close_ticket') {
+  // REJECT CANDIDATE / CLOSE TICKET
+  if (action === 'close_ticket' || action === 'reject_candidate') {
     if (!isReviewer(guildMember)) {
       return interaction.reply({
-        content: '⛔ You do not have permission to close this ticket.',
+        content: '⛔ You do not have permission to close or reject this ticket.',
         ephemeral: true,
       });
     }
 
-    await interaction.reply({
-      content: `🛑 **TICKET CLOSED:** Application closed by <@${interaction.user.id}>.\nClosing channel in 5 seconds...`,
+    await interaction.deferReply();
+
+    let applicantUser = null;
+    try {
+      applicantUser = await client.users.fetch(applicantId);
+    } catch {}
+
+    const applicantUsername = applicantUser?.username || applicantId;
+
+    // 1. Record rejection in local ticket status
+    saveTicketStatus(ticketId, {
+      status: 'rejected',
+      applicantId,
+      username: applicantUsername,
+      closedBy: interaction.user.username,
+    });
+
+    // 2. Dispatch encouraging DM to the candidate
+    const rejectionEmbed = new EmbedBuilder()
+      .setTitle('🛑 The Uncommons — Admission Cohort Verdict')
+      .setDescription(
+        `Hello <@${applicantId}>,\n\n` +
+        `Thank you for taking the time to submit your application for **The Uncommons Webring** (Docket \`${ticketId}\`).\n\n` +
+        `**You were not admitted in this cohort.**\n\n` +
+        `*Stay active in the server, level up, build and learn new things! We actively monitor everyone in the server—even small contributions, discussions, and side projects—and may add you to the webring in the future.*`
+      )
+      .setColor(0xef4444)
+      .setFooter({ text: 'The Uncommons • Inspector Bartholomew (Chief Admissions Auditor)' })
+      .setTimestamp();
+
+    if (applicantUser) {
+      try {
+        await applicantUser.send({ embeds: [rejectionEmbed] });
+      } catch (dmErr) {
+        console.warn('Could not DM rejection to user:', dmErr.message);
+      }
+    }
+
+    // 3. Broadcast rejection record to Staff Key Ledger
+    try {
+      const guild = interaction.guild;
+      const ledgerChannel = await getOrCreateKeyLedgerChannel(guild);
+      if (ledgerChannel) {
+        await ledgerChannel.send({
+          content: `<!-- UNC_TICKET_STATUS: ${JSON.stringify({ ticketId, applicantId, username: applicantUsername, status: 'rejected', timestamp: new Date().toISOString() })} -->`,
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(`🛑 DOCKET REJECTED // ${ticketId}`)
+              .setDescription(`Candidate <@${applicantId}> (\`${applicantUsername}\`) was not admitted by Reviewer <@${interaction.user.id}>.`)
+              .setColor(0xef4444)
+              .addFields(
+                { name: 'Applicant', value: `<@${applicantId}> (\`${applicantUsername}\`)`, inline: true },
+                { name: 'Reviewer', value: `<@${interaction.user.id}>`, inline: true },
+                { name: 'Status', value: '🛑 Not Admitted / Encouragement Dispatched', inline: true },
+              )
+              .setFooter({ text: 'Audited by Inspector Bartholomew' })
+              .setTimestamp(),
+          ],
+        });
+      }
+    } catch (lErr) {
+      console.warn('Could not log rejection to ledger channel:', lErr.message);
+    }
+
+    await interaction.editReply({
+      content: `🛑 **ADMISSION DOCKET CLOSED // VERDICT: NOT ADMITTED**\n` +
+               `Reviewer <@${interaction.user.id}> has concluded review for Candidate <@${applicantId}> (\`${applicantUsername}\`).\n` +
+               `Encouraging status notice was dispatched to applicant.\n\n` +
+               `⏳ *Closing channel in 10 seconds...*`,
     });
 
     setTimeout(async () => {
       try {
-        await interaction.channel.delete('Ticket closed by reviewer');
+        await interaction.channel.delete('Candidate docket rejected by reviewer');
       } catch (delErr) {
         console.error('Failed to delete channel:', delErr);
       }
-    }, 5000);
+    }, 10000);
     return;
   }
+
   } catch (err) {
     if (err.code === 40060 || err.code === 10062) {
       console.warn('⚠️ Safe warning: Interaction expired or was already acknowledged:', err.message);
