@@ -30,19 +30,22 @@
         .ring-container {
           display: inline-flex;
           align-items: center;
-          gap: 10px;
-          padding: 6px 14px;
-          background: #09090b;
-          border: 1px solid rgba(52, 211, 153, 0.2);
-          border-radius: 4px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          gap: 12px;
+          padding: 8px 16px;
+          background: rgba(15, 15, 17, 0.7);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 9999px;
+          box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
           user-select: none;
-          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          transition: all 0.3s ease;
         }
 
         .ring-container:hover {
-          border-color: rgba(52, 211, 153, 0.5);
-          box-shadow: 0 4px 16px rgba(52, 211, 153, 0.1);
+          background: rgba(20, 20, 22, 0.85);
+          border-color: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         a {
@@ -50,56 +53,57 @@
           text-decoration: none;
           display: inline-flex;
           align-items: center;
-          gap: 4px;
-          transition: color 0.15s ease;
+          gap: 6px;
+          font-weight: 500;
+          transition: color 0.2s ease;
         }
 
         a:hover {
-          color: #34d399;
+          color: #ffffff;
         }
 
         .hub-link {
-          color: #34d399;
+          color: #f4f4f5;
           font-weight: 600;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.02em;
         }
 
         .hub-link:hover {
-          color: #10b981;
+          color: #ffffff;
         }
 
         .divider {
-          color: #3f3f46;
+          width: 1px;
+          height: 12px;
+          background: rgba(255, 255, 255, 0.1);
         }
 
         .icon {
           display: inline-block;
-          width: 6px;
-          height: 6px;
-          background: #34d399;
+          width: 8px;
+          height: 8px;
+          border: 2px solid rgba(255, 255, 255, 0.8);
           border-radius: 50%;
-          box-shadow: 0 0 8px #34d399;
-          animation: pulse 2s infinite;
+          transition: transform 0.3s ease, border-color 0.3s ease;
         }
 
-        @keyframes pulse {
-          0% { opacity: 0.6; box-shadow: 0 0 4px #34d399; }
-          50% { opacity: 1; box-shadow: 0 0 10px #34d399; }
-          100% { opacity: 0.6; box-shadow: 0 0 4px #34d399; }
+        .hub-link:hover .icon {
+          transform: scale(1.1);
+          border-color: #ffffff;
         }
       `;
 
       this.shadowRoot.innerHTML = `
         <style>${styles}</style>
         <div class="ring-container">
-          <a href="${prevUrl}" title="Previous Node" class="nav-btn">[prev]</a>
+          <a href="${prevUrl}" title="Previous Node" class="nav-btn">← Prev</a>
           <span class="divider"></span>
           <a href="${hubUrl}" title="The Uncommons Webring Hub" class="hub-link">
             <span class="icon"></span>
-            [ the uncommons ]
+            The Uncommons
           </a>
           <span class="divider"></span>
-          <a href="${nextUrl}" title="Next Node" class="nav-btn">[next]</a>
+          <a href="${nextUrl}" title="Next Node" class="nav-btn">Next →</a>
         </div>
       `;
     }
