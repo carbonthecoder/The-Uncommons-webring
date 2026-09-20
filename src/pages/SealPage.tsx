@@ -31,10 +31,12 @@ export const SealPage: React.FC = () => {
 
   // Authentication & 2-Step Credentials (Ring Key + Secret PIN)
   const [passcode, setPasscode] = useState(() => {
-    return sessionStorage.getItem('unc_vault_key') || '';
+    const urlParams = new URLSearchParams(window.location.search);
+    return (urlParams.get('key') || sessionStorage.getItem('unc_vault_key') || '').trim().toUpperCase();
   });
   const [pin, setPin] = useState(() => {
-    return sessionStorage.getItem('unc_vault_pin') || '';
+    const urlParams = new URLSearchParams(window.location.search);
+    return (urlParams.get('pin') || sessionStorage.getItem('unc_vault_pin') || '').trim();
   });
   const [isUnlocked, setIsUnlocked] = useState(() => {
     const savedKey = sessionStorage.getItem('unc_vault_key');
@@ -44,6 +46,43 @@ export const SealPage: React.FC = () => {
   });
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // 1-Click Direct Unlock via Discord DM Link (?key=...&pin=...)
+  useEffect(() => {
+    if (isUnlocked) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlKey = (urlParams.get('key') || '').trim().toUpperCase();
+    const urlPin = (urlParams.get('pin') || '').trim();
+
+    if (urlKey && urlPin) {
+      setIsVerifying(true);
+      fetch('/api/verify-vault-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: urlKey, pin: urlPin }),
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            const data = await res.json();
+            if (data.valid) {
+              setIsUnlocked(true);
+              sessionStorage.setItem('unc_vault_key', urlKey);
+              sessionStorage.setItem('unc_vault_pin', urlPin);
+              sessionStorage.setItem('unc_vault_verified', 'true');
+              sound.playHarmonic();
+              confetti({
+                particleCount: 60,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ffffff', '#a1a1aa', '#10b981'],
+              });
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsVerifying(false));
+    }
+  }, [isUnlocked]);
 
   // Tab View: 'studio' (Node Profile Editor) vs 'embed' (Seal Snippet)
   const [activeTab, setActiveTab] = useState<'studio' | 'embed'>('studio');

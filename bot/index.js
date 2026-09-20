@@ -1739,13 +1739,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
           asciiCert + '\n\n' +
           (roleGranted && webringRole ? `🛡️ **Role Awarded:** You have been assigned <@&${webringRole.id}> in the server!\n\n` : '') +
           `🔒 **IMPORTANT SECURITY NOTICE (KEEP YOUR PIN PRIVATE):**\n` +
-          `Your 6-digit PIN (\`${secretPin}\`) is strictly private. It acts as your master password to edit your node at [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal). Even staff members cannot edit your node without this PIN.\n\n` +
           `**Next Steps:**\n` +
-          `1. Open [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal)\n` +
-          `2. Enter your Ring Key: \`${uniqueKey}\`\n` +
-          `3. Enter your Secret PIN: \`${secretPin}\`\n` +
-          `4. Configure your profile in the Sovereign Node Studio and click **Save & Publish Node**\n` +
-          `5. Copy the webring seal code and embed it into your personal website footer.`
+          `✨ **[Click Here for 1-Click Vault Access](https://the-uncommons.vercel.app/seal?key=${uniqueKey}&pin=${secretPin})**\n\n` +
+          `Or enter manually at [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal):\n` +
+          `• **Ring Key:** \`${uniqueKey}\`\n` +
+          `• **Secret PIN:** \`${secretPin}\`\n\n` +
+          `Configure your profile in the Sovereign Node Studio, claim your open slot, and click **Save & Publish Node** to go live globally!`
         )
         .setColor(0x10b981)
         .setFooter({ text: 'The Uncommons • Sealed by Inspector Bartholomew (Chief Admissions Auditor)' });
