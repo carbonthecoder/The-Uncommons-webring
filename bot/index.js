@@ -1718,27 +1718,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         key: uniqueKey,
       });
 
-      const issuedDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      const asciiCert = 
-`\`\`\`text
-+==================================================================+
-|                       THE UNCOMMONS WEBRING                      |
-|                  SOVEREIGN ADMISSION CERTIFICATE                 |
-+==================================================================+
-|  MEMBER:        ${applicantUser.tag}
-|  SERIAL:        ${ticketId}
-|  DATE ISSUED:   ${issuedDate}
-|  STATUS:        RATIFIED & VERIFIED
-+------------------------------------------------------------------+
-|  RING KEY:      ${uniqueKey}
-|  SECRET PIN:    ${secretPin}  <-- KEEP THIS PRIVATE
-+------------------------------------------------------------------+
-|  2-STEP VERIFICATION INSTRUCTIONS:                               |
-|  1. Visit: https://the-uncommons.vercel.app/seal                 |
-|  2. Enter BOTH your Ring Key AND your 6-digit PIN.               |
-|  3. Configure your node profile and publish to the webring.      |
-|  4. Place the circular webring seal snippet on your site footer. |
-+==================================================================+
+
       // Minimal Clean DM for applicant
       let dmSuccess = true;
       const dmEmbed = new EmbedBuilder()
