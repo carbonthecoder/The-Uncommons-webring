@@ -146,6 +146,12 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
     let pulseProgress = 0; // Wave packet progress 0 -> 1
 
     const render = () => {
+      // Pause 3D canvas rendering while any modal is open (body overflow locked) to prevent GPU choke
+      if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
+        animationId = requestAnimationFrame(render);
+        return;
+      }
+
       const rect = canvas.getBoundingClientRect();
       const width = rect.width;
       const height = rect.height;

@@ -20,8 +20,8 @@ export const MongoSaveOverlay: React.FC<MongoSaveOverlayProps> = ({
     : slotId || 'Genesis Slot';
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/96 backdrop-blur-md rounded-xl select-none">
-      <div className="w-full max-w-sm p-6 rounded-lg border border-zinc-800 bg-[#0c0c0e] shadow-2xl flex flex-col items-center text-center space-y-4">
+    <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b] rounded-lg select-none">
+      <div className="w-full max-w-sm p-6 rounded border border-zinc-800 bg-[#0c0c0e] flex flex-col items-center text-center space-y-4">
         {/* Orbital Theme Animation */}
         <SovereignOrbitalLoader size={56} />
 

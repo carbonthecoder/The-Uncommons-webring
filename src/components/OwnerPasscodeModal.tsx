@@ -51,8 +51,8 @@ export const OwnerPasscodeModal: React.FC<OwnerPasscodeModalProps> = ({ isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
-      <div className="relative w-full max-w-sm p-6 bg-[#09090b] border border-zinc-800 rounded-xl shadow-2xl text-zinc-200 font-mono space-y-5">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90">
+      <div className="relative w-full max-w-sm p-6 bg-[#09090b] border border-zinc-800 rounded-lg text-zinc-200 font-mono space-y-5">
         <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300">
             <Lock className="w-3.5 h-3.5 text-zinc-400" />
@@ -103,13 +103,13 @@ export const OwnerPasscodeModal: React.FC<OwnerPasscodeModalProps> = ({ isOpen, 
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-800 rounded transition-colors cursor-pointer"
+              className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-800 rounded cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded transition-colors flex items-center gap-1.5 cursor-pointer shadow"
+              className="px-4 py-1.5 text-xs bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded flex items-center gap-1.5 cursor-pointer"
             >
               <span>Authenticate</span>
               <ArrowRight className="w-3.5 h-3.5" />
