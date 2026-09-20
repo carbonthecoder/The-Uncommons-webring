@@ -11,7 +11,12 @@ import {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  ActivityType
+  ActivityType,
+  UserSelectMenuBuilder,
+  RoleSelectMenuBuilder,
+  SlashCommandBuilder,
+  REST,
+  Routes
 } from 'discord.js';
 import express from 'express';
 import cors from 'cors';
@@ -25,6 +30,11 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configPath = path.join(__dirname, 'config.json');
 let config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+// Helper to persist config changes
+function saveConfig() {
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+}
 
 // Initialize Discord Client with valid, non-privileged Gateway intents
 const client = new Client({
@@ -491,7 +501,14 @@ function isReviewer(member) {
     }
   }
 
-  // 4. Role fallbacks if set
+  // 4. Configured Reviewer Role IDs array
+  if (Array.isArray(config.reviewerRoleIds)) {
+    if (config.reviewerRoleIds.some(roleId => member.roles.cache.has(roleId))) {
+      return true;
+    }
+  }
+
+  // 5. Role fallbacks if set
   if (config.seniorStaffRoleId && member.roles.cache.has(config.seniorStaffRoleId)) {
     return true;
   }
@@ -500,6 +517,22 @@ function isReviewer(member) {
   }
 
   return false;
+}
+
+// Generate formatted pings for all reviewer roles and designated individuals
+function getReviewerPings(guild) {
+  const roleIds = new Set([
+    ...(Array.isArray(config.reviewerRoleIds) ? config.reviewerRoleIds : []),
+    ...(config.seniorStaffRoleId ? [config.seniorStaffRoleId] : []),
+    ...(config.staffRoleId ? [config.staffRoleId] : [])
+  ]);
+  const pings = Array.from(roleIds).map(id => `<@&${id}>`);
+  if (Array.isArray(config.reviewerUsernames)) {
+    config.reviewerUsernames.forEach(u => {
+      if (/^\d{17,20}$/.test(u)) pings.push(`<@${u}>`);
+    });
+  }
+  return pings.length > 0 ? pings.join(' ') : 'Admissions Reviewers';
 }
 
 // Check if a member has senior ratification clearance
@@ -791,8 +824,8 @@ app.post('/api/create-ticket', async (req, res) => {
       .setFooter({ text: 'Review Turnaround: 2–3 hours (rarely 4–5h) • Classic English Protocol' })
       .setTimestamp();
 
-    // 5 Action Controls
-    const row = new ActionRowBuilder().addComponents(
+    // Action Controls (2 Rows)
+    const row1 = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`open_application_modal:${member.id}:${ticketId}`)
         .setLabel('📝 Open Application Dialog')
@@ -801,6 +834,13 @@ app.post('/api/create-ticket', async (req, res) => {
         .setCustomId(`claim_review:${member.id}:${ticketId}`)
         .setLabel('⚡ Take Over Review')
         .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId(`pass_review:${member.id}:${ticketId}`)
+        .setLabel('🔁 Pass Review (AFK)')
+        .setStyle(ButtonStyle.Secondary)
+    );
+
+    const row2 = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`ping_senior:${member.id}:${ticketId}`)
         .setLabel('📢 Signal Council')
@@ -823,7 +863,7 @@ app.post('/api/create-ticket', async (req, res) => {
     await ticketChannel.send({
       content: channelDispatch,
       embeds: [embed],
-      components: [row],
+      components: [row1, row2],
     });
 
     return res.json({
@@ -919,11 +959,201 @@ app.post('/api/save-node', async (req, res) => {
 });
 
 // ============================================================================
-// DISCORD INTERACTION LISTENER (BUTTONS & MODALS)
+// DISCORD INTERACTION LISTENER (COMMANDS, SELECT MENUS, BUTTONS & MODALS)
 // ============================================================================
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
-    // 1. MODAL SUBMIT HANDLER
+    // 1. SLASH COMMANDS
+    if (interaction.isChatInputCommand()) {
+      const { commandName } = interaction;
+
+      if (commandName === 'staff') {
+        if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !isSeniorStaff(interaction.member)) {
+          return interaction.reply({
+            content: '⛔ Only Server Managers, Founders, or Senior Staff can manage Admissions reviewers.',
+            ephemeral: true,
+          });
+        }
+
+        const sub = interaction.options.getSubcommand();
+
+        if (sub === 'add-user') {
+          const target = interaction.options.getUser('user');
+          if (!Array.isArray(config.reviewerUsernames)) config.reviewerUsernames = [];
+          if (!config.reviewerUsernames.includes(target.id)) {
+            config.reviewerUsernames.push(target.id);
+            saveConfig();
+          }
+          return interaction.reply({
+            content: `✅ **REVIEWER AUTHORIZED:** <@${target.id}> (\`${target.tag}\`) is now an authorized Admissions Reviewer.`,
+            ephemeral: true,
+          });
+        }
+
+        if (sub === 'remove-user') {
+          const target = interaction.options.getUser('user');
+          if (Array.isArray(config.reviewerUsernames)) {
+            config.reviewerUsernames = config.reviewerUsernames.filter(u => u !== target.id && u !== target.username);
+            saveConfig();
+          }
+          return interaction.reply({
+            content: `🗑️ **REVIEWER REMOVED:** <@${target.id}> is no longer an authorized reviewer.`,
+            ephemeral: true,
+          });
+        }
+
+        if (sub === 'add-role') {
+          const role = interaction.options.getRole('role');
+          if (!Array.isArray(config.reviewerRoleIds)) config.reviewerRoleIds = [];
+          if (!config.reviewerRoleIds.includes(role.id)) {
+            config.reviewerRoleIds.push(role.id);
+            saveConfig();
+          }
+          return interaction.reply({
+            content: `✅ **ROLE AUTHORIZED:** Members with role <@&${role.id}> can now review admissions tickets & evaluate dossiers.`,
+            ephemeral: true,
+          });
+        }
+
+        if (sub === 'remove-role') {
+          const role = interaction.options.getRole('role');
+          if (Array.isArray(config.reviewerRoleIds)) {
+            config.reviewerRoleIds = config.reviewerRoleIds.filter(r => r !== role.id);
+            saveConfig();
+          }
+          return interaction.reply({
+            content: `🗑️ **ROLE REMOVED:** Role <@&${role.id}> removed from authorized reviewer roles.`,
+            ephemeral: true,
+          });
+        }
+
+        if (sub === 'list') {
+          const rolesList = (config.reviewerRoleIds && config.reviewerRoleIds.length > 0)
+            ? config.reviewerRoleIds.map(id => `• <@&${id}>`).join('\n')
+            : '*None configured*';
+
+          const usersList = (config.reviewerUsernames && config.reviewerUsernames.length > 0)
+            ? config.reviewerUsernames.map(u => `• ${/^\d+$/.test(u) ? `<@${u}>` : `@${u}`}`).join('\n')
+            : '*None configured*';
+
+          const embed = new EmbedBuilder()
+            .setTitle('🛡️ The Uncommons // Admissions Review Staff Configuration')
+            .setColor(0x10b981)
+            .addFields(
+              { name: '👥 Authorized Reviewer Roles', value: rolesList, inline: false },
+              { name: '👤 Individual Reviewers', value: usersList, inline: false },
+              { name: '🌐 Webring Member Role', value: config.webringRoleId ? `<@&${config.webringRoleId}>` : 'Auto-created', inline: true },
+              { name: '🔒 Staff Key Ledger', value: config.keyLedgerChannelId ? `<#${config.keyLedgerChannelId}>` : 'Not set', inline: true },
+              { name: '👑 Founder PIN Vault', value: config.founderVaultChannelId ? `<#${config.founderVaultChannelId}>` : 'Not set', inline: true }
+            )
+            .setFooter({ text: 'Inspector Bartholomew • Chief Admissions Auditor & Key Ledger Warden' })
+            .setTimestamp();
+
+          return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+
+        if (sub === 'panel') {
+          const roleRow = new ActionRowBuilder().addComponents(
+            new RoleSelectMenuBuilder()
+              .setCustomId('staff_panel_add_role')
+              .setPlaceholder('Select a role to add as Admissions Reviewer...')
+              .setMinValues(1)
+              .setMaxValues(1)
+          );
+
+          const userRow = new ActionRowBuilder().addComponents(
+            new UserSelectMenuBuilder()
+              .setCustomId('staff_panel_add_user')
+              .setPlaceholder('Select a user to add as Admissions Reviewer...')
+              .setMinValues(1)
+              .setMaxValues(1)
+          );
+
+          const panelEmbed = new EmbedBuilder()
+            .setTitle('⚙️ Admissions Staff Control Panel')
+            .setDescription(
+              'Use the dropdown menus below to authorize new staff or reviewer roles for **The Uncommons**.\n\n' +
+              'Reviewers can claim tickets, evaluate AI dossiers, and ratify candidate Ring Keys.'
+            )
+            .setColor(0x8b5cf6)
+            .setFooter({ text: 'Inspector Bartholomew • Staff Administration' });
+
+          return interaction.reply({ embeds: [panelEmbed], components: [roleRow, userRow], ephemeral: true });
+        }
+      }
+
+      if (commandName === 'pass-review') {
+        if (!isReviewer(interaction.member)) {
+          return interaction.reply({ content: '⛔ Only authorized reviewers can pass a review.', ephemeral: true });
+        }
+
+        const target = interaction.options.getUser('reviewer');
+        if (target) {
+          return interaction.reply({
+            content: `🔁 **REVIEW HANDED OFF:** Reviewer <@${interaction.user.id}> is AFK/busy and passed review to <@${target.id}>!\n<@${target.id}>, please inspect the candidate dossier and continue evaluation.`,
+          });
+        } else {
+          const pings = getReviewerPings(interaction.guild);
+          return interaction.reply({
+            content: `📢 **TICKET RE-OPENED FOR REVIEW (REVIEWER AFK):**\nReviewer <@${interaction.user.id}> is stepping away from this ticket.\nReviewers (${pings}), please click **[ ⚡ Take Over Review ]** to claim!`,
+          });
+        }
+      }
+      return;
+    }
+
+    // 2. SELECT MENUS (HANDOFF & STAFF CONFIG)
+    if (interaction.isUserSelectMenu()) {
+      if (interaction.customId.startsWith('handoff_select_user:')) {
+        const parts = interaction.customId.split(':');
+        const applicantId = parts[1];
+        const ticketId = parts[2];
+        const targetUserId = interaction.values[0];
+
+        await interaction.update({
+          content: `✅ Transferred review to <@${targetUserId}>.`,
+          components: [],
+        });
+
+        const candidateText = applicantId ? `(Candidate: <@${applicantId}>)` : '';
+        const ticketText = ticketId ? `ticket \`${ticketId}\`` : 'this ticket';
+
+        await interaction.channel.send({
+          content: `🔁 **REVIEW HANDED OFF:** Reviewer <@${interaction.user.id}> is AFK/busy and transferred active review of ${ticketText} ${candidateText} to <@${targetUserId}>!\n<@${targetUserId}>, please inspect the candidate dossier and continue the evaluation.`,
+        });
+        return;
+      }
+
+      if (interaction.customId === 'staff_panel_add_user') {
+        const userId = interaction.values[0];
+        if (!Array.isArray(config.reviewerUsernames)) config.reviewerUsernames = [];
+        if (!config.reviewerUsernames.includes(userId)) {
+          config.reviewerUsernames.push(userId);
+          saveConfig();
+        }
+        return interaction.reply({
+          content: `✅ **REVIEWER AUTHORIZED:** <@${userId}> is now an authorized Admissions Reviewer.`,
+          ephemeral: true,
+        });
+      }
+    }
+
+    if (interaction.isRoleSelectMenu()) {
+      if (interaction.customId === 'staff_panel_add_role') {
+        const roleId = interaction.values[0];
+        if (!Array.isArray(config.reviewerRoleIds)) config.reviewerRoleIds = [];
+        if (!config.reviewerRoleIds.includes(roleId)) {
+          config.reviewerRoleIds.push(roleId);
+          saveConfig();
+        }
+        return interaction.reply({
+          content: `✅ **ROLE AUTHORIZED:** Members with role <@&${roleId}> can now review admissions tickets.`,
+          ephemeral: true,
+        });
+      }
+    }
+
+    // 3. MODAL SUBMIT HANDLER
     if (interaction.isModalSubmit()) {
       const [action, applicantId, ticketId] = interaction.customId.split(':');
 
@@ -979,15 +1209,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
         .setFooter({ text: 'Inspector Bartholomew • Chief Admissions Auditor & Key Ledger Warden' })
         .setTimestamp();
 
-      const staffControls = new ActionRowBuilder().addComponents(
+      const staffRow1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId(`claim_review:${applicantId}:${ticketId}`)
           .setLabel('⚡ Take Over Review')
           .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
+          .setCustomId(`pass_review:${applicantId}:${ticketId}`)
+          .setLabel('🔁 Pass Review (AFK)')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
           .setCustomId(`ping_senior:${applicantId}:${ticketId}`)
           .setLabel('📢 Signal Council')
-          .setStyle(ButtonStyle.Secondary),
+          .setStyle(ButtonStyle.Secondary)
+      );
+
+      const staffRow2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId(`ratify_key:${applicantId}:${ticketId}`)
           .setLabel('🟢 Ratify & Forge Key')
@@ -1001,7 +1238,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.channel.send({
         content: `📥 **NEW APPLICATION SUBMITTED** by <@${applicantId}>:`,
         embeds: [answersEmbed, aiEmbed],
-        components: [staffControls],
+        components: [staffRow1, staffRow2],
       });
       return;
     }
@@ -1106,6 +1343,64 @@ client.on(Events.InteractionCreate, async (interaction) => {
       content: `⚡ **REVIEW CLAIMED:** Reviewer <@${interaction.user.id}> has taken over active review for ticket \`${ticketId}\` (Candidate: <@${applicantId}>).`,
     });
     return;
+  }
+
+  // PASS REVIEW / HANDOFF (AFK / BUSY)
+  if (action === 'pass_review') {
+    if (!isReviewer(guildMember)) {
+      return interaction.reply({
+        content: '⛔ Only authorized reviewers can hand off an active ticket.',
+        ephemeral: true,
+      });
+    }
+
+    const userSelectRow = new ActionRowBuilder().addComponents(
+      new UserSelectMenuBuilder()
+        .setCustomId(`handoff_select_user:${applicantId}:${ticketId}`)
+        .setPlaceholder('Select a reviewer to hand off to...')
+        .setMinValues(1)
+        .setMaxValues(1)
+    );
+
+    const buttonRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`handoff_broadcast:${applicantId}:${ticketId}`)
+        .setLabel('📢 Broadcast to All Staff (Step Down)')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId(`handoff_cancel:${applicantId}:${ticketId}`)
+        .setLabel('❌ Cancel')
+        .setStyle(ButtonStyle.Secondary)
+    );
+
+    return interaction.reply({
+      content: '🔁 **Review Handoff Panel**\nAre you AFK or busy? Choose a specific reviewer below to hand off this dossier, or broadcast to all admissions staff to release it:',
+      components: [userSelectRow, buttonRow],
+      ephemeral: true,
+    });
+  }
+
+  // BROADCAST HANDOFF / STEP DOWN
+  if (action === 'handoff_broadcast') {
+    const pings = getReviewerPings(interaction.guild);
+
+    await interaction.update({
+      content: '📢 Handoff broadcasted to all admissions staff.',
+      components: [],
+    });
+
+    await interaction.channel.send({
+      content: `📢 **TICKET RE-OPENED FOR REVIEW (REVIEWER AFK):**\nReviewer <@${interaction.user.id}> is stepping away from ticket \`${ticketId || 'Active'}\` (Candidate: <@${applicantId}>).\nReviewers (${pings}), please click **[ ⚡ Take Over Review ]** below to claim this candidate's application!`,
+    });
+    return;
+  }
+
+  // CANCEL HANDOFF
+  if (action === 'handoff_cancel') {
+    return interaction.update({
+      content: 'Handoff cancelled.',
+      components: [],
+    });
   }
 
   // SIGNAL COUNCIL / PING REVIEWERS
@@ -1422,11 +1717,68 @@ client.once(Events.ClientReady, async () => {
         console.log(`👑 Founder PIN Vault Channel: #${vault?.name} (${vault?.id})`);
       }
       console.log(`🎭 Webring Member Role: ${role?.name} (${role?.id})`);
+
+      // Deploy & sync Guild Slash Commands (/staff and /pass-review)
+      await registerSlashCommands();
     }
   } catch (err) {
     console.warn('Initial readiness check warning:', err.message);
   }
 });
+
+// Register Guild Slash Commands (/staff and /pass-review)
+async function registerSlashCommands() {
+  const commands = [
+    new SlashCommandBuilder()
+      .setName('staff')
+      .setDescription('Manage Uncommons Admissions review staff and reviewer roles')
+      .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+      .addSubcommand(sub => 
+        sub.setName('add-user')
+          .setDescription('Authorize an individual user to review admissions applications')
+          .addUserOption(opt => opt.setName('user').setDescription('The user to authorize as reviewer').setRequired(true))
+      )
+      .addSubcommand(sub => 
+        sub.setName('remove-user')
+          .setDescription('Revoke application review permissions from a user')
+          .addUserOption(opt => opt.setName('user').setDescription('The user to revoke').setRequired(true))
+      )
+      .addSubcommand(sub => 
+        sub.setName('add-role')
+          .setDescription('Authorize an entire Discord role to review admissions applications')
+          .addRoleOption(opt => opt.setName('role').setDescription('The role to authorize').setRequired(true))
+      )
+      .addSubcommand(sub => 
+        sub.setName('remove-role')
+          .setDescription('Remove a role from authorized reviewer roles')
+          .addRoleOption(opt => opt.setName('role').setDescription('The role to remove').setRequired(true))
+      )
+      .addSubcommand(sub => 
+        sub.setName('list')
+          .setDescription('List all authorized admissions reviewer roles and members')
+      )
+      .addSubcommand(sub => 
+        sub.setName('panel')
+          .setDescription('Open the interactive Admissions Staff Configuration Panel')
+      ),
+
+    new SlashCommandBuilder()
+      .setName('pass-review')
+      .setDescription('Pass active ticket review to another staff member if you are AFK or busy')
+      .addUserOption(opt => opt.setName('reviewer').setDescription('The staff member to hand off review to (optional)').setRequired(false))
+  ];
+
+  try {
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
+    await rest.put(
+      Routes.applicationGuildCommands(client.user.id, config.guildId),
+      { body: commands.map(c => c.toJSON()) }
+    );
+    console.log('✨ Registered Discord Slash Commands: /staff, /pass-review');
+  } catch (err) {
+    console.warn('Could not register slash commands:', err.message);
+  }
+}
 
 // Start API Server
 const PORT = process.env.PORT || config.port || 3001;

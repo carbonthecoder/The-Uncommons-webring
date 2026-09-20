@@ -3,6 +3,11 @@
   "ticketCategoryId": "1550541993250267166",
   "staffRoleId": "1534750546400116789",
   "seniorStaffRoleId": "1534750849006567484",
+  "reviewerRoleIds": [
+    "1534750546400116789",
+    "1534750849006567484",
+    "1534751095815929948"
+  ],
   "seniorStaffUsernames": [],
   "reviewerUsernames": [],
   "ringKey": "UNC-ALPHA-2026",
