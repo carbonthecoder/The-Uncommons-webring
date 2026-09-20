@@ -1640,25 +1640,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         answers: { name, obsession, selfTaught, projects, why },
       });
 
-      // Artificial buffer for evaluation processing (5 seconds)
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // 1. Staff-Only Confidential AI Review Report (Sent to #council-review ONLY)
-      const staffAiEmbed = new EmbedBuilder()
-        .setTitle(`🕵️ Inspector Bartholomew // Staff Briefing [${ticketId}]`)
-        .setDescription(
-          `Candidate: <@${applicantId}> (\`${interaction.user.username}\`)\n` +
-          `Verdict: **${aiResult.verdict}**\n\n` +
-          `**Technical Assessment:**\n${aiResult.summary}`
-        )
-        .setColor(0x8b5cf6)
-        .addFields({
-          name: '🎙️ 5 Suggested Interview Questions for Staff',
-          value: aiResult.questions.map((q, idx) => `**${idx + 1}.** ${q}`).join('\n\n'),
-          inline: false,
-        })
-        .setFooter({ text: 'Confidential Staff Briefing • Inspector Bartholomew' })
-        .setTimestamp();
+      // Save AI evaluation result in local ticket status for staff briefing lookup
+      saveTicketStatus(ticketId, {
+        status: 'under_review',
+        applicantId,
+        username: interaction.user.username,
+        aiResult,
+      });
 
       const reviewerPings = getReviewerPings(interaction.guild);
 
@@ -1668,8 +1656,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setLabel('⚡ Take Over Review')
           .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
-          .setCustomId(`pass_review:${applicantId}:${ticketId}`)
-          .setLabel('🔁 Pass Review (AFK)')
+          .setCustomId(`view_briefing:${applicantId}:${ticketId}`)
+          .setLabel('🔍 Staff Briefing & Questions')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId(`ping_senior:${applicantId}:${ticketId}`)
@@ -1691,7 +1679,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // Clean Minimal Staff Controls Embed for the Ticket Channel
       const staffControlsEmbed = new EmbedBuilder()
         .setTitle(`⚙️ Admissions Reviewer Controls // Docket ${ticketId}`)
-        .setDescription(`Reviewers: Inspect the dossier above. Use these control buttons to claim, signal council, or ratify/reject the applicant:`)
+        .setDescription(`Reviewers: Inspect the candidate dossier above. Click **[ 🔍 Staff Briefing & Questions ]** for confidential AI questions or use the buttons below to manage the candidate:`)
         .setColor(0x8b5cf6)
         .setFooter({ text: 'The Uncommons Admissions • Staff Operations' });
 
@@ -1701,28 +1689,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         embeds: [answersEmbed, staffControlsEmbed],
         components: [staffRow1, staffRow2],
       });
-
-      // In Staff Council Channel (#council-review): Send confidential Bartholomew briefing with 5 suggested questions
-      if (config.councilChannelId) {
-        try {
-          const councilCh = interaction.guild.channels.cache.get(config.councilChannelId) || await interaction.guild.channels.fetch(config.councilChannelId);
-          if (councilCh) {
-            const jumpBtn = new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setLabel('⚡ Jump to Candidate Docket')
-                .setStyle(ButtonStyle.Link)
-                .setURL(`https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}`)
-            );
-            await councilCh.send({
-              content: `🕵️ **NEW CANDIDATE DOSSIER AUDIT** for <@${applicantId}> [${ticketId}]`,
-              embeds: [staffAiEmbed],
-              components: [jumpBtn],
-            });
-          }
-        } catch (cErr) {
-          console.warn('Could not post staff briefing to council channel:', cErr.message);
-        }
-      }
       return;
     }
     return;
@@ -1735,7 +1701,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const guildMember = interaction.member;
 
   // Applicant check: Non-admin applicants cannot click reviewer control buttons
-  if (['claim_review', 'pass_review', 'ping_senior', 'ratify_key', 'close_ticket'].includes(action)) {
+  if (['claim_review', 'view_briefing', 'pass_review', 'ping_senior', 'ratify_key', 'close_ticket'].includes(action)) {
     const isAdmin = guildMember.permissions.has(PermissionFlagsBits.Administrator) || isReviewer(guildMember);
     if (interaction.user.id === applicantId && !isAdmin) {
       return interaction.reply({
@@ -1749,6 +1715,49 @@ client.on(Events.InteractionCreate, async (interaction) => {
         ephemeral: true,
       });
     }
+  }
+
+  // VIEW STAFF BRIEFING & SUGGESTED QUESTIONS (EPHEMERAL - ONLY VISIBLE TO STAFF WHO CLICKED)
+  if (action === 'view_briefing') {
+    const isAdmin = guildMember.permissions.has(PermissionFlagsBits.Administrator) || isReviewer(guildMember);
+    if (!isAdmin) {
+      return interaction.reply({
+        content: '⛔ Only authorized admissions reviewers can view staff briefings.',
+        ephemeral: true,
+      });
+    }
+
+    const allStatus = loadTicketStatus();
+    const ticketData = allStatus[ticketId];
+    const aiResult = ticketData?.aiResult;
+
+    if (!aiResult) {
+      return interaction.reply({
+        content: '⚠️ No AI briefing found for this ticket yet.',
+        ephemeral: true,
+      });
+    }
+
+    const staffAiEmbed = new EmbedBuilder()
+      .setTitle(`🕵️ Inspector Bartholomew // Staff Briefing [${ticketId}]`)
+      .setDescription(
+        `Candidate: <@${applicantId}>\n` +
+        `Verdict: **${aiResult.verdict}**\n\n` +
+        `**Technical Assessment:**\n${aiResult.summary}`
+      )
+      .setColor(0x8b5cf6)
+      .addFields({
+        name: '🎙️ 5 Suggested Interview Questions for Staff (Copy/Send if needed)',
+        value: aiResult.questions.map((q, idx) => `**${idx + 1}.** ${q}`).join('\n\n'),
+        inline: false,
+      })
+      .setFooter({ text: 'Confidential Staff Briefing • Ephemeral (Only visible to you)' })
+      .setTimestamp();
+
+    return interaction.reply({
+      embeds: [staffAiEmbed],
+      ephemeral: true,
+    });
   }
 
   // OPEN APPLICATION MODAL DIALOG
