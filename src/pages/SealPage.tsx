@@ -25,6 +25,7 @@ import {
 import type { Member } from '../data/members';
 import { saveCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
+import { MongoSaveOverlay } from '../components/MongoSaveOverlay';
 
 
 export const SealPage: React.FC = () => {
@@ -447,6 +448,7 @@ export const SealPage: React.FC = () => {
     }
 
     setIsSaving(true);
+    const startTime = Date.now();
 
     try {
       // 1. Save to localStorage immediately
@@ -462,7 +464,7 @@ export const SealPage: React.FC = () => {
         });
         if (res.ok) {
           console.log('Successfully authenticated & written to cloud ledger');
-          await syncServerNodes();
+          await syncServerNodes(true);
         } else {
           const errData = await res.json().catch(() => ({}));
           if (errData.error) {
@@ -473,6 +475,11 @@ export const SealPage: React.FC = () => {
         // Backend offline or running in standalone client mode, local state is persisted
       }
 
+      // Smooth buffer delay (~1.6s) to allow high-tech multi-step animation to play smoothly
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1600) {
+        await new Promise((resolve) => setTimeout(resolve, 1600 - elapsed));
+      }
 
       setSaveSuccess(`Node ${previewMember.id} (${previewMember.domain}) is verified and live in the Webring!`);
       sound.playHarmonic();
@@ -481,7 +488,7 @@ export const SealPage: React.FC = () => {
         particleCount: 65,
         spread: 80,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#ffffff', '#34d399'],
+        colors: ['#f59e0b', '#10b981', '#ffffff'],
       });
     } catch (err: unknown) {
       const error = err as Error;
@@ -880,7 +887,9 @@ export const SealPage: React.FC = () => {
           {/* DUAL COLUMN: LEFT = EDITOR, RIGHT = REAL-TIME TRIPLE LIVE PREVIEW */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* LEFT COLUMN: Input Form */}
-            <div className="lg:col-span-6 bg-zinc-950 border border-white/[0.08] rounded-xl p-5 sm:p-6 space-y-4">
+            <div className="relative lg:col-span-6 bg-zinc-950 border border-white/[0.08] rounded-xl p-5 sm:p-6 space-y-4 overflow-hidden">
+              <MongoSaveOverlay isSaving={isSaving} targetDomain={domain} slotId={slotId} />
+
               <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-zinc-400" />

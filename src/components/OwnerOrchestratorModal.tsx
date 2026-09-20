@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useLiveMembers, syncServerNodes, broadcastRingUpdate, type Member } from '../data/members';
+import { MongoSaveOverlay } from './MongoSaveOverlay';
 
 interface OwnerOrchestratorModalProps {
   isOpen: boolean;
@@ -93,6 +94,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
     }
 
     setIsSaving(true);
+    const startTime = Date.now();
 
     const updatedNode: Member = {
       id: selectedSlotId,
@@ -121,6 +123,12 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
           pin: '000000',
         }),
       });
+
+      // Smooth buffer delay (~1.6s) to allow multi-step loading animation to render cleanly
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1600) {
+        await new Promise((resolve) => setTimeout(resolve, 1600 - elapsed));
+      }
 
       if (res.ok) {
         await syncServerNodes(true);
@@ -373,7 +381,9 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
           </div>
 
           {/* Quick Node Editor Form */}
-          <div className="bg-zinc-900/70 border border-white/10 rounded-xl p-5 space-y-4">
+          <div className="relative bg-zinc-900/70 border border-white/10 rounded-xl p-5 space-y-4 overflow-hidden">
+            <MongoSaveOverlay isSaving={isSaving} targetDomain={domain} slotId={selectedSlotId} />
+
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
