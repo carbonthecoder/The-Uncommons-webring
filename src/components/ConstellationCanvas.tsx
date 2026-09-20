@@ -28,27 +28,33 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
   // Virtualize ring to at least 8 celestial nodes so the 3D orbit remains intact with open candidate slots
   const displayNodes = useMemo(() => {
-    if (members.length >= 8) return members;
-    const slots: Member[] = [...members];
-    for (let i = members.length; i < 8; i++) {
-      slots.push({
-        id: `NODE-00${i + 1}`,
-        name: `Candidate Slot #${i + 1}`,
-        handle: 'open_slot',
-        domain: `slot-00${i + 1}.open`,
-        url: '/apply',
-        field: 'Awaiting Council Admission in #council-review',
-        bio: 'This sovereign slot is unassigned. Apply via Kavyon #council-review with your personal domain and proof of work to claim it.',
-        proofOfWork: 'Open for admitted polymaths.',
-        proofUrl: '/apply',
-        tags: ['Open Slot', 'Awaiting Admission'],
-        joinDate: '2026',
-        verified: false,
-        ringPosition: i + 1,
-        status: 'reviewing',
-      });
+    if (members.length >= 8) {
+      return [...members].sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
     }
-    return slots;
+    const existingIds = new Set(members.map(m => m.id));
+    const slots: Member[] = [...members];
+    for (let i = 1; i <= 8; i++) {
+      const id = `NODE-00${i}`;
+      if (!existingIds.has(id) && slots.length < 8) {
+        slots.push({
+          id,
+          name: 'Awaiting Candidate',
+          handle: 'vacant',
+          domain: `unclaimed-slot-00${i}.xyz`,
+          url: '/apply',
+          field: 'Open Genesis Vacancy',
+          bio: `Genesis vacancy slot #${i}. Applications open via #council-review in Kavyon Discord.`,
+          proofOfWork: 'Awaiting candidate build submission.',
+          proofUrl: '/apply',
+          tags: ['Genesis', 'Vacancy'],
+          joinDate: '2026',
+          verified: false,
+          ringPosition: i,
+          status: 'reviewing',
+        });
+      }
+    }
+    return slots.sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
   }, [members]);
 
   const activeMember = displayNodes[activeNodeIndex] || displayNodes[0];
@@ -104,7 +110,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [prevNode, nextNode, activeNodeIndex, members, onSelectMember]);
+  }, [prevNode, nextNode, activeNodeIndex, displayNodes, onSelectMember]);
 
   // Canvas rendering loop
   useEffect(() => {
@@ -537,7 +543,7 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
         <div className="absolute bottom-3 inset-x-4 z-10 flex items-center justify-between text-[11px] font-mono text-zinc-500 pointer-events-none">
           <div>PULSE: CIRCULAR WAVE PACKETS ACTIVE</div>
           <div className="hidden sm:block">
-            {members.length} VERIFIED NODE &bull; {Math.max(0, displayNodes.length - members.length)} OPEN CANDIDATE SLOTS
+            {displayNodes.filter((m) => m.verified && m.domain && !m.domain.includes('unclaimed') && m.handle !== 'vacant').length} VERIFIED NODES &bull; {displayNodes.filter((m) => !m.verified || !m.domain || m.domain.includes('unclaimed') || m.handle === 'vacant').length} OPEN CANDIDATE SLOTS
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { sound } from '../utils/audio';
 import confetti from 'canvas-confetti';
 import { Disc, Copy, Check, Terminal, ExternalLink, Sparkles, Send, ShieldAlert, CheckCircle2, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { dispatchApplicationToDiscord, checkCooldown, checkDiscordServerMembership, DISCORD_LINKS, type DiscordMemberCheck } from '../utils/discord';
+import { SovereignOrbitalLoader } from '../components/SovereignOrbitalLoader';
 
 interface StoredTicket {
   ticketId: string;
@@ -496,8 +497,8 @@ export const ApplyPage: React.FC = () => {
                   1. YOUR DISCORD USERNAME (MUST BE IN KAVYON SERVER) *
                 </label>
                 {liveCheckStatus === 'checking' && (
-                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 animate-spin text-emerald-400" />
+                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5">
+                    <SovereignOrbitalLoader size={12} />
                     <span>Checking server membership...</span>
                   </span>
                 )}
@@ -646,7 +647,7 @@ export const ApplyPage: React.FC = () => {
             >
               {isSubmitting ? (
                 <>
-                  <Sparkles className="w-4 h-4 animate-spin" />
+                  <SovereignOrbitalLoader size={16} />
                   <span>Dispatching Ticket to #council-review...</span>
                 </>
               ) : cooldownRemaining > 0 ? (
@@ -656,7 +657,7 @@ export const ApplyPage: React.FC = () => {
                 </>
               ) : liveCheckStatus === 'checking' ? (
                 <>
-                  <Sparkles className="w-4 h-4 animate-spin" />
+                  <SovereignOrbitalLoader size={16} />
                   <span>Verifying Server Membership...</span>
                 </>
               ) : liveCheckStatus === 'not_found' ? (

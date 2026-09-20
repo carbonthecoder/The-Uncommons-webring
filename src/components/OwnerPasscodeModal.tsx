@@ -51,7 +51,7 @@ export const OwnerPasscodeModal: React.FC<OwnerPasscodeModalProps> = ({ isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
       <div className="relative w-full max-w-sm p-6 bg-[#09090b] border border-zinc-800 rounded-xl shadow-2xl text-zinc-200 font-mono space-y-5">
         <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300">

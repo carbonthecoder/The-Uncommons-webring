@@ -23,9 +23,10 @@ import {
   Layers
 } from 'lucide-react';
 import type { Member } from '../data/members';
-import { saveCustomNode, vacateCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
+import { saveCustomNode, saveGenesisSlot, vacateCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { MongoSaveOverlay } from '../components/MongoSaveOverlay';
+import { SovereignOrbitalLoader } from '../components/SovereignOrbitalLoader';
 
 
 export const SealPage: React.FC = () => {
@@ -452,11 +453,11 @@ export const SealPage: React.FC = () => {
     const startTime = Date.now();
 
     try {
-      // 1. Save to localStorage immediately
+      // 1. Save to local storage & genesis cache immediately
+      saveGenesisSlot(previewMember);
       saveCustomNode(previewMember);
-      window.dispatchEvent(new Event('unc_nodes_updated'));
 
-      // 2. Persist to bot backend with 2-step verification credentials
+      // 2. Persist to backend with 2-step verification credentials
       try {
         const res = await fetch('/api/save-node', {
           method: 'POST',
@@ -464,22 +465,16 @@ export const SealPage: React.FC = () => {
           body: JSON.stringify({ node: previewMember, key: passcode, pin }),
         });
         if (res.ok) {
-          console.log('Successfully authenticated & written to cloud ledger');
           await syncServerNodes(true);
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          if (errData.error) {
-            console.warn('Backend rejected save:', errData.error);
-          }
         }
       } catch {
         // Backend offline or running in standalone client mode, local state is persisted
       }
 
-      // Smooth buffer delay (~6.2s) to allow clean terminal saving sequence to play smoothly
+      // Smooth brief transition buffer
       const elapsed = Date.now() - startTime;
-      if (elapsed < 6200) {
-        await new Promise((resolve) => setTimeout(resolve, 6200 - elapsed));
+      if (elapsed < 400) {
+        await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       }
 
       setSaveSuccess(`Node ${previewMember.id} (${previewMember.domain}) is verified and live in the Webring!`);
@@ -669,7 +664,7 @@ export const SealPage: React.FC = () => {
             >
               {isVerifying ? (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                  <SovereignOrbitalLoader size={14} />
                   <span>Verifying 2-Step Credentials...</span>
                 </>
               ) : (
@@ -1115,7 +1110,7 @@ export const SealPage: React.FC = () => {
                 >
                   {isSaving ? (
                     <>
-                      <Sparkles className="w-4 h-4 animate-spin text-zinc-900" />
+                      <SovereignOrbitalLoader size={16} />
                       <span>Saving Across Multi-Cloud DB...</span>
                     </>
                   ) : (

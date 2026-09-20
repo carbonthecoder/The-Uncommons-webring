@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useLiveMembers } from '../data/members';
+import { useGenesisSlots } from '../data/members';
 import type { Member } from '../data/members';
 import { ConstellationCanvas } from '../components/ConstellationCanvas';
 import { MemberDossierModal } from '../components/MemberDossierModal';
@@ -9,8 +9,10 @@ import { ArrowRight, Disc, BookOpen, ExternalLink } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const allMembers = useLiveMembers();
-  const verifiedCount = allMembers.filter(m => m.verified).length;
+  const genesisSlots = useGenesisSlots();
+  const verifiedCount = genesisSlots.filter(
+    (m) => m.verified && m.domain && !m.domain.includes('unclaimed') && m.handle !== 'vacant'
+  ).length;
 
   return (
     <div className="space-y-16 sm:space-y-20 w-full">
@@ -65,7 +67,7 @@ export const HomePage: React.FC = () => {
       {/* 2. The 3D Orbital Canvas */}
       <section className="space-y-3">
         <ConstellationCanvas
-          members={allMembers}
+          members={genesisSlots}
           onSelectMember={setSelectedMember}
         />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] font-mono text-zinc-500 px-1 text-center sm:text-left">

@@ -11,7 +11,6 @@ import { GoPage } from './pages/GoPage';
 import { OwnerOrchestratorModal } from './components/OwnerOrchestratorModal';
 import { OwnerPasscodeModal } from './components/OwnerPasscodeModal';
 import { sound } from './utils/audio';
-import confetti from 'canvas-confetti';
 
 export default function App() {
   const liveMembers = useLiveMembers();
@@ -76,12 +75,6 @@ export default function App() {
             setIsPasscodeModalOpen(false);
             setIsOwnerModalOpen(true);
             sound.playOwnerChime();
-            confetti({
-              particleCount: 65,
-              spread: 75,
-              origin: { y: 0.6 },
-              colors: ['#ffffff', '#a1a1aa', '#71717a'],
-            });
           }}
         />
 

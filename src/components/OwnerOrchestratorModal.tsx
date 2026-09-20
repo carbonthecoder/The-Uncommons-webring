@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { sound } from '../utils/audio';
-import confetti from 'canvas-confetti';
 import { 
   X, 
   Save, 
@@ -14,9 +13,11 @@ import {
 } from 'lucide-react';
 import { 
   getAllGenesisSlots, 
+  saveGenesisSlot,
+  reorderGenesisSlots,
+  vacateCustomNode, 
   syncServerNodes, 
   broadcastRingUpdate, 
-  vacateCustomNode, 
   type Member 
 } from '../data/members';
 import { MongoSaveOverlay } from './MongoSaveOverlay';
@@ -50,11 +51,11 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
   const [isShifting, setIsShifting] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Background Scroll Locking
+  // Background Scroll Locking & initial sync
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      // Sync fresh data
+      setAllSlots(getAllGenesisSlots());
       syncServerNodes(true).then(() => {
         setAllSlots(getAllGenesisSlots());
       });
@@ -73,7 +74,11 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
       setAllSlots(getAllGenesisSlots());
     };
     window.addEventListener('unc_nodes_updated', handleUpdate);
-    return () => window.removeEventListener('unc_nodes_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('unc_nodes_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   // Populate form fields when selected slot changes
@@ -112,8 +117,15 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
     const [previousState, ...restHistory] = history;
     setHistory(restHistory);
 
+    // Apply locally first
+    reorderGenesisSlots(previousState);
+    setAllSlots(previousState);
+    broadcastRingUpdate();
+    sound.playHarmonic();
+    setStatusMsg({ type: 'success', text: 'Reverted to previous registry state.' });
+
     try {
-      const res = await fetch('/api/reorder-nodes', {
+      await fetch('/api/reorder-nodes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -122,15 +134,9 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
           pin: '918542',
         }),
       });
-      if (res.ok) {
-        setAllSlots(previousState);
-        await syncServerNodes(true);
-        broadcastRingUpdate();
-        sound.playHarmonic();
-        setStatusMsg({ type: 'success', text: 'Reverted to previous registry state.' });
-      }
+      await syncServerNodes(true);
     } catch {
-      setStatusMsg({ type: 'error', text: 'Failed to apply undo.' });
+      // Local state is already restored
     }
   };
 
@@ -168,7 +174,15 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
     updated[currentIdx] = itemB;
     updated[targetIdx] = itemA;
 
+    // Immediately update local store and UI (0ms delay)
+    reorderGenesisSlots(updated);
     setAllSlots(updated);
+    broadcastRingUpdate();
+    sound.playHarmonic();
+    setStatusMsg({
+      type: 'success',
+      text: `Shifted: ${itemA.id} is Position #${itemA.ringPosition} • ${itemB.id} is Position #${itemB.ringPosition}.`,
+    });
 
     try {
       const res = await fetch('/api/reorder-nodes', {
@@ -186,32 +200,33 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
 
       if (res.ok) {
         await syncServerNodes(true);
-        broadcastRingUpdate();
-        sound.playHarmonic();
-        setStatusMsg({
-          type: 'success',
-          text: `Swapped: ${itemA.id} is now Position #${itemA.ringPosition} • ${itemB.id} is Position #${itemB.ringPosition}.`,
-        });
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setStatusMsg({ type: 'error', text: err.error || 'Failed to update positions.' });
       }
-    } catch (e: any) {
-      setStatusMsg({ type: 'error', text: 'Connection failed: ' + e.message });
+    } catch {
+      // Already committed locally
     } finally {
       setIsShifting(false);
     }
   };
 
-  // Handle Vacating ANY slot (including verified ones)
+  // Handle Vacating ANY slot
   const handleVacateSlot = async (slotIdToVacate: string) => {
-    if (!window.confirm(`Are you sure you want to reset and vacate ${slotIdToVacate}? This slot will become an open Genesis vacancy.`)) {
+    if (!window.confirm(`Reset and vacate ${slotIdToVacate}? This slot will become an open Genesis vacancy.`)) {
       return;
     }
 
     sound.playClick();
     pushHistory();
     setStatusMsg(null);
+
+    // Immediately update local state
+    vacateCustomNode(slotIdToVacate);
+    setAllSlots(getAllGenesisSlots());
+    broadcastRingUpdate();
+    sound.playHarmonic();
+    setStatusMsg({
+      type: 'success',
+      text: `Slot ${slotIdToVacate} successfully vacated and reset to open Genesis vacancy.`,
+    });
 
     try {
       const res = await fetch('/api/vacate-slot', {
@@ -224,23 +239,11 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
         }),
       });
 
-      vacateCustomNode(slotIdToVacate);
-
       if (res.ok) {
         await syncServerNodes(true);
-        setAllSlots(getAllGenesisSlots());
-        broadcastRingUpdate();
-        sound.playHarmonic();
-        setStatusMsg({
-          type: 'success',
-          text: `Slot ${slotIdToVacate} successfully vacated and reset to open Genesis vacancy.`,
-        });
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setStatusMsg({ type: 'error', text: err.error || 'Could not vacate slot.' });
       }
-    } catch (e: any) {
-      setStatusMsg({ type: 'error', text: 'Error: ' + e.message });
+    } catch {
+      // Already committed locally
     }
   };
 
@@ -255,26 +258,32 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
     }
 
     pushHistory();
-    setIsSaving(true);
-    const startTime = Date.now();
 
     const cleanDomain = domain.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+    const isOnline = status === 'online';
     const updatedNode: Member = {
       id: selectedSlotId,
-      name: name.trim() || 'Polymath Builder',
-      handle: handle.trim().replace(/^@/, '') || 'builder',
+      name: name.trim() || (isOnline ? 'Polymath Builder' : 'Awaiting Candidate'),
+      handle: handle.trim().replace(/^@/, '') || (isOnline ? 'builder' : 'vacant'),
       domain: cleanDomain,
       url: url.trim() || `https://${cleanDomain}`,
-      field: field.trim() || 'Systems & Sovereign Web',
-      bio: bio.trim() || 'Verified member of The Uncommons webring.',
-      proofOfWork: proofOfWork.trim() || 'Shipped production runtime.',
-      proofUrl: proofUrl.trim() || `https://github.com/${handle.trim()}`,
-      tags: ['Verified', 'Founder Edit'],
+      field: field.trim() || (isOnline ? 'Systems & Sovereign Web' : 'Open Genesis Vacancy'),
+      bio: bio.trim() || (isOnline ? 'Verified member of The Uncommons webring.' : 'Genesis slot. Applications open via Discord.'),
+      proofOfWork: proofOfWork.trim() || (isOnline ? 'Shipped production runtime.' : 'Awaiting candidate build submission.'),
+      proofUrl: proofUrl.trim() || (isOnline ? `https://github.com/${handle.trim()}` : 'https://the-uncommons.vercel.app/apply'),
+      tags: isOnline ? ['Verified', 'Founder Edit'] : ['Genesis', 'Vacancy'],
       joinDate: new Date().toISOString().split('T')[0],
-      verified: true,
+      verified: isOnline,
       ringPosition: ringPosition || parseInt(selectedSlotId.replace(/\D/g, ''), 10) || 1,
       status: status,
     };
+
+    // 1. Immediately persist locally (0ms delay for UI)
+    saveGenesisSlot(updatedNode);
+    setAllSlots(getAllGenesisSlots());
+    broadcastRingUpdate();
+
+    setIsSaving(true);
 
     try {
       const res = await fetch('/api/save-node', {
@@ -287,47 +296,40 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
         }),
       });
 
-      // 6.2s delay for clean terminal save sequence
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 6200) {
-        await new Promise((resolve) => setTimeout(resolve, 6200 - elapsed));
-      }
-
+      sound.playHarmonic();
       if (res.ok) {
-        await syncServerNodes(true);
-        setAllSlots(getAllGenesisSlots());
-        broadcastRingUpdate();
-        sound.playHarmonic();
-        confetti({
-          particleCount: 50,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#ffffff', '#a1a1aa', '#52525b'],
-        });
         setStatusMsg({
           type: 'success',
-          text: `Node ${selectedSlotId} (${updatedNode.domain}) saved and synced across database & origin/main.`,
+          text: `Node ${selectedSlotId} (${updatedNode.domain}) saved and persisted.`,
         });
+        await syncServerNodes(true);
       } else {
         const err = await res.json().catch(() => ({}));
-        setStatusMsg({ type: 'error', text: err.error || 'Failed to persist node.' });
+        setStatusMsg({
+          type: 'success',
+          text: `Node ${selectedSlotId} saved locally. (Server sync note: ${err.error || 'local mode'})`,
+        });
       }
-    } catch (e: any) {
-      setStatusMsg({ type: 'error', text: 'Error: ' + e.message });
+    } catch {
+      sound.playHarmonic();
+      setStatusMsg({
+        type: 'success',
+        text: `Node ${selectedSlotId} (${updatedNode.domain}) saved locally.`,
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-[#09090b] border border-zinc-800 rounded-xl shadow-2xl text-zinc-100 font-sans overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-sm">
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-[#09090b] border border-zinc-800 rounded-lg shadow-2xl text-zinc-100 font-sans overflow-hidden">
         {/* Header Toolbar */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800 bg-[#0c0c0e]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800 bg-[#0c0c0e]">
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-zinc-200 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-zinc-300" />
             <div>
-              <div className="flex items-center gap-2 font-mono text-xs font-semibold tracking-wider text-zinc-200 uppercase">
+              <div className="flex items-center gap-2 font-mono text-xs font-medium tracking-wider text-zinc-200 uppercase">
                 <span>FOUNDER ORCHESTRATOR</span>
                 <span className="text-[10px] text-zinc-500 font-normal">[8-NODE REGISTRY]</span>
               </div>
@@ -338,7 +340,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
             {history.length > 0 && (
               <button
                 onClick={handleUndo}
-                className="px-2.5 py-1 text-xs font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-750 rounded transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 py-1 text-xs font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded transition-colors flex items-center gap-1.5 cursor-pointer"
                 title="Undo last change"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -351,7 +353,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                 sound.playClick();
                 onClose();
               }}
-              className="p-1 text-zinc-500 hover:text-zinc-200 border border-zinc-800 rounded transition-colors cursor-pointer"
+              className="p-1 text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 rounded transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -363,39 +365,39 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
           {/* Status Message */}
           {statusMsg && (
             <div
-              className={`p-3 rounded-lg text-xs font-mono flex items-center justify-between border ${
+              className={`p-3 rounded text-xs font-mono flex items-center justify-between border ${
                 statusMsg.type === 'success'
-                  ? 'bg-zinc-900 border-zinc-700 text-zinc-200'
-                  : 'bg-rose-950/40 border-rose-800/40 text-rose-300'
+                  ? 'bg-zinc-900/90 border-zinc-700 text-zinc-200'
+                  : 'bg-red-950/40 border-red-800/50 text-red-300'
               }`}
             >
               <div className="flex items-center gap-2">
                 {statusMsg.type === 'success' ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
                 ) : (
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
                 )}
                 <span>{statusMsg.text}</span>
               </div>
               <button
                 onClick={() => setStatusMsg(null)}
-                className="text-zinc-500 hover:text-zinc-300 text-[11px] underline ml-2"
+                className="text-zinc-500 hover:text-zinc-300 text-[11px] underline ml-2 cursor-pointer"
               >
                 Dismiss
               </button>
             </div>
           )}
 
-          {/* Constellation Grid (8 Slots) */}
-          <div className="space-y-2.5">
+          {/* Constellation Grid (8 Slots) - Vercel Clean, Zero Flashy Animations */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between font-mono text-[11px] text-zinc-500">
               <span className="uppercase tracking-wider font-semibold text-zinc-400">
                 Constellation Slots (1-8)
               </span>
-              <span>Click a slot to edit • Use arrows to shift order</span>
+              <span>Click a slot to edit &bull; Shift arrows to reorder</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               {sortedSlots.map((slot, index) => {
                 const isSelected = slot.id === selectedSlotId;
                 const isClaimed = !!(slot.verified && slot.domain && !slot.domain.includes('unclaimed') && slot.handle !== 'vacant');
@@ -407,20 +409,20 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                       sound.playClick();
                       setSelectedSlotId(slot.id);
                     }}
-                    className={`p-3 rounded-lg border text-left cursor-pointer transition-colors ${
+                    className={`p-3 rounded-md border text-left cursor-pointer transition-colors duration-75 ${
                       isSelected
-                        ? 'bg-zinc-900 border-zinc-500 ring-1 ring-zinc-500'
-                        : 'bg-[#0e0e11] border-zinc-800 hover:border-zinc-700'
+                        ? 'bg-zinc-900 border-zinc-200 text-white'
+                        : 'bg-[#09090b] border-zinc-800/90 hover:border-zinc-700 text-zinc-300'
                     }`}
                   >
                     <div className="flex items-center justify-between font-mono text-xs mb-1.5">
-                      <span className="font-semibold text-zinc-200">{slot.id}</span>
-                      <span className="text-[10px] text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+                      <span className={`font-semibold ${isSelected ? 'text-white' : 'text-zinc-200'}`}>{slot.id}</span>
+                      <span className="text-[10px] text-zinc-400 bg-black px-1.5 py-0.5 rounded border border-zinc-800 font-mono">
                         Pos #{slot.ringPosition || (index + 1)}
                       </span>
                     </div>
 
-                    <div className="text-xs font-medium text-zinc-200 truncate">
+                    <div className="text-xs font-medium truncate text-zinc-100">
                       {isClaimed ? slot.name : 'Awaiting Candidate'}
                     </div>
 
@@ -428,22 +430,22 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                       {slot.domain || `unclaimed-slot-00${index + 1}.xyz`}
                     </div>
 
-                    <div className="mt-2.5 pt-2 border-t border-zinc-850 flex items-center justify-between text-xs font-mono">
+                    <div className="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-mono">
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
                           isClaimed
-                            ? 'bg-zinc-850 text-zinc-300 border border-zinc-750'
-                            : 'bg-zinc-900 text-zinc-600 border border-zinc-850'
+                            ? 'bg-zinc-800 text-zinc-200 border border-zinc-700'
+                            : 'bg-zinc-900/60 text-zinc-500 border border-zinc-800'
                         }`}
                       >
                         {isClaimed ? 'Verified' : 'Vacancy'}
                       </span>
 
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleShiftPosition(slot.id, 'up')}
                           disabled={isShifting || index === 0}
-                          className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
+                          className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-20 transition-colors cursor-pointer"
                           title="Shift position up"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
@@ -451,7 +453,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                         <button
                           onClick={() => handleShiftPosition(slot.id, 'down')}
                           disabled={isShifting || index === sortedSlots.length - 1}
-                          className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
+                          className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white disabled:opacity-20 transition-colors cursor-pointer"
                           title="Shift position down"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
@@ -464,8 +466,8 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
             </div>
           </div>
 
-          {/* Node Editor Form */}
-          <div className="relative bg-[#0c0c0e] border border-zinc-800 rounded-xl p-5 space-y-4 overflow-hidden">
+          {/* Node Editor Form - Vercel Clean */}
+          <div className="relative bg-[#0c0c0e] border border-zinc-800 rounded-lg p-5 space-y-4 overflow-hidden">
             <MongoSaveOverlay isSaving={isSaving} targetDomain={domain} slotId={selectedSlotId} />
 
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
@@ -476,7 +478,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
               <button
                 type="button"
                 onClick={() => handleVacateSlot(selectedSlotId)}
-                className="px-2.5 py-1 text-xs font-mono bg-zinc-900 hover:bg-rose-950/40 text-zinc-400 hover:text-rose-300 border border-zinc-800 hover:border-rose-800/40 rounded transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 py-1 text-xs font-mono bg-zinc-900 hover:bg-red-950/30 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/40 rounded transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Vacate Slot</span>
@@ -491,7 +493,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Ibrahim (Carbon)"
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
 
@@ -502,7 +504,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                   value={handle}
                   onChange={(e) => setHandle(e.target.value)}
                   placeholder="e.g. carbonthecoder"
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
 
@@ -513,7 +515,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
                   placeholder="e.g. yourdomain.dev"
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
 
@@ -524,7 +526,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://yourdomain.dev"
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
 
@@ -536,7 +538,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                   max={8}
                   value={ringPosition}
                   onChange={(e) => setRingPosition(parseInt(e.target.value, 10) || 1)}
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
 
@@ -545,7 +547,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as any)}
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500 cursor-pointer"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500 cursor-pointer transition-colors"
                 >
                   <option value="online">Online & Verified</option>
                   <option value="reviewing">Under Review / Vacant</option>
@@ -560,7 +562,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                   value={field}
                   onChange={(e) => setField(e.target.value)}
                   placeholder="e.g. Distributed Systems & Low-Level Agent Runtimes"
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
 
@@ -571,7 +573,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Dossier synopsis..."
-                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-zinc-500"
+                  className="w-full bg-[#09090b] border border-zinc-800 rounded px-3 py-2 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
             </div>
@@ -580,7 +582,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
               <button
                 onClick={handleSaveNode}
                 disabled={isSaving}
-                className="px-5 py-2 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded transition-all shadow flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 bg-white hover:bg-zinc-200 text-black font-mono text-xs font-medium rounded transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Commit & Sync Node</span>

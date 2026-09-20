@@ -64,3 +64,12 @@ code, pre, kbd, .font-mono {
 .bg-radial-fade {
   background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
 }
+
+@keyframes shimmerLine {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(350%); }
+}
+
+.shimmer-line {
+  animation: shimmerLine 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}

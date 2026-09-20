@@ -52,23 +52,92 @@ export const MEMBERS: Member[] = [
   }
 ];
 
-let serverNodesCache: Member[] = [];
-let allGenesisSlotsCache: Member[] = [];
+export const GENESIS_TOTAL_SLOTS = 8;
+const GENESIS_SLOTS_KEY = 'unc_genesis_slots';
+const CUSTOM_NODES_KEY = 'unc_custom_nodes';
+const VACATED_SLOTS_KEY = 'unc_vacated_slots';
 
+let allGenesisSlotsCache: Member[] = [];
 let ringChannel: BroadcastChannel | null = null;
+
 try {
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
     ringChannel = new BroadcastChannel('unc_ring_sync');
     ringChannel.onmessage = (event) => {
       if (event.data?.type === 'NODES_UPDATED') {
-        syncServerNodes(true);
+        // Refresh local cache and notify listeners
+        loadGenesisSlotsFromStorage();
+        window.dispatchEvent(new Event('unc_nodes_updated'));
       }
     };
   }
 } catch {}
 
+function getVacatedSlots(): Set<string> {
+  try {
+    const raw = localStorage.getItem(VACATED_SLOTS_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveVacatedSlots(set: Set<string>) {
+  try {
+    localStorage.setItem(VACATED_SLOTS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+function createDefaultGenesisSlot(index: number): Member {
+  const num = index + 1;
+  const id = `NODE-00${num}`;
+  const vacated = getVacatedSlots();
+
+  if (!vacated.has(id)) {
+    const defaultMember = MEMBERS.find((m) => m.id === id);
+    if (defaultMember) {
+      return { ...defaultMember, ringPosition: num };
+    }
+  }
+
+  return {
+    id,
+    name: 'Awaiting Candidate',
+    handle: 'vacant',
+    domain: `unclaimed-slot-00${num}.xyz`,
+    url: 'https://the-uncommons.vercel.app/apply',
+    field: 'Open Genesis Vacancy',
+    bio: `Genesis vacancy slot #${num}. Applications open via #council-review in Kavyon Discord.`,
+    proofOfWork: 'Awaiting candidate build submission.',
+    proofUrl: 'https://the-uncommons.vercel.app/apply',
+    tags: ['Genesis', 'Vacancy'],
+    joinDate: '2026-01-01',
+    verified: false,
+    ringPosition: num,
+    status: 'reviewing',
+  };
+}
+
+function loadGenesisSlotsFromStorage(): Member[] | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem(GENESIS_SLOTS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      allGenesisSlotsCache = parsed;
+      return parsed;
+    }
+  } catch {}
+  return null;
+}
+
 export function broadcastRingUpdate() {
-  window.dispatchEvent(new Event('unc_nodes_updated'));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('unc_nodes_updated'));
+  }
   if (ringChannel) {
     try {
       ringChannel.postMessage({ type: 'NODES_UPDATED', timestamp: Date.now() });
@@ -76,81 +145,100 @@ export function broadcastRingUpdate() {
   }
 }
 
-export async function syncServerNodes(bypassCache: boolean = false): Promise<Member[]> {
-  try {
-    const url = bypassCache ? `/api/get-nodes?refresh=true&t=${Date.now()}` : `/api/get-nodes?t=${Date.now()}`;
-    let res = await fetch(url);
-    if (!res.ok) {
-      res = await fetch('/nodes.json?t=' + Date.now());
-    }
-    if (res.ok) {
-      const result = await res.json();
-      const data = Array.isArray(result) ? result : (result.nodes || []);
-      if (Array.isArray(data) && data.length > 0) {
-        allGenesisSlotsCache = data.map((d: any, i: number) => ({
-          id: d.id || `NODE-00${i + 1}`,
-          name: d.name || 'Awaiting Candidate',
-          handle: d.handle || 'vacant',
-          domain: d.domain || `unclaimed-slot-00${i + 1}.xyz`,
-          url: d.url || (d.domain && !d.domain.includes('unclaimed') ? (d.domain.startsWith('http') ? d.domain : `https://${d.domain}`) : 'https://the-uncommons.vercel.app/apply'),
-          field: d.field || 'Open Genesis Vacancy',
-          bio: d.bio || 'Genesis slot. Applications open via Discord.',
-          proofOfWork: d.proofOfWork || 'Awaiting candidate build submission.',
-          proofUrl: d.proofUrl || 'https://the-uncommons.vercel.app/apply',
-          tags: d.tags || ['Genesis', 'Vacancy'],
-          joinDate: d.joinDate || '2026-01-01',
-          verified: !!d.verified && !d.domain?.includes('unclaimed') && d.handle !== 'vacant',
-          ringPosition: d.ringPosition || (i + 1),
-          status: d.status || 'online',
-        }));
-
-        serverNodesCache = allGenesisSlotsCache.filter((s) => s.verified);
-        window.dispatchEvent(new Event('unc_nodes_updated'));
-      }
-    }
-  } catch (err) {
-    console.warn('syncServerNodes error:', err);
-  }
-  return getAllMembers();
-}
-
 export function getAllGenesisSlots(): Member[] {
-  if (allGenesisSlotsCache.length > 0) {
+  if (allGenesisSlotsCache.length >= GENESIS_TOTAL_SLOTS) {
     return allGenesisSlotsCache;
   }
-  return Array.from({ length: 8 }, (_, i) => {
-    const num = i + 1;
-    const id = `NODE-00${num}`;
-    const found = MEMBERS.find((m) => m.id === id);
-    if (found) return found;
-    return {
-      id,
-      name: 'Awaiting Candidate',
-      handle: 'vacant',
-      domain: `unclaimed-slot-00${num}.xyz`,
-      url: 'https://the-uncommons.vercel.app/apply',
-      field: 'Open Genesis Vacancy',
-      bio: `Genesis vacancy slot #${num}. Applications open via Discord.`,
-      proofOfWork: 'Awaiting candidate build submission.',
-      proofUrl: 'https://the-uncommons.vercel.app/apply',
-      tags: ['Genesis', 'Vacancy'],
-      joinDate: '2026-01-01',
-      verified: false,
-      ringPosition: num,
-      status: 'reviewing' as const,
-    };
+
+  const fromStorage = loadGenesisSlotsFromStorage();
+  if (fromStorage && fromStorage.length >= GENESIS_TOTAL_SLOTS) {
+    return fromStorage;
+  }
+
+  // Construct initial 8 slots
+  const initialSlots: Member[] = Array.from({ length: GENESIS_TOTAL_SLOTS }, (_, i) => {
+    return createDefaultGenesisSlot(i);
   });
+
+  allGenesisSlotsCache = initialSlots;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(GENESIS_SLOTS_KEY, JSON.stringify(initialSlots));
+    }
+  } catch {}
+
+  return initialSlots;
+}
+
+export function saveGenesisSlot(newMember: Member) {
+  try {
+    const slots = [...getAllGenesisSlots()];
+    const idx = slots.findIndex((s) => s.id === newMember.id);
+    if (idx !== -1) {
+      slots[idx] = { ...newMember };
+    } else {
+      slots.push({ ...newMember });
+    }
+
+    slots.sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
+    allGenesisSlotsCache = slots;
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(GENESIS_SLOTS_KEY, JSON.stringify(slots));
+
+      // Remove from vacated tracking if now active
+      const vacated = getVacatedSlots();
+      if (vacated.has(newMember.id)) {
+        vacated.delete(newMember.id);
+        saveVacatedSlots(vacated);
+      }
+
+      // Sync to custom nodes storage
+      if (newMember.verified && !newMember.domain.includes('unclaimed') && newMember.handle !== 'vacant') {
+        saveCustomNode(newMember);
+      }
+    }
+
+    broadcastRingUpdate();
+  } catch (err) {
+    console.error('Failed to save genesis slot:', err);
+  }
+}
+
+export function reorderGenesisSlots(updatedList: Member[]) {
+  try {
+    const current = [...getAllGenesisSlots()];
+    for (const item of updatedList) {
+      const idx = current.findIndex((s) => s.id === item.id);
+      if (idx !== -1) {
+        current[idx] = { ...current[idx], ...item };
+      }
+    }
+
+    current.sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
+    allGenesisSlotsCache = current;
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(GENESIS_SLOTS_KEY, JSON.stringify(current));
+
+      // Keep custom nodes storage in sync with updated positions
+      const existingCustom = getCustomActiveNodes();
+      const updatedCustom = existingCustom.map((c) => {
+        const found = current.find((s) => s.id === c.id);
+        return found ? { ...c, ringPosition: found.ringPosition } : c;
+      });
+      localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(updatedCustom));
+    }
+
+    broadcastRingUpdate();
+  } catch (err) {
+    console.error('Failed to reorder genesis slots:', err);
+  }
 }
 
 export function vacateCustomNode(slotId: string) {
   try {
-    const existing = getCustomActiveNodes();
-    const updated = existing.filter((m) => m.id !== slotId);
-    localStorage.setItem('unc_custom_nodes', JSON.stringify(updated));
-
-    serverNodesCache = serverNodesCache.filter((m) => m.id !== slotId);
     const slotNum = parseInt(slotId.replace(/\D/g, ''), 10) || 1;
-    const idx = allGenesisSlotsCache.findIndex((s) => s.id === slotId);
     const vacantObj: Member = {
       id: slotId,
       name: 'Awaiting Candidate',
@@ -158,7 +246,7 @@ export function vacateCustomNode(slotId: string) {
       domain: `unclaimed-slot-00${slotNum}.xyz`,
       url: 'https://the-uncommons.vercel.app/apply',
       field: 'Open Genesis Vacancy',
-      bio: `Genesis vacancy slot #${slotNum}. Applications open via Discord.`,
+      bio: `Genesis vacancy slot #${slotNum}. Applications open via #council-review in Kavyon Discord.`,
       proofOfWork: 'Awaiting candidate build submission.',
       proofUrl: 'https://the-uncommons.vercel.app/apply',
       tags: ['Genesis', 'Vacancy'],
@@ -167,93 +255,112 @@ export function vacateCustomNode(slotId: string) {
       ringPosition: slotNum,
       status: 'reviewing',
     };
+
+    const slots = [...getAllGenesisSlots()];
+    const idx = slots.findIndex((s) => s.id === slotId);
     if (idx !== -1) {
-      allGenesisSlotsCache[idx] = vacantObj;
+      slots[idx] = vacantObj;
     } else {
-      allGenesisSlotsCache.push(vacantObj);
+      slots.push(vacantObj);
+    }
+    slots.sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
+    allGenesisSlotsCache = slots;
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(GENESIS_SLOTS_KEY, JSON.stringify(slots));
+
+      // Remove from custom active nodes
+      const existing = getCustomActiveNodes();
+      const updated = existing.filter((m) => m.id !== slotId);
+      localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(updated));
+
+      // Mark as vacated to prevent resurrecting from static fallbacks
+      const vacated = getVacatedSlots();
+      vacated.add(slotId);
+      saveVacatedSlots(vacated);
     }
 
     broadcastRingUpdate();
-  } catch {}
+  } catch (err) {
+    console.error('Failed to vacate slot:', err);
+  }
 }
 
 export function getAllMembers(): Member[] {
-  const custom = getCustomActiveNodes();
-  const map = new Map<string, Member>();
+  const slots = getAllGenesisSlots();
+  return slots
+    .filter((s) => s.verified && s.domain && !s.domain.includes('unclaimed') && s.handle !== 'vacant')
+    .sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
+}
 
-  if (allGenesisSlotsCache.length > 0) {
-    for (const s of allGenesisSlotsCache) {
-      if (s.verified && s.domain && !s.domain.includes('unclaimed') && s.handle !== 'vacant') {
-        map.set(s.id, s);
+export async function syncServerNodes(bypassCache: boolean = false): Promise<Member[]> {
+  try {
+    const url = bypassCache ? `/api/get-nodes?refresh=true&t=${Date.now()}` : `/api/get-nodes?t=${Date.now()}`;
+    let res = await fetch(url).catch(() => null);
+    if (!res || !res.ok) {
+      res = await fetch('/nodes.json?t=' + Date.now()).catch(() => null);
+    }
+
+    if (res && res.ok) {
+      const result = await res.json();
+      const data = Array.isArray(result) ? result : (result.nodes || []);
+      if (Array.isArray(data) && data.length > 0) {
+        const mergedSlots: Member[] = data.map((d: any, i: number) => {
+          const slotId = d.id || `NODE-00${i + 1}`;
+          const isClaimed = !!d.verified && !d.domain?.includes('unclaimed') && d.handle !== 'vacant';
+          return {
+            id: slotId,
+            name: d.name || 'Awaiting Candidate',
+            handle: d.handle || 'vacant',
+            domain: d.domain || `unclaimed-slot-00${i + 1}.xyz`,
+            url: d.url || (isClaimed ? (d.domain.startsWith('http') ? d.domain : `https://${d.domain}`) : 'https://the-uncommons.vercel.app/apply'),
+            field: d.field || 'Open Genesis Vacancy',
+            bio: d.bio || 'Genesis slot. Applications open via Discord.',
+            proofOfWork: d.proofOfWork || 'Awaiting candidate build submission.',
+            proofUrl: d.proofUrl || 'https://the-uncommons.vercel.app/apply',
+            tags: d.tags || ['Genesis', 'Vacancy'],
+            joinDate: d.joinDate || '2026-01-01',
+            verified: isClaimed,
+            ringPosition: d.ringPosition || (i + 1),
+            status: d.status || (isClaimed ? 'online' : 'reviewing'),
+          };
+        });
+
+        mergedSlots.sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
+        allGenesisSlotsCache = mergedSlots;
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(GENESIS_SLOTS_KEY, JSON.stringify(mergedSlots));
+          // Keep custom nodes storage in sync with active verified slots
+          const customActive = mergedSlots.filter((s) => s.verified && !s.domain.includes('unclaimed') && s.handle !== 'vacant');
+          localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(customActive));
+        }
+
+        broadcastRingUpdate();
       }
     }
-  } else {
-    for (const m of MEMBERS) {
-      map.set(m.id, m);
-    }
-    for (const s of serverNodesCache) {
-      if (s.verified && s.domain && !s.domain.includes('unclaimed') && s.handle !== 'vacant') {
-        map.set(s.id, s);
-      }
-    }
+  } catch (err) {
+    console.warn('syncServerNodes error:', err);
   }
-
-  for (const c of custom) {
-    if (c.verified && c.domain && !c.domain.includes('unclaimed') && c.handle !== 'vacant') {
-      map.set(c.id, c);
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => a.ringPosition - b.ringPosition);
+  return getAllMembers();
 }
-
-export function getNextMember(currentDomain: string): Member {
-  const members = getAllMembers();
-  const clean = currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
-  const index = members.findIndex(m => m.domain.toLowerCase() === clean);
-  if (index === -1) return members[0];
-  return members[(index + 1) % members.length];
-}
-
-export function getPrevMember(currentDomain: string): Member {
-  const members = getAllMembers();
-  const clean = currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
-  const index = members.findIndex(m => m.domain.toLowerCase() === clean);
-  if (index === -1) return members[members.length - 1];
-  return members[(index - 1 + members.length) % members.length];
-}
-
-export function getRandomMember(currentDomain?: string): Member {
-  const members = getAllMembers();
-  const clean = currentDomain ? currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase() : '';
-  const filtered = currentDomain ? members.filter(m => m.domain.toLowerCase() !== clean) : members;
-  const pool = filtered.length > 0 ? filtered : members;
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  return pool[randomIndex];
-}
-
-export const GENESIS_TOTAL_SLOTS = 8;
 
 export function getCustomActiveNodes(): Member[] {
   try {
-    const raw = localStorage.getItem('unc_custom_nodes');
+    if (typeof window === 'undefined') return [];
+    const raw = localStorage.getItem(CUSTOM_NODES_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
 
-    // Sanitize against test submissions or corrupted slots
     const sanitized = parsed.filter((m: any) => {
       if (!m || typeof m !== 'object' || !m.id || !m.domain) return false;
-      // Strip test submissions
-      if (/^test/i.test(m.handle) || /^test/i.test(m.name) || /test/i.test(m.domain)) return false;
-      // Protect NODE-001
-      if (m.id === 'NODE-001' && m.handle !== 'carbonthecoder') return false;
-      // Protect NODE-002
-      if (m.id === 'NODE-002' && !String(m.handle).includes('priyxnshu')) return false;
+      if (/^test_submission/i.test(m.handle) || /^test_builder/i.test(m.name)) return false;
       return true;
     });
 
     if (sanitized.length !== parsed.length) {
-      localStorage.setItem('unc_custom_nodes', JSON.stringify(sanitized));
+      localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(sanitized));
     }
     return sanitized;
   } catch {
@@ -263,12 +370,41 @@ export function getCustomActiveNodes(): Member[] {
 
 export function saveCustomNode(newMember: Member) {
   try {
+    if (typeof window === 'undefined') return;
     const existing = getCustomActiveNodes();
     const updated = [...existing.filter(m => m.id !== newMember.id), newMember];
-    localStorage.setItem('unc_custom_nodes', JSON.stringify(updated));
+    localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(updated));
   } catch {
     // ignore
   }
+}
+
+export function getNextMember(currentDomain: string): Member {
+  const members = getAllMembers();
+  if (members.length === 0) return MEMBERS[0];
+  const clean = currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+  const index = members.findIndex(m => m.domain.toLowerCase() === clean);
+  if (index === -1) return members[0];
+  return members[(index + 1) % members.length];
+}
+
+export function getPrevMember(currentDomain: string): Member {
+  const members = getAllMembers();
+  if (members.length === 0) return MEMBERS[MEMBERS.length - 1];
+  const clean = currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+  const index = members.findIndex(m => m.domain.toLowerCase() === clean);
+  if (index === -1) return members[members.length - 1];
+  return members[(index - 1 + members.length) % members.length];
+}
+
+export function getRandomMember(currentDomain?: string): Member {
+  const members = getAllMembers();
+  if (members.length === 0) return MEMBERS[0];
+  const clean = currentDomain ? currentDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase() : '';
+  const filtered = currentDomain ? members.filter(m => m.domain.toLowerCase() !== clean) : members;
+  const pool = filtered.length > 0 ? filtered : members;
+  const randomIndex = Math.floor(Math.random() * pool.length);
+  return pool[randomIndex];
 }
 
 export function validateActivationKey(key: string): { valid: boolean; targetSlot: string; error?: string } {
@@ -301,7 +437,6 @@ export function validateActivationKey(key: string): { valid: boolean; targetSlot
   };
 }
 
-
 export function useLiveMembers(): Member[] {
   const [members, setMembers] = useState<Member[]>(() => getAllMembers());
 
@@ -315,7 +450,6 @@ export function useLiveMembers(): Member[] {
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('unc_nodes_updated', handleUpdate);
 
-    // Periodic cloud refresh every 15 seconds to keep all devices globally in sync
     const pollInterval = setInterval(() => {
       syncServerNodes().then(m => setMembers(m));
     }, 15000);
@@ -330,4 +464,33 @@ export function useLiveMembers(): Member[] {
   return members;
 }
 
+export function useGenesisSlots(): Member[] {
+  const [slots, setSlots] = useState<Member[]>(() => getAllGenesisSlots());
 
+  useEffect(() => {
+    syncServerNodes().then(() => {
+      setSlots([...getAllGenesisSlots()]);
+    });
+
+    const handleUpdate = () => {
+      setSlots([...getAllGenesisSlots()]);
+    };
+
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('unc_nodes_updated', handleUpdate);
+
+    const pollInterval = setInterval(() => {
+      syncServerNodes().then(() => {
+        setSlots([...getAllGenesisSlots()]);
+      });
+    }, 15000);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('unc_nodes_updated', handleUpdate);
+    };
+  }, []);
+
+  return slots;
+}

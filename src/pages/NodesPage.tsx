@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { GENESIS_TOTAL_SLOTS, useLiveMembers } from '../data/members';
+import { GENESIS_TOTAL_SLOTS, useLiveMembers, useGenesisSlots } from '../data/members';
 import type { Member } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
@@ -26,35 +26,22 @@ export const NodesPage: React.FC = () => {
   const [filterMode, setFilterMode] = useState<'all' | 'verified' | 'vacant'>('all');
   const [viewFormat, setViewFormat] = useState<'table' | 'json'>('table');
   const [copiedJson, setCopiedJson] = useState(false);
-  const [version, setVersion] = useState(0);
 
   const liveMembers = useLiveMembers();
+  const genesisSlots = useGenesisSlots();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const handleStorage = () => setVersion(v => v + 1);
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('unc_nodes_updated', handleStorage);
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('unc_nodes_updated', handleStorage);
-    };
-  }, []);
-
-  // Construct full genesis 8-node registry list
+  // Construct full genesis 8-node registry list ordered by ringPosition
   const fullRegistry = useMemo(() => {
-    const list: Array<{ id: string; member?: Member; isVacant: boolean }> = [];
-    for (let i = 1; i <= GENESIS_TOTAL_SLOTS; i++) {
-      const slotId = `NODE-00${i}`;
-      const found = liveMembers.find(m => m.id === slotId || m.ringPosition === i);
-      if (found) {
-        list.push({ id: slotId, member: found, isVacant: false });
-      } else {
-        list.push({ id: slotId, isVacant: true });
-      }
-    }
-    return list;
-  }, [liveMembers, version]);
+    return [...genesisSlots].sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1)).map(slot => {
+      const isClaimed = !!(slot.verified && slot.domain && !slot.domain.includes('unclaimed') && slot.handle !== 'vacant');
+      return {
+        id: slot.id,
+        member: isClaimed ? slot : undefined,
+        isVacant: !isClaimed,
+      };
+    });
+  }, [genesisSlots]);
 
   // Filtered registry based on query and filter mode
   const filteredRegistry = useMemo(() => {
@@ -122,14 +109,15 @@ export const NodesPage: React.FC = () => {
 
   const copyJsonManifest = () => {
     sound.playClick();
-    const jsonStr = JSON.stringify(liveMembers, null, 2);
+    const dataToExport = filterMode === 'verified' ? liveMembers : genesisSlots;
+    const jsonStr = JSON.stringify(dataToExport, null, 2);
     navigator.clipboard.writeText(jsonStr);
     setCopiedJson(true);
     setTimeout(() => setCopiedJson(false), 2000);
   };
 
-  const verifiedCount = liveMembers.filter(m => m.verified).length;
-  const vacantCount = GENESIS_TOTAL_SLOTS - verifiedCount;
+  const verifiedCount = fullRegistry.filter(item => !item.isVacant).length;
+  const vacantCount = fullRegistry.filter(item => item.isVacant).length;
 
   return (
     <div className="space-y-8 w-full max-w-6xl mx-auto px-2 sm:px-4">
@@ -303,7 +291,7 @@ export const NodesPage: React.FC = () => {
             </button>
           </div>
           <pre className="p-4 bg-zinc-950 border border-white/10 rounded-lg text-xs font-mono text-emerald-400 overflow-x-auto leading-relaxed selection:bg-emerald-950">
-            {JSON.stringify(liveMembers, null, 2)}
+            {JSON.stringify(filterMode === 'verified' ? liveMembers : genesisSlots, null, 2)}
           </pre>
         </div>
       ) : (

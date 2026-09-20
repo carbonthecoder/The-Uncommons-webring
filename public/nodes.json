@@ -18,7 +18,8 @@
     "joinDate": "2026-01-01",
     "verified": true,
     "ringPosition": 1,
-    "status": "online"
+    "status": "online",
+    "updatedAt": "2026-09-20T08:30:54.411Z"
   },
   {
     "id": "NODE-002",
@@ -39,15 +40,16 @@
     "joinDate": "2026-01-15",
     "verified": true,
     "ringPosition": 2,
-    "status": "online"
+    "status": "online",
+    "updatedAt": "2026-09-20T08:30:54.411Z"
   },
   {
     "id": "NODE-003",
-    "name": "Awaiting Council Review",
+    "name": "Awaiting Candidate",
     "handle": "vacant",
     "domain": "unclaimed-slot-003.xyz",
     "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open to polymaths, systems hackers & sovereign creators",
+    "field": "Open Genesis Vacancy",
     "bio": "Genesis vacancy slot #3. Applications open via #council-review in Kavyon Discord.",
     "proofOfWork": "Awaiting candidate build submission.",
     "proofUrl": "https://the-uncommons.vercel.app/apply",
@@ -58,7 +60,8 @@
     "joinDate": "2026-01-01",
     "verified": false,
     "ringPosition": 3,
-    "status": "reviewing"
+    "status": "reviewing",
+    "updatedAt": "2026-09-20T08:30:54.403Z"
   },
   {
     "id": "NODE-004",

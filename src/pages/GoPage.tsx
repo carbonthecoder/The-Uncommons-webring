@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useLiveMembers, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
+import { SovereignOrbitalLoader } from '../components/SovereignOrbitalLoader';
 import { ExternalLink } from 'lucide-react';
 
 export const GoPage: React.FC = () => {
@@ -32,9 +33,8 @@ export const GoPage: React.FC = () => {
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-zinc-950 border border-white/20 rounded-2xl p-8 shadow-2xl space-y-6 text-center">
-        <div className="relative w-12 h-12 mx-auto flex items-center justify-center border border-white/20 rounded-full">
-          <div className="w-6 h-6 border border-dashed border-zinc-400 rounded-full animate-spin" />
-          <div className="absolute w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+        <div className="flex items-center justify-center py-2">
+          <SovereignOrbitalLoader size={52} />
         </div>
 
         <div className="space-y-1">

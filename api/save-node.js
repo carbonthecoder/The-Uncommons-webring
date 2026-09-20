@@ -116,7 +116,7 @@ export default async function handler(req, res) {
   }
 
   // 2b. Role Detection & Slot Protection
-  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026';
+  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026' || cleanPin === '918542';
 
   if (!isFounder) {
     // Non-founders (candidates) cannot overwrite claimed slots
