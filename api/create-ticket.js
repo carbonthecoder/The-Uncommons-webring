@@ -120,31 +120,7 @@ export default async function handler(req, res) {
           custom_id: `open_application_modal:${member.user.id}:${ticketId}`,
           label: '📝 Open Application Dialog',
           style: 3, // Success (Green)
-        },
-        {
-          type: 2,
-          custom_id: `claim_review:${member.user.id}:${ticketId}`,
-          label: '⚡ Take Over Review',
-          style: 1, // Primary (Blurple)
-        },
-        {
-          type: 2,
-          custom_id: `ping_senior:${member.user.id}:${ticketId}`,
-          label: '📢 Signal Council',
-          style: 2, // Secondary (Grey)
-        },
-        {
-          type: 2,
-          custom_id: `ratify_key:${member.user.id}:${ticketId}`,
-          label: '🟢 Ratify & Forge Key',
-          style: 3, // Success (Green)
-        },
-        {
-          type: 2,
-          custom_id: `close_ticket:${member.user.id}:${ticketId}`,
-          label: '🛑 Reject / Close',
-          style: 4, // Danger (Red)
-        },
+        }
 
       ],
     };

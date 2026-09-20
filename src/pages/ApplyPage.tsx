@@ -35,39 +35,7 @@ export const ApplyPage: React.FC = () => {
   const [liveCheckUser, setLiveCheckUser] = useState<DiscordMemberCheck['user'] | null>(null);
 
 
-  // Live sync check on Discord username change (debounced 400ms)
-  useEffect(() => {
-    const clean = discordHandle.trim().replace(/^@/, '');
-    if (!clean || clean.length < 2) {
-      setLiveCheckStatus('idle');
-      setLiveCheckUser(null);
-      return;
-    }
-
-    setLiveCheckStatus('checking');
-
-    const debounceTimer = setTimeout(async () => {
-      try {
-        const check = await checkDiscordServerMembership(clean);
-        if (check.checked) {
-          if (check.exists && check.user) {
-            setLiveCheckStatus('verified');
-            setLiveCheckUser(check.user);
-          } else if (!check.exists) {
-            setLiveCheckStatus('not_found');
-            setLiveCheckUser(null);
-          }
-        } else {
-          // Bot API offline / standalone mode
-          setLiveCheckStatus('idle');
-        }
-      } catch {
-        setLiveCheckStatus('idle');
-      }
-    }, 400);
-
-    return () => clearTimeout(debounceTimer);
-  }, [discordHandle]);
+  // Discord membership is checked onBlur or via manual recheck button
 
   const triggerManualRecheck = async () => {
     const clean = discordHandle.trim().replace(/^@/, '');
@@ -536,7 +504,14 @@ export const ApplyPage: React.FC = () => {
                   type="text"
                   required
                   value={discordHandle}
-                  onChange={(e) => setDiscordHandle(e.target.value)}
+                  onChange={(e) => {
+                    setDiscordHandle(e.target.value);
+                    if (liveCheckStatus === 'not_found' || liveCheckStatus === 'verified') {
+                      setLiveCheckStatus('idle');
+                      setLiveCheckUser(null);
+                    }
+                  }}
+                  onBlur={triggerManualRecheck}
                   placeholder="e.g. carbonthecoder (without @)"
                   className={`w-full px-3.5 py-2.5 bg-black border rounded-md text-xs font-mono text-white placeholder-zinc-600 focus:outline-none transition-colors ${
                     liveCheckStatus === 'verified'

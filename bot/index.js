@@ -194,9 +194,8 @@ Return ONLY a JSON object with this exact structure:
     "question 1 (Architecture & Trade-offs): probe their specific project architecture and design trade-offs",
     "question 2 (Debugging Roadblock): probe the hardest bug, memory leak, or obstacle they hit in what they taught themselves",
     "question 3 (Autodidact Methodology): probe how they learn complex domains without courses or tutorials",
-    "question 4 (Sovereign Web): probe why they want an independent web domain over proprietary platforms",
-    "question 5 (Code Craft & Taste): probe their personal standard for code quality and maintainability",
-    "question 6 (Webring Contribution): probe what rare intellect, build, or perspective their node brings to the Ring"
+    "question 4 (Code Craft & Taste): probe their personal standard for code quality and maintainability",
+    "question 5 (Webring Contribution): probe what rare intellect, build, or perspective their node brings to the Ring"
   ]
 }`;
 
@@ -214,13 +213,12 @@ Return ONLY a JSON object with this exact structure:
           const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (rawText) {
             const parsed = JSON.parse(rawText);
-            const questions = Array.isArray(parsed.questions) && parsed.questions.length >= 6
-              ? parsed.questions.slice(0, 6)
+            const questions = Array.isArray(parsed.questions) && parsed.questions.length >= 5
+              ? parsed.questions.slice(0, 5)
               : [
                   `In your project (${(projects || 'build').slice(0, 45)}), what core architectural trade-offs did you make, and what would you re-architect today?`,
                   `What was the hardest debugging wall you hit teaching yourself ${(selfTaught || 'systems').slice(0, 40)}, and how did you isolate the root cause?`,
                   `How do you systematically master complex technical topics without relying on guided courses or tutorials?`,
-                  `Why is maintaining an independent, sovereign domain essential to your creative agency over proprietary platforms?`,
                   `What does 'uncompromising technical craft' look like in your personal daily builds and architecture?`,
                   `What rare perspective, tool, or knowledge will your node contribute to The Uncommons webring?`,
                 ];
@@ -1642,6 +1640,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         answers: { name, obsession, selfTaught, projects, why },
       });
 
+      // Artificial buffer to let things go smooth and make the AI analysis feel real (12 seconds)
+      await new Promise(resolve => setTimeout(resolve, 12000));
+
       // Visual Score Bar Helper
       const filled = Math.min(10, Math.max(0, Math.round(aiResult.score / 10)));
       const scoreBar = `[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}] ${aiResult.score}/100`;
@@ -1663,20 +1664,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
         .setFooter({ text: 'Inspector Bartholomew • Chief Admissions Auditor' })
         .setTimestamp();
 
-      // 6 Mandatory Technical Interview / Icebreaker Questions
+      // 5 Mandatory Technical Interview / Icebreaker Questions
       const questionsFormatted = aiResult.questions
         .map((q, idx) => `**${idx + 1}.** ${q}`)
         .join('\n\n');
 
       const icebreakerEmbed = new EmbedBuilder()
-        .setTitle('📋 BARTHOLOMEW\'S ICEBREAKER DOCKET // 6 REQUIRED QUESTIONS')
+        .setTitle('📋 BARTHOLOMEW\'S ICEBREAKER DOCKET // 5 REQUIRED QUESTIONS')
         .setDescription(
-          `Candidate <@${applicantId}>, before the Council can ratify your key, please answer these **6 interview questions** directly in this channel:\n\n` +
+          `Candidate <@${applicantId}>, before the Council can ratify your key, please answer these **5 interview questions** directly in this channel:\n\n` +
           questionsFormatted + '\n\n' +
           `*Take your time. Deep, authentic technical answers are favored over buzzwords. Reviewers will inspect your responses before casting votes.*`
         )
         .setColor(0x06b6d4)
-        .setFooter({ text: 'Admissions Interview Stage • 6 Mandatory Inquiries' })
+        .setFooter({ text: 'Admissions Interview Stage • 5 Mandatory Inquiries' })
         .setTimestamp();
 
       const reviewerPings = getReviewerPings(interaction.guild);

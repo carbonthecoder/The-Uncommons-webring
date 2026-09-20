@@ -634,7 +634,7 @@ export const SealPage: React.FC = () => {
           </div>
 
           <div className="pt-2 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-zinc-500">
-            <span>Demo: <code className="text-emerald-300">UNC-ALPHA-2026</code> / PIN: <code className="text-emerald-300">000000</code></span>
+            <span className="opacity-0 hidden sm:inline"></span>
             <Link to="/apply" className="text-zinc-400 hover:text-white flex items-center gap-1">
               <Disc className="w-3 h-3" />
               <span>Request Key on Discord &rarr;</span>
