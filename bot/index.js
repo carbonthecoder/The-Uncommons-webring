@@ -162,11 +162,12 @@ async function runAIEvaluation({ applicantUser, answers, age, uncommonBelief, pr
     const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'];
     for (const model of models) {
       try {
-        const prompt = `You are the lead admissions auditor for "The Uncommons", a private sovereign webring and guild for exceptional, autodidactic young builders and engineers (ages 1-26).
+        const prompt = `You are Inspector Bartholomew, the unfiltered, discerning chief admissions auditor for "The Uncommons", a private sovereign webring and guild for exceptional young builders and engineers (ages 1-26).
+"I review Ring applications between espresso shots and unfiltered smokes. No vibecoding allowed on my watch."
 
 Analyze this applicant's complete dossier thoroughly:
 - Candidate Moniker / Name: ${name || applicantUser.username}
-- Discord Handle: @${applicantUser.username} (Tag: ${applicantUser.tag})
+- Discord Handle: @${applicantUser.username} (Tag: ${applicantUser.tag || applicantUser.username})
 - Age: ${age || 'Not specified'}
 - Domain / Site: ${domain || 'None'}
 - Proof of Work / GitHub / Link: ${proof || 'None'}
@@ -181,14 +182,22 @@ Evaluate this builder with high standards. Look for authentic hands-on craft, de
 
 Return ONLY a JSON object with this exact structure:
 {
-  "score": number between 72 and 98,
+  "score": number between 74 and 96,
   "verdict": "string, e.g. High Signal Systems Hacker, Pure Autodidact, Independent Engine Architect, Solid Practical Builder",
-  "summary": "1 to 2 sentences summarizing who this builder is and what defines their technical craft",
+  "summary": "1 to 2 sentences summarizing who this builder is and what defines their technical craft in sharp Inspector Bartholomew tone",
   "signals": [
-    "concise signal 1 (max 12 words) analyzing their project or obsession",
-    "concise signal 2 (max 12 words) analyzing their self-taught skill or independent thinking"
+    "concise signal 1 (max 14 words) analyzing their project or obsession",
+    "concise signal 2 (max 14 words) analyzing their self-taught skill or independent thinking",
+    "concise signal 3 (max 14 words) analyzing their mindset or craft"
   ],
-  "question": "one sharp, deep technical interview question that directly quotes or probes their specific project architecture, trade-offs, or debugging wall"
+  "questions": [
+    "question 1 (Architecture & Trade-offs): probe their specific project architecture and design trade-offs",
+    "question 2 (Debugging Roadblock): probe the hardest bug, memory leak, or obstacle they hit in what they taught themselves",
+    "question 3 (Autodidact Methodology): probe how they learn complex domains without courses or tutorials",
+    "question 4 (Sovereign Web): probe why they want an independent web domain over proprietary platforms",
+    "question 5 (Code Craft & Taste): probe their personal standard for code quality and maintainability",
+    "question 6 (Webring Contribution): probe what rare intellect, build, or perspective their node brings to the Ring"
+  ]
 }`;
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
@@ -205,12 +214,23 @@ Return ONLY a JSON object with this exact structure:
           const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (rawText) {
             const parsed = JSON.parse(rawText);
+            const questions = Array.isArray(parsed.questions) && parsed.questions.length >= 6
+              ? parsed.questions.slice(0, 6)
+              : [
+                  `In your project (${(projects || 'build').slice(0, 45)}), what core architectural trade-offs did you make, and what would you re-architect today?`,
+                  `What was the hardest debugging wall you hit teaching yourself ${(selfTaught || 'systems').slice(0, 40)}, and how did you isolate the root cause?`,
+                  `How do you systematically master complex technical topics without relying on guided courses or tutorials?`,
+                  `Why is maintaining an independent, sovereign domain essential to your creative agency over proprietary platforms?`,
+                  `What does 'uncompromising technical craft' look like in your personal daily builds and architecture?`,
+                  `What rare perspective, tool, or knowledge will your node contribute to The Uncommons webring?`,
+                ];
+
             return {
-              score: Math.min(99, Math.max(60, Number(parsed.score) || 85)),
-              verdict: parsed.verdict || 'Autodidactic Builder',
+              score: Math.min(99, Math.max(60, Number(parsed.score) || 86)),
+              verdict: parsed.verdict || 'Promising Independent Thinker',
               summary: parsed.summary || 'Demonstrates verifiable engineering curiosity and independent initiative.',
-              signals: Array.isArray(parsed.signals) ? parsed.signals.slice(0, 3) : ['Authentic hands-on builder', 'Independent perspective'],
-              question: parsed.question || `What was the most challenging technical roadblock you encountered in your builds?`,
+              signals: Array.isArray(parsed.signals) ? parsed.signals.slice(0, 3) : ['Authentic hands-on builder', 'Independent perspective', 'Self-taught initiative'],
+              questions,
             };
           }
         }
@@ -227,6 +247,7 @@ Return ONLY a JSON object with this exact structure:
   const cleanObsession = (obsession || '').replace(/^(i am |i'm |obsessed with |about )/i, '').trim();
   const cleanSelfTaught = (selfTaught || '').replace(/^(i taught myself |teaching myself |learning )/i, '').trim();
   const cleanProjects = (projects || '').replace(/^(i built |i made |i created |working on )/i, '').trim();
+  const cleanWhy = (why || '').replace(/^(i want |my goal |to )/i, '').trim();
 
   let score = 84;
   if (wordCount > 60) score += 3;
@@ -255,23 +276,32 @@ Return ONLY a JSON object with this exact structure:
   const signals = [
     `Self-taught depth: "${cleanSelfTaught.slice(0, 48)}..."`,
     `Craft & experiments: "${cleanProjects.slice(0, 48)}..."`,
+    hasProofLink ? `Verifiable proof link attached (${proof.replace(/^https?:\/\//, '').slice(0, 24)}...)` : `Goal: "${cleanWhy.slice(0, 45)}..."`,
   ];
-  if (hasProofLink) {
-    signals.push(`Verifiable proof link attached (${proof.replace(/^https?:\/\//, '').slice(0, 24)}...)`);
-  }
 
   const summary = `Focuses on ${cleanObsession.slice(0, 45) || 'systems engineering'}. Solved theoretical and implementation challenges in ${cleanSelfTaught.slice(0, 35) || 'self-directed studies'}.`;
 
-  const question = cleanProjects
-    ? `In your project (${cleanProjects.slice(0, 45)}), what trade-offs did you make in the design, and what would you do differently today?`
-    : `What was the hardest debugging wall you hit teaching yourself ${cleanSelfTaught.slice(0, 40)}, and how did you resolve it?`;
+  const questions = [
+    cleanProjects
+      ? `In your project (${cleanProjects.slice(0, 45)}), what core architectural trade-offs did you make, and what would you re-architect today?`
+      : `What was the most challenging technical system you ever designed from scratch?`,
+    cleanSelfTaught
+      ? `What was the hardest debugging wall, memory leak, or obstacle you hit teaching yourself ${cleanSelfTaught.slice(0, 40)}, and how did you isolate the root cause?`
+      : `Describe a time your code failed mysteriously and how you systematically isolated the problem.`,
+    `How do you systematically master complex engineering domains without relying on guided courses or tutorials?`,
+    `Why is maintaining an independent, sovereign domain essential to your creative agency over proprietary walled gardens?`,
+    `What does 'uncompromising technical craft' look like in your daily engineering practice?`,
+    cleanWhy
+      ? `Given your vision ("${cleanWhy.slice(0, 45)}"), what rare perspective, build, or insight will your node contribute to The Uncommons webring?`
+      : `What will other members of The Uncommons webring learn from inspecting your node?`,
+  ];
 
   return {
     score,
     verdict,
     summary,
     signals,
-    question,
+    questions,
   };
 }
 
@@ -1449,17 +1479,39 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       // Visual Score Bar Helper
       const filled = Math.min(10, Math.max(0, Math.round(aiResult.score / 10)));
-      const scoreBar = `\`[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}]\` **${aiResult.score}/100**`;
+      const scoreBar = `[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}] ${aiResult.score}/100`;
 
       const aiEmbed = new EmbedBuilder()
-        .setTitle(`⚡ CANDIDATE AUDIT // @${interaction.user.username}`)
-        .setDescription(`**Score:** ${scoreBar}\n**Verdict:** \`${aiResult.verdict}\``)
+        .setTitle('🕵️ INSPECTOR BARTHOLOMEW // CANDIDATE AUDIT')
+        .setDescription(
+          `Candidate dossier scrutiny for <@${applicantId}> (\`${interaction.user.username}\`).\n` +
+          `*"I review Ring applications between espresso shots and unfiltered smokes. No vibecoding allowed on my watch."*\n\n` +
+          `**🎯 Alignment Index**\n` +
+          `\`${scoreBar}\`\n` +
+          `**Verdict:** \`${aiResult.verdict}\`\n\n` +
+          `**Auditor Assessment:** ${aiResult.summary}`
+        )
         .setColor(0x10b981)
         .addFields(
-          { name: 'Signals', value: aiResult.signals.map((s) => `• ${s}`).join('\n'), inline: false },
-          { name: 'Reviewer Inquiry', value: `> ${aiResult.question || (Array.isArray(aiResult.questions) ? aiResult.questions[0] : 'What was the most challenging technical roadblock you encountered in your builds?')}`, inline: false }
+          { name: '📊 Candidate Signals Identified', value: aiResult.signals.map((s) => `• ${s}`).join('\n'), inline: false }
         )
-        .setFooter({ text: 'Inspector Bartholomew • Fast-Track Audit' })
+        .setFooter({ text: 'Inspector Bartholomew • Chief Admissions Auditor' })
+        .setTimestamp();
+
+      // 6 Mandatory Technical Interview / Icebreaker Questions
+      const questionsFormatted = aiResult.questions
+        .map((q, idx) => `**${idx + 1}.** ${q}`)
+        .join('\n\n');
+
+      const icebreakerEmbed = new EmbedBuilder()
+        .setTitle('📋 BARTHOLOMEW\'S ICEBREAKER DOCKET // 6 REQUIRED QUESTIONS')
+        .setDescription(
+          `Candidate <@${applicantId}>, before the Council can ratify your key, please answer these **6 interview questions** directly in this channel:\n\n` +
+          questionsFormatted + '\n\n' +
+          `*Take your time. Deep, authentic technical answers are favored over buzzwords. Reviewers will inspect your responses before casting votes.*`
+        )
+        .setColor(0x06b6d4)
+        .setFooter({ text: 'Admissions Interview Stage • 6 Mandatory Inquiries' })
         .setTimestamp();
 
       const reviewerPings = getReviewerPings(interaction.guild);
@@ -1492,7 +1544,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await interaction.channel.send({
         content: `🔔 **NEW APPLICATION SUBMITTED** by <@${applicantId}> | Reviewers: ${reviewerPings}`,
-        embeds: [answersEmbed, aiEmbed],
+        embeds: [answersEmbed, aiEmbed, icebreakerEmbed],
         components: [staffRow1, staffRow2],
       });
       return;
@@ -1682,9 +1734,44 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (!pings) {
       pings = config.seniorStaffRoleId ? `<@&${config.seniorStaffRoleId}>` : (config.staffRoleId ? `<@&${config.staffRoleId}>` : 'Council Reviewers');
     }
+
     await interaction.editReply({
-      content: `📢 **REVIEWERS CALLED:** <@${interaction.user.id}> requested assistance or second review on ticket \`${ticketId}\` (Candidate: <@${applicantId}>).\nReviewers: ${pings}`,
+      content: `📢 **COUNCIL SIGNAL BROADCASTED:** <@${interaction.user.id}> has signaled Council for docket \`${ticketId}\` (Candidate: <@${applicantId}>).\nReviewers & Council: ${pings}`,
+      allowedMentions: { parse: ['roles', 'users'] },
     });
+
+    // Also broadcast an urgent alert to #council-review channel with Jump Button
+    if (config.councilChannelId) {
+      try {
+        const councilCh = interaction.guild.channels.cache.get(config.councilChannelId) || await interaction.guild.channels.fetch(config.councilChannelId);
+        if (councilCh) {
+          const jumpBtn = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setLabel('⚡ Jump to Candidate Docket')
+              .setStyle(ButtonStyle.Link)
+              .setURL(`https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}`)
+          );
+          const councilEmbed = new EmbedBuilder()
+            .setTitle(`📢 COUNCIL SIGNAL // ${ticketId || 'Active Docket'}`)
+            .setDescription(
+              `Reviewer <@${interaction.user.id}> has requested Council assistance/second review on docket **\`${ticketId || 'Active'}\`** for Candidate <@${applicantId}>.\n\n` +
+              `Please click below to enter the docket channel and assist with evaluation.`
+            )
+            .setColor(0xf59e0b)
+            .setFooter({ text: 'Inspector Bartholomew • Council Dispatch' })
+            .setTimestamp();
+
+          await councilCh.send({
+            content: `📢 **COUNCIL ATTENTION REQUIRED** | ${pings}`,
+            embeds: [councilEmbed],
+            components: [jumpBtn],
+            allowedMentions: { parse: ['roles', 'users'] },
+          });
+        }
+      } catch (cErr) {
+        console.warn('Could not post alert to council channel:', cErr.message);
+      }
+    }
     return;
   }
 
@@ -1952,7 +2039,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       content: `🛑 **ADMISSION DOCKET CLOSED // VERDICT: NOT ADMITTED**\n` +
                `Reviewer <@${interaction.user.id}> has concluded review for Candidate <@${applicantId}> (\`${applicantUsername}\`).\n` +
                `Encouraging status notice was dispatched to applicant.\n\n` +
-               `⏳ *Closing channel in 10 seconds...*`,
+               `⏳ *This docket channel will automatically close in 5 minutes.*`,
     });
 
     setTimeout(async () => {
@@ -1961,7 +2048,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       } catch (delErr) {
         console.error('Failed to delete channel:', delErr);
       }
-    }, 10000);
+    }, 300000); // 5 minutes
     return;
   }
 

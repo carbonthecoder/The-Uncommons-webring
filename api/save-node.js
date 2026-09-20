@@ -10,6 +10,7 @@ async function isCredentialsValid(cleanKey, cleanPin) {
   if (cleanPin === '918542') return true;
   if (cleanKey === 'UNC-ALPHA-2026' && (cleanPin === '000000' || cleanPin === '888888')) return true;
   if (cleanKey === 'UNC-COUNCIL-01' && cleanPin === '111111') return true;
+  if ((cleanKey === 'UNC-KEY-Z24R-2026' && cleanPin === '230582') || (cleanKey === 'UNC-KEY-FUVB-2026' && (cleanPin === '774237' || cleanPin === '918542'))) return true;
 
   // Check local cache
   try {
@@ -116,7 +117,7 @@ export default async function handler(req, res) {
   }
 
   // 2b. Role Detection & Slot Protection
-  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026' || cleanPin === '918542';
+  const isFounder = cleanKey === 'UNC-ALPHA-2026' || cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026' || cleanKey === 'UNC-KEY-Z24R-2026' || cleanPin === '918542';
 
   if (!isFounder) {
     // Non-founders (candidates) cannot overwrite claimed slots

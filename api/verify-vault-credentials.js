@@ -11,6 +11,8 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
   const { key, pin } = req.body || {};
   const cleanKey = String(key || '').trim().toUpperCase();
   const cleanPin = String(pin || '').trim();
@@ -28,6 +30,9 @@ export default async function handler(req, res) {
   }
   if (cleanKey === 'UNC-COUNCIL-01' && cleanPin === '111111') {
     return res.json({ valid: true, key: cleanKey, username: 'council', message: 'Council Key authenticated' });
+  }
+  if ((cleanKey === 'UNC-KEY-Z24R-2026' && cleanPin === '230582') || (cleanKey === 'UNC-KEY-FUVB-2026' && (cleanPin === '774237' || cleanPin === '918542'))) {
+    return res.json({ valid: true, key: cleanKey, username: 'the_priyxnshu_', slotId: 'NODE-002', message: 'Council Founder Key authenticated (Priyanshu)' });
   }
 
   // 2. Check if dedicated Bot API URL is configured

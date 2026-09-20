@@ -109,18 +109,26 @@ export const ApplyPage: React.FC = () => {
     }
   }, []);
 
-  // Poll live ticket status if user has an existing ticket
+  // Fast live ticket status polling (sub-3s sync without manual page refresh)
   useEffect(() => {
     if (!existingTicket) return;
 
     let isMounted = true;
     const checkLiveStatus = async () => {
       try {
-        const res = await fetch(`/api/check-ticket?ticketId=${encodeURIComponent(existingTicket.ticketId)}&handle=${encodeURIComponent(existingTicket.discordHandle)}`);
+        const res = await fetch(`/api/check-ticket?ticketId=${encodeURIComponent(existingTicket.ticketId)}&handle=${encodeURIComponent(existingTicket.discordHandle)}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.status) {
-            setTicketStatus(data.status);
+            setTicketStatus((prev) => {
+              if (prev !== data.status && (data.status === 'approved' || data.status === 'rejected')) {
+                sound.playHarmonic();
+              }
+              return data.status;
+            });
             if (data.message) setTicketStatusMsg(data.message);
           }
         }
@@ -130,10 +138,29 @@ export const ApplyPage: React.FC = () => {
     };
 
     checkLiveStatus();
-    const interval = setInterval(checkLiveStatus, 15000);
+    // Fast 3-second heartbeat polling
+    const interval = setInterval(checkLiveStatus, 3000);
+
+    // Immediate poll when user switches tabs or focuses window
+    const handleFocus = () => checkLiveStatus();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    // BroadcastChannel for cross-tab instant synchronization
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('unc_ticket_sync');
+      bc.onmessage = () => checkLiveStatus();
+    } catch {
+      // not supported in older envs
+    }
+
     return () => {
       isMounted = false;
       clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      if (bc) bc.close();
     };
   }, [existingTicket]);
 
