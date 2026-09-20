@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { getNextMember, getPrevMember, getRandomMember } from '../data/members';
+import { useLiveMembers, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
 import { ExternalLink } from 'lucide-react';
 
@@ -8,6 +8,7 @@ export const GoPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const from = searchParams.get('from') || '';
   const action = searchParams.get('action') || 'next';
+  const liveMembers = useLiveMembers();
   const [target, setTarget] = useState<Member | null>(null);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export const GoPage: React.FC = () => {
     }, 1400);
 
     return () => clearTimeout(timer);
-  }, [from, action]);
+  }, [from, action, liveMembers]);
 
   if (!target) return null;
 
