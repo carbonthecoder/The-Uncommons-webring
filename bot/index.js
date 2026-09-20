@@ -895,6 +895,31 @@ app.post('/api/create-ticket', async (req, res) => {
       components: [candidateRow],
     });
 
+    // Dispatch helpful DM with direct jump button to candidate
+    try {
+      const ticketLinkButton = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel('📝 Enter Admissions Docket')
+          .setStyle(ButtonStyle.Link)
+          .setURL(`https://discord.com/channels/${guild.id}/${ticketChannel.id}`)
+      );
+      const ticketDM = new EmbedBuilder()
+        .setTitle(`The Uncommons — Admissions Docket [${ticketId}]`)
+        .setDescription(
+          `👋 Greetings <@${member.id}>,\n\n` +
+          `Your private admissions review channel has been opened on Discord:\n` +
+          `👉 **<#${ticketChannel.id}>**\n\n` +
+          `Please enter your channel and click **[ 📝 Open Application Dialog ]** to submit your 5 intake questions.`
+        )
+        .setColor(0x10b981)
+        .setFooter({ text: 'The Uncommons • Admissions Reception' })
+        .setTimestamp();
+
+      await member.user.send({ embeds: [ticketDM], components: [ticketLinkButton] });
+    } catch (dmErr) {
+      console.warn(`Could not dispatch intake DM to user ${member.id}:`, dmErr.message);
+    }
+
     return res.json({
       success: true,
       ticketId,
@@ -1329,6 +1354,31 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await interaction.channel.send({
           content: `🔁 **REVIEW HANDED OFF:** Reviewer <@${interaction.user.id}> is AFK/busy and transferred active review of ${ticketText} ${candidateText} to <@${targetUserId}>!\n<@${targetUserId}>, please inspect the candidate dossier and continue the evaluation.`,
         });
+
+        // Dispatch alert DM to new assigned reviewer
+        try {
+          const targetReviewerUser = await client.users.fetch(targetUserId);
+          if (targetReviewerUser) {
+            const jumpRow = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setLabel('🔍 Jump to Docket')
+                .setStyle(ButtonStyle.Link)
+                .setURL(`https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}`)
+            );
+            const handoffDM = new EmbedBuilder()
+              .setTitle(`The Uncommons — Docket Assigned // ${ticketId || 'Active'}`)
+              .setDescription(
+                `Reviewer <@${interaction.user.id}> is AFK/busy and handed over review of docket **\`${ticketId || 'Active'}\`** ${candidateText} to you.\n\n` +
+                `Please navigate to the review channel to evaluate the candidate's dossier.`
+              )
+              .setColor(0x06b6d4)
+              .setFooter({ text: 'Inspector Bartholomew • Review Handoff' })
+              .setTimestamp();
+            await targetReviewerUser.send({ embeds: [handoffDM], components: [jumpRow] });
+          }
+        } catch (dmErr) {
+          console.warn('Could not dispatch handoff DM to reviewer:', dmErr.message);
+        }
         return;
       }
 
@@ -1407,7 +1457,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         .setColor(0x10b981)
         .addFields(
           { name: 'Signals', value: aiResult.signals.map((s) => `• ${s}`).join('\n'), inline: false },
-          { name: 'Reviewer Inquiry', value: `> ${aiResult.questions[0]}`, inline: false }
+          { name: 'Reviewer Inquiry', value: `> ${aiResult.question || (Array.isArray(aiResult.questions) ? aiResult.questions[0] : 'What was the most challenging technical roadblock you encountered in your builds?')}`, inline: false }
         )
         .setFooter({ text: 'Inspector Bartholomew • Fast-Track Audit' })
         .setTimestamp();
@@ -1763,8 +1813,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
         .setFooter({ text: 'The Uncommons • Sealed by Inspector Bartholomew' })
         .setTimestamp();
 
+      const vaultButtonRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel('🔑 Enter Sovereign Node Studio')
+          .setStyle(ButtonStyle.Link)
+          .setURL(`https://the-uncommons.vercel.app/seal?key=${uniqueKey}&pin=${secretPin}`)
+      );
+
       try {
-        await applicantUser.send({ embeds: [dmEmbed] });
+        await applicantUser.send({ embeds: [dmEmbed], components: [vaultButtonRow] });
       } catch (dmErr) {
         dmSuccess = false;
         console.warn(`Could not DM user ${applicantId}:`, dmErr.message);
