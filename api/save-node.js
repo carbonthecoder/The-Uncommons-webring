@@ -33,7 +33,7 @@ async function isCredentialsValid(cleanKey, cleanPin) {
         for (const msg of messages) {
           if (msg.content && msg.content.includes('UNC_CREDENTIAL:')) {
             try {
-              const match = msg.content.match(/UNC_CREDENTIAL:\s*({[^}]+})/);
+              const match = msg.content.match(/UNC_CREDENTIAL:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
               if (match) {
                 const cred = JSON.parse(match[1]);
                 if (String(cred.key).trim().toUpperCase() === cleanKey && String(cred.pin).trim() === cleanPin) {
@@ -42,6 +42,7 @@ async function isCredentialsValid(cleanKey, cleanPin) {
               }
             } catch {}
           }
+
           for (const embed of (msg.embeds || [])) {
             let foundKey = null;
             let foundPin = null;

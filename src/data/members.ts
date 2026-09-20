@@ -198,7 +198,14 @@ export function useLiveMembers(): Member[] {
 
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('unc_nodes_updated', handleUpdate);
+
+    // Periodic cloud refresh every 15 seconds to keep all devices globally in sync
+    const pollInterval = setInterval(() => {
+      syncServerNodes().then(m => setMembers(m));
+    }, 15000);
+
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('unc_nodes_updated', handleUpdate);
     };
@@ -206,4 +213,5 @@ export function useLiveMembers(): Member[] {
 
   return members;
 }
+
 

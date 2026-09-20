@@ -77,7 +77,7 @@ export default async function handler(req, res) {
             // Check structured credential comments
             if (msg.content && msg.content.includes('UNC_CREDENTIAL:')) {
               try {
-                const match = msg.content.match(/UNC_CREDENTIAL:\s*({[^}]+})/);
+                const match = msg.content.match(/UNC_CREDENTIAL:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
                 if (match) {
                   const cred = JSON.parse(match[1]);
                   if ((ticketId && cred.ticketId === ticketId) || (cleanHandle && cred.username?.toLowerCase() === cleanHandle)) {
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
             // Check structured ticket status (rejections)
             if (msg.content && msg.content.includes('UNC_TICKET_STATUS:')) {
               try {
-                const match = msg.content.match(/UNC_TICKET_STATUS:\s*({[^}]+})/);
+                const match = msg.content.match(/UNC_TICKET_STATUS:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
                 if (match) {
                   const rec = JSON.parse(match[1]);
                   if ((ticketId && rec.ticketId === ticketId) || (cleanHandle && rec.username?.toLowerCase() === cleanHandle)) {
@@ -111,6 +111,7 @@ export default async function handler(req, res) {
                 }
               } catch {}
             }
+
 
             // Check legacy embed fields
             for (const embed of (msg.embeds || [])) {

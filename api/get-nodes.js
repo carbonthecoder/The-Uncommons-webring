@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         for (const msg of messages.reverse()) {
           if (msg.content && msg.content.includes('UNC_NODE_DATA:')) {
             try {
-              const match = msg.content.match(/UNC_NODE_DATA:\s*({[^}]+})/);
+              const match = msg.content.match(/UNC_NODE_DATA:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
               if (match) {
                 const nodeData = JSON.parse(match[1]);
                 if (nodeData && nodeData.id) {
@@ -59,6 +59,7 @@ export default async function handler(req, res) {
               console.warn('Failed to parse UNC_NODE_DATA message:', pErr);
             }
           }
+
         }
       }
     } catch (discErr) {

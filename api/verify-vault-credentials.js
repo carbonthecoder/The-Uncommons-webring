@@ -83,7 +83,7 @@ export default async function handler(req, res) {
           // Check for structured comment in message content
           if (msg.content && msg.content.includes('UNC_CREDENTIAL:')) {
             try {
-              const match = msg.content.match(/UNC_CREDENTIAL:\s*({[^}]+})/);
+              const match = msg.content.match(/UNC_CREDENTIAL:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
               if (match) {
                 const cred = JSON.parse(match[1]);
                 if (String(cred.key).trim().toUpperCase() === cleanKey && String(cred.pin).trim() === cleanPin) {
@@ -98,6 +98,7 @@ export default async function handler(req, res) {
               }
             } catch {}
           }
+
 
           // Check for credentials in embed fields
           for (const embed of (msg.embeds || [])) {
