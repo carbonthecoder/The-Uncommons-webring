@@ -53,6 +53,7 @@ export const MEMBERS: Member[] = [
 ];
 
 let serverNodesCache: Member[] = [];
+let allGenesisSlotsCache: Member[] = [];
 
 let ringChannel: BroadcastChannel | null = null;
 try {
@@ -77,7 +78,7 @@ export function broadcastRingUpdate() {
 
 export async function syncServerNodes(bypassCache: boolean = false): Promise<Member[]> {
   try {
-    const url = bypassCache ? '/api/get-nodes?refresh=true' : '/api/get-nodes';
+    const url = bypassCache ? `/api/get-nodes?refresh=true&t=${Date.now()}` : `/api/get-nodes?t=${Date.now()}`;
     let res = await fetch(url);
     if (!res.ok) {
       res = await fetch('/nodes.json?t=' + Date.now());
@@ -85,25 +86,25 @@ export async function syncServerNodes(bypassCache: boolean = false): Promise<Mem
     if (res.ok) {
       const result = await res.json();
       const data = Array.isArray(result) ? result : (result.nodes || []);
-      if (Array.isArray(data)) {
-        serverNodesCache = data
-          .filter((d: any) => d.verified && d.domain && !d.domain.includes('unclaimed'))
-          .map((d: any, i: number) => ({
-            id: d.id || `NODE-00${i + 1}`,
-            name: d.name || 'Builder',
-            handle: d.handle || 'builder',
-            domain: d.domain,
-            url: d.url || (d.domain.startsWith('http') ? d.domain : `https://${d.domain}`),
-            field: d.field || 'Sovereign Systems & Web',
-            bio: d.bio || 'Verified member of The Uncommons webring.',
-            proofOfWork: d.proofOfWork || 'Shipped verified production runtime.',
-            proofUrl: d.proofUrl || `https://github.com/${d.handle}`,
-            tags: d.tags || ['Verified', 'Systems'],
-            joinDate: d.joinDate || '2026-01-01',
-            verified: true,
-            ringPosition: d.ringPosition || (i + 1),
-            status: d.status || 'online',
-          }));
+      if (Array.isArray(data) && data.length > 0) {
+        allGenesisSlotsCache = data.map((d: any, i: number) => ({
+          id: d.id || `NODE-00${i + 1}`,
+          name: d.name || 'Awaiting Candidate',
+          handle: d.handle || 'vacant',
+          domain: d.domain || `unclaimed-slot-00${i + 1}.xyz`,
+          url: d.url || (d.domain && !d.domain.includes('unclaimed') ? (d.domain.startsWith('http') ? d.domain : `https://${d.domain}`) : 'https://the-uncommons.vercel.app/apply'),
+          field: d.field || 'Open Genesis Vacancy',
+          bio: d.bio || 'Genesis slot. Applications open via Discord.',
+          proofOfWork: d.proofOfWork || 'Awaiting candidate build submission.',
+          proofUrl: d.proofUrl || 'https://the-uncommons.vercel.app/apply',
+          tags: d.tags || ['Genesis', 'Vacancy'],
+          joinDate: d.joinDate || '2026-01-01',
+          verified: !!d.verified && !d.domain?.includes('unclaimed') && d.handle !== 'vacant',
+          ringPosition: d.ringPosition || (i + 1),
+          status: d.status || 'online',
+        }));
+
+        serverNodesCache = allGenesisSlotsCache.filter((s) => s.verified);
         window.dispatchEvent(new Event('unc_nodes_updated'));
       }
     }
@@ -113,17 +114,94 @@ export async function syncServerNodes(bypassCache: boolean = false): Promise<Mem
   return getAllMembers();
 }
 
+export function getAllGenesisSlots(): Member[] {
+  if (allGenesisSlotsCache.length > 0) {
+    return allGenesisSlotsCache;
+  }
+  return Array.from({ length: 8 }, (_, i) => {
+    const num = i + 1;
+    const id = `NODE-00${num}`;
+    const found = MEMBERS.find((m) => m.id === id);
+    if (found) return found;
+    return {
+      id,
+      name: 'Awaiting Candidate',
+      handle: 'vacant',
+      domain: `unclaimed-slot-00${num}.xyz`,
+      url: 'https://the-uncommons.vercel.app/apply',
+      field: 'Open Genesis Vacancy',
+      bio: `Genesis vacancy slot #${num}. Applications open via Discord.`,
+      proofOfWork: 'Awaiting candidate build submission.',
+      proofUrl: 'https://the-uncommons.vercel.app/apply',
+      tags: ['Genesis', 'Vacancy'],
+      joinDate: '2026-01-01',
+      verified: false,
+      ringPosition: num,
+      status: 'reviewing' as const,
+    };
+  });
+}
+
+export function vacateCustomNode(slotId: string) {
+  try {
+    const existing = getCustomActiveNodes();
+    const updated = existing.filter((m) => m.id !== slotId);
+    localStorage.setItem('unc_custom_nodes', JSON.stringify(updated));
+
+    serverNodesCache = serverNodesCache.filter((m) => m.id !== slotId);
+    const slotNum = parseInt(slotId.replace(/\D/g, ''), 10) || 1;
+    const idx = allGenesisSlotsCache.findIndex((s) => s.id === slotId);
+    const vacantObj: Member = {
+      id: slotId,
+      name: 'Awaiting Candidate',
+      handle: 'vacant',
+      domain: `unclaimed-slot-00${slotNum}.xyz`,
+      url: 'https://the-uncommons.vercel.app/apply',
+      field: 'Open Genesis Vacancy',
+      bio: `Genesis vacancy slot #${slotNum}. Applications open via Discord.`,
+      proofOfWork: 'Awaiting candidate build submission.',
+      proofUrl: 'https://the-uncommons.vercel.app/apply',
+      tags: ['Genesis', 'Vacancy'],
+      joinDate: '2026-01-01',
+      verified: false,
+      ringPosition: slotNum,
+      status: 'reviewing',
+    };
+    if (idx !== -1) {
+      allGenesisSlotsCache[idx] = vacantObj;
+    } else {
+      allGenesisSlotsCache.push(vacantObj);
+    }
+
+    broadcastRingUpdate();
+  } catch {}
+}
+
 export function getAllMembers(): Member[] {
   const custom = getCustomActiveNodes();
   const map = new Map<string, Member>();
-  for (const m of MEMBERS) {
-    map.set(m.id, m);
+
+  if (allGenesisSlotsCache.length > 0) {
+    for (const s of allGenesisSlotsCache) {
+      if (s.verified && s.domain && !s.domain.includes('unclaimed') && s.handle !== 'vacant') {
+        map.set(s.id, s);
+      }
+    }
+  } else {
+    for (const m of MEMBERS) {
+      map.set(m.id, m);
+    }
+    for (const s of serverNodesCache) {
+      if (s.verified && s.domain && !s.domain.includes('unclaimed') && s.handle !== 'vacant') {
+        map.set(s.id, s);
+      }
+    }
   }
-  for (const s of serverNodesCache) {
-    map.set(s.id, s);
-  }
+
   for (const c of custom) {
-    map.set(c.id, c);
+    if (c.verified && c.domain && !c.domain.includes('unclaimed') && c.handle !== 'vacant') {
+      map.set(c.id, c);
+    }
   }
   return Array.from(map.values()).sort((a, b) => a.ringPosition - b.ringPosition);
 }

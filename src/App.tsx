@@ -9,12 +9,14 @@ import { ApplyPage } from './pages/ApplyPage';
 import { ManifestoPage } from './pages/ManifestoPage';
 import { GoPage } from './pages/GoPage';
 import { OwnerOrchestratorModal } from './components/OwnerOrchestratorModal';
+import { OwnerPasscodeModal } from './components/OwnerPasscodeModal';
 import { sound } from './utils/audio';
 import confetti from 'canvas-confetti';
 
 export default function App() {
   const liveMembers = useLiveMembers();
   const verifiedCount = liveMembers.filter(m => m.verified).length;
+  const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
 
   // Global "owner" keyboard trigger listener
@@ -43,23 +45,8 @@ export default function App() {
 
       if (keyBuffer.join('') === 'owner') {
         keyBuffer = [];
-        // Set Founder Superadmin Credentials in sessionStorage
-        sessionStorage.setItem('unc_vault_key', 'UNC-ALPHA-2026');
-        sessionStorage.setItem('unc_vault_pin', '000000');
-        sessionStorage.setItem('unc_vault_verified', 'true');
-        sessionStorage.setItem('unc_owner_mode', 'true');
-
-        // Play audio & confetti
-        sound.playOwnerChime();
-        confetti({
-          particleCount: 75,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ['#f59e0b', '#10b981', '#ffffff'],
-        });
-
-        window.dispatchEvent(new Event('unc_owner_activated'));
-        setIsOwnerModalOpen(true);
+        // Open Passcode Modal to verify founder passcode 918542
+        setIsPasscodeModalOpen(true);
       }
     };
 
@@ -80,6 +67,23 @@ export default function App() {
       <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
         {/* Top Navbar */}
         <Navbar nodeCount={verifiedCount} />
+
+        {/* Owner Passcode Verification Modal */}
+        <OwnerPasscodeModal
+          isOpen={isPasscodeModalOpen}
+          onClose={() => setIsPasscodeModalOpen(false)}
+          onSuccess={() => {
+            setIsPasscodeModalOpen(false);
+            setIsOwnerModalOpen(true);
+            sound.playOwnerChime();
+            confetti({
+              particleCount: 65,
+              spread: 75,
+              origin: { y: 0.6 },
+              colors: ['#ffffff', '#a1a1aa', '#71717a'],
+            });
+          }}
+        />
 
         {/* Global Founder Orchestrator Modal */}
         <OwnerOrchestratorModal

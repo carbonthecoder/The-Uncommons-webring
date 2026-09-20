@@ -1,112 +1,163 @@
 import React, { useState, useEffect } from 'react';
-import { Database, GitCommit, FileCode, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
+import { Terminal, Check, ArrowRight } from 'lucide-react';
 
 interface MongoSaveOverlayProps {
   isSaving: boolean;
   targetDomain: string;
   slotId: string;
+  onFinished?: () => void;
 }
 
-export const MongoSaveOverlay: React.FC<MongoSaveOverlayProps> = ({ isSaving, targetDomain, slotId }) => {
-  const [step, setStep] = useState(1);
-  const [progress, setProgress] = useState(15);
+export const MongoSaveOverlay: React.FC<MongoSaveOverlayProps> = ({
+  isSaving,
+  targetDomain,
+  slotId,
+  onFinished,
+}) => {
+  const [step, setStep] = useState(0);
+  const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
     if (!isSaving) {
-      setStep(1);
-      setProgress(15);
+      setStep(0);
+      setIsDone(false);
       return;
     }
 
-    const t1 = setTimeout(() => {
-      setStep(2);
-      setProgress(45);
-    }, 400);
+    setStep(1);
 
-    const t2 = setTimeout(() => {
-      setStep(3);
-      setProgress(75);
-    }, 950);
-
-    const t3 = setTimeout(() => {
-      setStep(4);
-      setProgress(100);
-    }, 1500);
+    const t1 = setTimeout(() => setStep(2), 1500);
+    const t2 = setTimeout(() => setStep(3), 3200);
+    const t3 = setTimeout(() => setStep(4), 4800);
+    const t4 = setTimeout(() => {
+      setIsDone(true);
+      if (onFinished) onFinished();
+    }, 6200);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
+      clearTimeout(t4);
     };
-  }, [isSaving]);
+  }, [isSaving, onFinished]);
 
   if (!isSaving) return null;
 
+  const handleGoToNodes = () => {
+    window.location.href = '/nodes';
+  };
+
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/90 backdrop-blur-md rounded-xl animate-in fade-in duration-200 text-zinc-100 font-sans border border-amber-500/30">
-      {/* High-Tech Orbital Ring Animation */}
-      <div className="relative w-20 h-20 mb-6 flex items-center justify-center select-none">
-        {/* Outer dashed spinning ring */}
-        <div className="absolute inset-0 border-2 border-dashed border-zinc-600 rounded-full animate-[spin_8s_linear_infinite]" />
-        {/* Inner counter-spinning amber ring */}
-        <div className="absolute inset-2 border-2 border-amber-400/80 border-t-transparent rounded-full animate-[spin_3s_linear_infinite_reverse]" />
-        {/* Core pulse dot */}
-        <div className="relative w-4 h-4 bg-amber-400 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.8)] animate-pulse flex items-center justify-center">
-          <div className="w-1.5 h-1.5 bg-black rounded-full" />
-        </div>
-      </div>
-
-      {/* Title & Target readout */}
-      <div className="text-center space-y-1 mb-5">
-        <div className="font-mono text-xs font-bold tracking-widest text-amber-400 uppercase flex items-center justify-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-400" />
-          <span>PERSISTING TO MONGODB ATLAS &amp; GLOBAL CLOUD</span>
-        </div>
-        <p className="font-mono text-[11px] text-zinc-400">
-          Syncing <span className="text-white font-semibold">{slotId}</span> ({targetDomain || 'builder.domain'}) across cloud registry
-        </p>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full max-w-xs bg-zinc-900 border border-white/10 rounded-full h-2 mb-6 overflow-hidden">
-        <div
-          className="bg-gradient-to-r from-amber-500 to-amber-300 h-full transition-all duration-300 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {/* Live Step Checklist */}
-      <div className="w-full max-w-sm space-y-2 font-mono text-[11px]">
-        <div className={`flex items-center justify-between p-2 rounded border transition-colors ${step >= 1 ? 'bg-zinc-900/80 border-amber-500/40 text-amber-300' : 'bg-zinc-950/40 border-white/5 text-zinc-600'}`}>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-            <span>1. Authenticating 2-Step Sovereign Credentials</span>
+    <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/98 rounded-xl animate-in fade-in duration-150 text-zinc-300 font-mono select-none">
+      <div className="w-full max-w-lg p-6 rounded-lg border border-zinc-800 bg-[#0c0c0e] shadow-2xl space-y-5 text-left">
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <Terminal className="w-3.5 h-3.5 text-zinc-300" />
+            <span>CLUSTERSYNC // {slotId}</span>
           </div>
-          {step > 1 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <span className="text-[9px] animate-pulse text-amber-400">RUNNING</span>}
+          <div className="text-[11px] text-zinc-500">
+            {isDone ? (
+              <span className="text-zinc-200 font-semibold">[READY]</span>
+            ) : (
+              <span className="animate-pulse">[RUNNING]</span>
+            )}
+          </div>
         </div>
 
-        <div className={`flex items-center justify-between p-2 rounded border transition-colors ${step >= 2 ? 'bg-zinc-900/80 border-amber-500/40 text-amber-300' : 'bg-zinc-950/40 border-white/5 text-zinc-600'}`}>
-          <div className="flex items-center gap-2">
-            <Database className="w-3.5 h-3.5 text-amber-400" />
-            <span>2. Writing Document Record to MongoDB Atlas</span>
-          </div>
-          {step > 2 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : step === 2 ? <span className="text-[9px] animate-pulse text-amber-400">WRITING...</span> : <span className="text-[9px]">WAITING</span>}
+        {/* Command Line */}
+        <div className="text-xs text-zinc-500">
+          <span className="text-zinc-400">$</span> mongosh &quot;cluster0.uncommons/nodes&quot; --sync --slot={slotId}
         </div>
 
-        <div className={`flex items-center justify-between p-2 rounded border transition-colors ${step >= 3 ? 'bg-zinc-900/80 border-amber-500/40 text-amber-300' : 'bg-zinc-950/40 border-white/5 text-zinc-600'}`}>
-          <div className="flex items-center gap-2">
-            <GitCommit className="w-3.5 h-3.5 text-amber-400" />
-            <span>3. Direct Committing public/nodes.json to GitHub</span>
+        {/* Progress Log Lines */}
+        <div className="space-y-2 text-xs font-mono">
+          <div className="flex items-center justify-between py-1">
+            <span className={step >= 1 ? 'text-zinc-200' : 'text-zinc-600'}>
+              [01/04] Authenticating cryptographic signature
+            </span>
+            <span className="text-[11px] shrink-0 font-sans">
+              {step > 1 ? (
+                <span className="text-zinc-300 flex items-center gap-1"><Check className="w-3 h-3" /> OK</span>
+              ) : step === 1 ? (
+                <span className="text-zinc-500 animate-pulse">...</span>
+              ) : (
+                <span className="text-zinc-700">WAIT</span>
+              )}
+            </span>
           </div>
-          {step > 3 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : step === 3 ? <span className="text-[9px] animate-pulse text-amber-400">COMMITTING...</span> : <span className="text-[9px]">WAITING</span>}
+
+          <div className="flex items-center justify-between py-1">
+            <span className={step >= 2 ? 'text-zinc-200' : 'text-zinc-600'}>
+              [02/04] Writing document record to MongoDB Atlas
+            </span>
+            <span className="text-[11px] shrink-0 font-sans">
+              {step > 2 ? (
+                <span className="text-zinc-300 flex items-center gap-1"><Check className="w-3 h-3" /> OK</span>
+              ) : step === 2 ? (
+                <span className="text-zinc-500 animate-pulse">...</span>
+              ) : (
+                <span className="text-zinc-700">WAIT</span>
+              )}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between py-1">
+            <span className={step >= 3 ? 'text-zinc-200' : 'text-zinc-600'}>
+              [03/04] Committing sha update to origin/main
+            </span>
+            <span className="text-[11px] shrink-0 font-sans">
+              {step > 3 ? (
+                <span className="text-zinc-300 flex items-center gap-1"><Check className="w-3 h-3" /> OK</span>
+              ) : step === 3 ? (
+                <span className="text-zinc-500 animate-pulse">...</span>
+              ) : (
+                <span className="text-zinc-700">WAIT</span>
+              )}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between py-1">
+            <span className={step >= 4 ? 'text-zinc-200' : 'text-zinc-600'}>
+              [04/04] Synchronizing node state across webring edge
+            </span>
+            <span className="text-[11px] shrink-0 font-sans">
+              {isDone ? (
+                <span className="text-zinc-200 font-bold flex items-center gap-1"><Check className="w-3 h-3" /> LIVE</span>
+              ) : step === 4 ? (
+                <span className="text-zinc-500 animate-pulse">...</span>
+              ) : (
+                <span className="text-zinc-700">WAIT</span>
+              )}
+            </span>
+          </div>
         </div>
 
-        <div className={`flex items-center justify-between p-2 rounded border transition-colors ${step >= 4 ? 'bg-zinc-900/80 border-amber-500/40 text-amber-300' : 'bg-zinc-950/40 border-white/5 text-zinc-600'}`}>
-          <div className="flex items-center gap-2">
-            <FileCode className="w-3.5 h-3.5 text-amber-400" />
-            <span>4. Broadcasting Embed to Discord Key Ledger</span>
+        {/* Minimal Progress Rule */}
+        <div className="w-full bg-zinc-900 h-[2px] rounded-full overflow-hidden">
+          <div
+            className="bg-white h-full transition-all duration-500"
+            style={{
+              width: `${isDone ? 100 : step === 1 ? 25 : step === 2 ? 50 : step === 3 ? 75 : 90}%`,
+            }}
+          />
+        </div>
+
+        {/* Target Info & Navigation Action */}
+        <div className="flex items-center justify-between pt-2 text-[11px] text-zinc-500 border-t border-zinc-850">
+          <div>
+            TARGET: <span className="text-zinc-300">{targetDomain || slotId}</span>
           </div>
-          {step >= 4 ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <span className="text-[9px]">WAITING</span>}
+          {isDone && (
+            <button
+              onClick={handleGoToNodes}
+              className="px-3 py-1 bg-zinc-100 hover:bg-white text-zinc-950 rounded text-[11px] font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow"
+            >
+              <span>View /nodes</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          )}
         </div>
       </div>
     </div>

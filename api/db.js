@@ -181,7 +181,6 @@ async function broadcastToDiscordLedger(node) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        content: payloadContent,
         embeds: [embedPayload],
       }),
     });
@@ -375,7 +374,31 @@ export async function getAllNodes(bypassCache = false) {
     }
   }
 
-  // Step 2: MongoDB Atlas (if configured)
+  // Step 2: GitHub Gist DB (if configured fallback)
+  const gistNodes = await getGistData();
+  if (Array.isArray(gistNodes) && gistNodes.length > 0) {
+    for (const gn of gistNodes) {
+      if (gn.id) {
+        nodeMap.set(gn.id, {
+          ...nodeMap.get(gn.id),
+          ...gn,
+        });
+      }
+    }
+  }
+
+  // Step 3: Discord Key Ledger real-time updates
+  const ledgerNodes = await fetchDiscordLedgerNodes();
+  for (const ln of ledgerNodes) {
+    if (ln && ln.id) {
+      nodeMap.set(ln.id, {
+        ...nodeMap.get(ln.id),
+        ...ln,
+      });
+    }
+  }
+
+  // Step 4: MongoDB Atlas (HIGHEST PRIORITY - PRIMARY AUTHORITY)
   try {
     const mongoDb = await getMongoDatabase();
     if (mongoDb) {
@@ -393,30 +416,6 @@ export async function getAllNodes(bypassCache = false) {
     }
   } catch (mErr) {
     console.warn('MongoDB read fallback:', mErr.message);
-  }
-
-  // Step 3: GitHub Gist DB (if configured)
-  const gistNodes = await getGistData();
-  if (Array.isArray(gistNodes) && gistNodes.length > 0) {
-    for (const gn of gistNodes) {
-      if (gn.id) {
-        nodeMap.set(gn.id, {
-          ...nodeMap.get(gn.id),
-          ...gn,
-        });
-      }
-    }
-  }
-
-  // Step 4: Discord Key Ledger real-time updates
-  const ledgerNodes = await fetchDiscordLedgerNodes();
-  for (const ln of ledgerNodes) {
-    if (ln && ln.id) {
-      nodeMap.set(ln.id, {
-        ...nodeMap.get(ln.id),
-        ...ln,
-      });
-    }
   }
 
   // Deterministic sorting: ringPosition or numeric ID
@@ -474,8 +473,10 @@ export async function saveNodeRecord(updatedNode) {
   // 4. Commit directly to GitHub Repository ("Change in code live update")
   await commitToGitHubRepo(currentNodes, `chore(registry): update node ${node.id} (${node.handle}) [skip ci]`);
 
-  // 5. Broadcast to Discord Key Ledger
-  await broadcastToDiscordLedger(node);
+  // 5. Broadcast to Discord Key Ledger only if verified and non-vacant
+  if (node.verified && !node.domain.includes('unclaimed') && node.handle !== 'vacant') {
+    await broadcastToDiscordLedger(node);
+  }
 
   // Invalidate memory cache
   memoryCacheNodes = null;
@@ -487,6 +488,18 @@ export async function saveNodeRecord(updatedNode) {
  * Batch update/reorder all nodes (e.g. Founder changing positions)
  */
 export async function batchUpdateNodes(updatedNodesList) {
+  // Merge into full 8-node list
+  const allNodes = await getAllNodes(true);
+  for (const updated of updatedNodesList) {
+    const idx = allNodes.findIndex((n) => n.id === updated.id);
+    if (idx !== -1) {
+      allNodes[idx] = { ...allNodes[idx], ...updated, updatedAt: new Date().toISOString() };
+    } else {
+      allNodes.push({ ...updated, updatedAt: new Date().toISOString() });
+    }
+  }
+  allNodes.sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
+
   // 1. Write to MongoDB Atlas
   try {
     const mongoDb = await getMongoDatabase();
@@ -505,33 +518,33 @@ export async function batchUpdateNodes(updatedNodesList) {
     console.warn('MongoDB bulk write error:', err.message);
   }
 
-  // 2. Write to Local File
-  writeLocalFileNodes(updatedNodesList);
+  // 2. Write full list to Local File
+  writeLocalFileNodes(allNodes);
 
-  // 3. Write to GitHub Gist DB
-  await saveGistData(updatedNodesList);
+  // 3. Write full list to GitHub Gist DB
+  await saveGistData(allNodes);
 
-  // 4. Commit directly to GitHub Repository ("Change in code live update")
-  await commitToGitHubRepo(updatedNodesList, 'chore(registry): batch reorder ring positions [skip ci]');
+  // 4. Commit full list directly to GitHub Repository
+  await commitToGitHubRepo(allNodes, 'chore(registry): batch reorder ring positions [skip ci]');
 
   // Invalidate memory cache
   memoryCacheNodes = null;
 
-  return updatedNodesList;
+  return allNodes;
 }
 
 /**
  * Vacate/Reset a slot back to an open Genesis vacancy
  */
 export async function vacateSlotRecord(slotId) {
-  const slotNum = parseInt(slotId.replace(/\D/g, ''), 10) || 3;
+  const slotNum = parseInt(slotId.replace(/\D/g, ''), 10) || 1;
   const vacantNode = {
     id: slotId,
-    name: 'Awaiting Council Review',
+    name: 'Awaiting Candidate',
     handle: 'vacant',
     domain: `unclaimed-slot-00${slotNum}.xyz`,
     url: 'https://the-uncommons.vercel.app/apply',
-    field: 'Open to polymaths, systems hackers & sovereign creators',
+    field: 'Open Genesis Vacancy',
     bio: `Genesis vacancy slot #${slotNum}. Applications open via #council-review in Kavyon Discord.`,
     proofOfWork: 'Awaiting candidate build submission.',
     proofUrl: 'https://the-uncommons.vercel.app/apply',

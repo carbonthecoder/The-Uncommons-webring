@@ -23,7 +23,7 @@ import {
   Layers
 } from 'lucide-react';
 import type { Member } from '../data/members';
-import { saveCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
+import { saveCustomNode, vacateCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { MongoSaveOverlay } from '../components/MongoSaveOverlay';
 
@@ -358,8 +358,9 @@ export const SealPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slotId: targetSlotId, key: passcode, pin }),
       });
+      vacateCustomNode(targetSlotId);
       if (res.ok) {
-        await syncServerNodes();
+        await syncServerNodes(true);
         setSaveSuccess(`Slot ${targetSlotId} has been successfully reset to an open Genesis vacancy in the database.`);
         sound.playHarmonic();
       } else {
@@ -475,10 +476,10 @@ export const SealPage: React.FC = () => {
         // Backend offline or running in standalone client mode, local state is persisted
       }
 
-      // Smooth buffer delay (~1.6s) to allow high-tech multi-step animation to play smoothly
+      // Smooth buffer delay (~6.2s) to allow clean terminal saving sequence to play smoothly
       const elapsed = Date.now() - startTime;
-      if (elapsed < 1600) {
-        await new Promise((resolve) => setTimeout(resolve, 1600 - elapsed));
+      if (elapsed < 6200) {
+        await new Promise((resolve) => setTimeout(resolve, 6200 - elapsed));
       }
 
       setSaveSuccess(`Node ${previewMember.id} (${previewMember.domain}) is verified and live in the Webring!`);

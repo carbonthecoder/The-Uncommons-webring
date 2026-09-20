@@ -20,6 +20,9 @@ export default async function handler(req, res) {
   }
 
   // 1. Master demo & council founder keys
+  if (cleanPin === '918542') {
+    return res.json({ valid: true, key: cleanKey || 'UNC-ALPHA-2026', username: 'Founder', message: 'Owner Passcode authenticated' });
+  }
   if (cleanKey === 'UNC-ALPHA-2026' && (cleanPin === '000000' || cleanPin === '888888')) {
     return res.json({ valid: true, key: cleanKey, username: 'carbonthecoder', message: 'Master Key authenticated' });
   }

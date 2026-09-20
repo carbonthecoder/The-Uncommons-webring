@@ -144,10 +144,10 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
                 sound.playClick();
                 window.dispatchEvent(new Event('unc_open_owner_modal'));
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold rounded-md transition-all shadow-md cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-zinc-900 hover:bg-zinc-850 text-zinc-200 border border-zinc-700 font-medium rounded-md transition-all shadow-sm cursor-pointer"
             >
-              <Crown className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Owner Edit</span>
+              <Crown className="w-3.5 h-3.5 text-zinc-300" />
+              <span className="hidden sm:inline">Orchestrator</span>
             </button>
           )}
 

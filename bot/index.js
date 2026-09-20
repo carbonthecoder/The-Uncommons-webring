@@ -230,17 +230,14 @@ Provide a crisp, insightful evaluation in JSON format with these exact keys:
     : 'Promising Independent Thinker';
 
   const signals = [
-    `Demonstrates genuine autodidactic focus in learning "${cleanSelfTaught.slice(0, 60)}..."`,
-    `Independent perspective stands out: "${(uncommonBelief || '').slice(0, 65)}..."`,
-    `Focus aligns with hands-on building and verifiable craft rather than surface credentials.`,
+    `Self-taught craft in ${cleanSelfTaught.slice(0, 32)}`,
+    `Focus: ${cleanProjects.slice(0, 32)}`,
   ];
 
-  const scrutiny = `Reviewers should probe deeper into the specific architecture of their builds and test how their independent perspective guides their engineering decisions.`;
+  const scrutiny = `Probe architecture decisions on ${cleanProjects.slice(0, 35)}.`;
 
   const questions = [
-    `"You mentioned teaching yourself ${cleanSelfTaught.slice(0, 45)}. What was the hardest theoretical or debugging wall you hit, and how did you resolve it?"`,
-    `"In your project (${cleanProjects.slice(0, 45)}), what trade-offs did you make in design or stack that you would do differently today?"`,
-    `"You noted that you believe '${(uncommonBelief || '').slice(0, 45)}...'. How has this worldview shaped what you choose to build?"`,
+    `What was the hardest technical wall you hit building ${cleanProjects.slice(0, 35)}, and how did you resolve it?`,
   ];
 
   return {
@@ -853,46 +850,23 @@ app.post('/api/create-ticket', async (req, res) => {
       .setFooter({ text: 'Review Turnaround: 2–3 hours (rarely 4–5h) • Classic English Protocol' })
       .setTimestamp();
 
-    // Action Controls (2 Rows)
-    const row1 = new ActionRowBuilder().addComponents(
+    // Action Controls: Candidate sees only the application button
+    const candidateRow = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`open_application_modal:${member.id}:${ticketId}`)
         .setLabel('📝 Open Application Dialog')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId(`claim_review:${member.id}:${ticketId}`)
-        .setLabel('⚡ Take Over Review')
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId(`pass_review:${member.id}:${ticketId}`)
-        .setLabel('🔁 Pass Review (AFK)')
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Success)
     );
 
-    const row2 = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`ping_senior:${member.id}:${ticketId}`)
-        .setLabel('📢 Signal Council')
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId(`ratify_key:${member.id}:${ticketId}`)
-        .setLabel('🟢 Ratify & Forge Key')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId(`close_ticket:${member.id}:${ticketId}`)
-        .setLabel('🛑 Purge Docket')
-        .setStyle(ButtonStyle.Danger)
-    );
-
-    const channelDispatch = `👋 **Hello <@${member.id}>, welcome to your private admissions channel!**\n` +
+    const channelDispatch = `👋 **Hello <@${member.id}>, welcome to your admissions channel!**\n` +
       `Assigned Reviewer: ${leadPingText}\n` +
       `${staffStatusNotice}\n\n` +
-      `➡️ **Next Step:** Click the **[ 📝 Open Application Dialog ]** button below to complete your candidate application.`;
+      `➡️ Click **[ 📝 Open Application Dialog ]** below to answer the 5 intake questions.`;
 
     await ticketChannel.send({
       content: channelDispatch,
       embeds: [embed],
-      components: [row1, row2],
+      components: [candidateRow],
     });
 
     return res.json({
@@ -1402,20 +1376,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const scoreBar = `\`[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}]\` **${aiResult.score}/100**`;
 
       const aiEmbed = new EmbedBuilder()
-        .setTitle(`🕵️ INSPECTOR BARTHOLOMEW // CANDIDATE AUDIT`)
-        .setDescription(
-          `Candidate dossier scrutiny for <@${applicantId}> (\`${interaction.user.tag}\`).\n` +
-          `> *"I review Ring applications between espresso shots and unfiltered smokes. No vibecoding allowed on my watch."*`
-        )
-        .setColor(0x8b5cf6)
+        .setTitle(`⚡ CANDIDATE AUDIT // @${interaction.user.username}`)
+        .setDescription(`**Score:** ${scoreBar}\n**Verdict:** \`${aiResult.verdict}\``)
+        .setColor(0x10b981)
         .addFields(
-          { name: '🎯 Alignment Index', value: `${scoreBar}\n**Verdict:** \`${aiResult.verdict}\``, inline: false },
-          { name: '📊 Candidate Signals Identified', value: aiResult.signals.map(s => `• ${s}`).join('\n'), inline: false },
-          { name: '🔍 Technical Scrutiny & Verification', value: `> *${aiResult.scrutiny}*`, inline: false },
-          { name: '🎙️ Tailored AI Interview Prompts', value: aiResult.questions.map((q, i) => `**${i + 1}.** ${q}`).join('\n\n'), inline: false }
+          { name: 'Signals', value: aiResult.signals.map((s) => `• ${s}`).join('\n'), inline: false },
+          { name: 'Reviewer Inquiry', value: `> ${aiResult.questions[0]}`, inline: false }
         )
-        .setFooter({ text: 'Inspector Bartholomew • Chief Admissions Auditor & Key Ledger Warden' })
+        .setFooter({ text: 'Inspector Bartholomew • Fast-Track Audit' })
         .setTimestamp();
+
+      const reviewerPings = getReviewerPings(interaction.guild);
 
       const staffRow1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -1443,9 +1414,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setStyle(ButtonStyle.Danger)
       );
 
-
       await interaction.channel.send({
-        content: `📥 **NEW APPLICATION SUBMITTED** by <@${applicantId}>:`,
+        content: `🔔 **NEW APPLICATION SUBMITTED** by <@${applicantId}> | Reviewers: ${reviewerPings}`,
         embeds: [answersEmbed, aiEmbed],
         components: [staffRow1, staffRow2],
       });
@@ -1459,6 +1429,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   const [action, applicantId, ticketId] = interaction.customId.split(':');
   const guildMember = interaction.member;
+
+  // Applicant check: Applicants cannot click reviewer control buttons
+  if (['claim_review', 'pass_review', 'ping_senior', 'ratify_key', 'close_ticket'].includes(action)) {
+    if (interaction.user.id === applicantId) {
+      return interaction.reply({
+        content: '⛔ Only authorized admissions reviewers can perform actions on this application.',
+        ephemeral: true,
+      });
+    }
+    if (!isReviewer(guildMember)) {
+      return interaction.reply({
+        content: '⛔ You do not have reviewer permissions.',
+        ephemeral: true,
+      });
+    }
+  }
 
   // OPEN APPLICATION MODAL DIALOG
   if (action === 'open_application_modal') {
@@ -1753,27 +1739,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
 |  3. Configure your node profile and publish to the webring.      |
 |  4. Place the circular webring seal snippet on your site footer. |
 +==================================================================+
-\`\`\``;
-
-      // DM Unique Key + Secret PIN to applicant with 2-step verification instructions
+      // Minimal Clean DM for applicant
       let dmSuccess = true;
       const dmEmbed = new EmbedBuilder()
-        .setTitle('🌌 The Uncommons — Admission Approved & 2-Step Credentials')
+        .setTitle('The Uncommons — Sovereign Admission Approved')
         .setDescription(
-          `Congratulations! Your application has been reviewed and approved for **The Uncommons Webring**.\n\n` +
-          `Here is your official Sovereign Ring Key & Secret 6-Digit Access PIN:\n\n` +
-          asciiCert + '\n\n' +
-          (roleGranted && webringRole ? `🛡️ **Role Awarded:** You have been assigned <@&${webringRole.id}> in the server!\n\n` : '') +
-          `🔒 **IMPORTANT SECURITY NOTICE (KEEP YOUR PIN PRIVATE):**\n` +
-          `**Next Steps:**\n` +
-          `✨ **[Click Here for 1-Click Vault Access](https://the-uncommons.vercel.app/seal?key=${uniqueKey}&pin=${secretPin})**\n\n` +
-          `Or enter manually at [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal):\n` +
+          `Congratulations <@${applicantId}>! Your application has been ratified and approved for **The Uncommons Webring**.\n\n` +
+          `**Your Sovereign Credentials:**\n` +
           `• **Ring Key:** \`${uniqueKey}\`\n` +
-          `• **Secret PIN:** \`${secretPin}\`\n\n` +
-          `Configure your profile in the Sovereign Node Studio, claim your open slot, and click **Save & Publish Node** to go live globally!`
+          `• **Secret PIN:** \`${secretPin}\` *(Keep this confidential)*\n\n` +
+          (roleGranted && webringRole ? `🛡️ **Role Awarded:** You have been assigned <@&${webringRole.id}> in the server!\n\n` : '') +
+          `**1-Click Vault Access:**\n` +
+          `✨ [Click here to enter your Node Studio](https://the-uncommons.vercel.app/seal?key=${uniqueKey}&pin=${secretPin})\n\n` +
+          `Or enter manually at [the-uncommons.vercel.app/seal](https://the-uncommons.vercel.app/seal) with your key & PIN.`
         )
         .setColor(0x10b981)
-        .setFooter({ text: 'The Uncommons • Sealed by Inspector Bartholomew (Chief Admissions Auditor)' });
+        .setFooter({ text: 'The Uncommons • Sealed by Inspector Bartholomew' })
+        .setTimestamp();
 
       try {
         await applicantUser.send({ embeds: [dmEmbed] });
@@ -1793,7 +1775,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                    roleLine +
                    ledgerLine +
                    founderLine + `\n\n` +
-                   `⏳ *This channel will close automatically in 15 seconds...*`,
+                   `⏳ *This docket channel will automatically close in 5 minutes.*`,
         });
 
         setTimeout(async () => {
@@ -1802,17 +1784,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
           } catch (delErr) {
             console.error('Failed to delete ticket channel:', delErr);
           }
-        }, 15000);
+        }, 300000); // 5 minutes
       } else {
         await interaction.editReply({
           content: `🟢 **APPLICATION APPROVED & 2-STEP CREDENTIALS ISSUED BY <@${interaction.user.id}>!**\n` +
                    `⚠️ *Candidate DMs appear to be disabled in privacy settings.* \n\n` +
                    `<@${applicantId}>, here are your Sovereign Ring credentials:\n\`\`\`text\nRing Key:   ${uniqueKey}\nSecret PIN: ${secretPin}\n\`\`\`\n` +
-                   asciiCert +
                    roleLine +
                    ledgerLine +
                    founderLine + `\n\n` +
-                   `⏳ *This channel will close automatically in 60 seconds so you can save your key & PIN...*`,
+                   `⏳ *This docket channel will automatically close in 5 minutes so you can save your credentials...*`,
         });
 
         setTimeout(async () => {
@@ -1821,7 +1802,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           } catch (delErr) {
             console.error('Failed to delete ticket channel:', delErr);
           }
-        }, 60000);
+        }, 300000); // 5 minutes
       }
 
     } catch (err) {
