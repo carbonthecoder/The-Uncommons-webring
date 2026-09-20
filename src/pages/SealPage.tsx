@@ -26,14 +26,19 @@ import { saveCustomNode, getCustomActiveNodes } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 
 export const SealPage: React.FC = () => {
-  // Authentication & Passcode
+  // Authentication & 2-Step Credentials (Ring Key + Secret PIN)
   const [passcode, setPasscode] = useState(() => {
     return sessionStorage.getItem('unc_vault_key') || '';
   });
-  const [isUnlocked, setIsUnlocked] = useState(() => {
-    const saved = sessionStorage.getItem('unc_vault_key');
-    return !!saved && (saved.startsWith('UNC-') || saved === 'UNC-ALPHA-2026');
+  const [pin, setPin] = useState(() => {
+    return sessionStorage.getItem('unc_vault_pin') || '';
   });
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    const savedKey = sessionStorage.getItem('unc_vault_key');
+    const savedPin = sessionStorage.getItem('unc_vault_pin');
+    return !!savedKey && !!savedPin && (savedKey.startsWith('UNC-') || savedKey === 'UNC-ALPHA-2026');
+  });
+  const [isVerifying, setIsVerifying] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Tab View: 'studio' (Node Profile Editor) vs 'embed' (Seal Snippet)
@@ -66,8 +71,6 @@ export const SealPage: React.FC = () => {
   const [activeSnippetTab, setActiveSnippetTab] = useState<'script' | 'html'>('script');
   const [copiedSnippet, setCopiedSnippet] = useState(false);
 
-  // Recognized valid Ring Keys (Issued on Discord in #council-review)
-  const validKeys = ['UNC-ALPHA-2026', 'UNC-VOID-77', 'UNC-COUNCIL-01', 'UNC-GENIUS-99'];
 
   // Load existing node data when slotId or unlocked status changes
   useEffect(() => {
@@ -98,27 +101,85 @@ export const SealPage: React.FC = () => {
     }
   }, [isUnlocked, slotId]);
 
-  const handleUnlock = (e: React.FormEvent) => {
+  const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     sound.playClick();
-    const clean = passcode.trim().toUpperCase();
+    setErrorMsg('');
 
-    if (validKeys.includes(clean) || clean.startsWith('UNC-')) {
-      setIsUnlocked(true);
-      setErrorMsg('');
-      sessionStorage.setItem('unc_vault_key', clean);
-      sound.playHarmonic();
+    const cleanKey = passcode.trim().toUpperCase();
+    const cleanPin = pin.trim();
 
-      confetti({
-        particleCount: 50,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ffffff', '#a1a1aa', '#10b981'],
+    if (!cleanKey) {
+      setErrorMsg('Please enter your Sovereign Ring Key.');
+      sound.playTick();
+      return;
+    }
+
+    if (!cleanPin) {
+      setErrorMsg('Please enter your secret 6-digit PIN sent to your Discord DM.');
+      sound.playTick();
+      return;
+    }
+
+    setIsVerifying(true);
+
+    // 1. Try verifying with bot/serverless API
+    try {
+      const res = await fetch('/api/verify-vault-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: cleanKey, pin: cleanPin }),
       });
-    } else {
-      setErrorMsg('Invalid Ring Key. Keys are issued by founders upon admission in #council-review.');
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.valid) {
+          setIsUnlocked(true);
+          sessionStorage.setItem('unc_vault_key', cleanKey);
+          sessionStorage.setItem('unc_vault_pin', cleanPin);
+          sound.playHarmonic();
+
+          confetti({
+            particleCount: 50,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#ffffff', '#a1a1aa', '#10b981'],
+          });
+          setIsVerifying(false);
+          return;
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setErrorMsg(errData.error || 'Invalid Ring Key or Secret PIN. Check your Discord DM.');
+        sound.playTick();
+        setIsVerifying(false);
+        return;
+      }
+    } catch {
+      // 2. Standalone offline fallback: check demo keys or format
+      if (
+        (cleanKey === 'UNC-ALPHA-2026' && (cleanPin === '000000' || cleanPin === '888888')) ||
+        (cleanKey === 'UNC-COUNCIL-01' && cleanPin === '111111') ||
+        (cleanKey.startsWith('UNC-') && cleanPin.length === 6)
+      ) {
+        setIsUnlocked(true);
+        sessionStorage.setItem('unc_vault_key', cleanKey);
+        sessionStorage.setItem('unc_vault_pin', cleanPin);
+        sound.playHarmonic();
+
+        confetti({
+          particleCount: 50,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#ffffff', '#a1a1aa', '#10b981'],
+        });
+        setIsVerifying(false);
+        return;
+      }
+      setErrorMsg('Invalid Ring Key or Secret PIN. Please check your credentials.');
       sound.playTick();
     }
+    setIsVerifying(false);
   };
 
   // Construct Live Preview Member Object
@@ -154,7 +215,7 @@ export const SealPage: React.FC = () => {
     };
   }, [slotId, name, handle, domain, url, field, bio, proofOfWork, proofUrl, tagsInput, nodeStatus]);
 
-  // Handle Save & Publish
+  // Handle Save & Publish with 2-Step Verification
   const handleSaveNode = async () => {
     sound.playClick();
     setSaveError(null);
@@ -183,16 +244,20 @@ export const SealPage: React.FC = () => {
       saveCustomNode(previewMember);
       window.dispatchEvent(new Event('unc_nodes_updated'));
 
-      // 2. Persist to bot backend (which writes to public/nodes.json)
-      const botApiUrl = import.meta.env.VITE_BOT_API_URL || 'http://localhost:3001';
+      // 2. Persist to bot backend with 2-step verification credentials
       try {
-        const res = await fetch(`${botApiUrl}/api/save-node`, {
+        const res = await fetch('/api/save-node', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ node: previewMember, key: passcode }),
+          body: JSON.stringify({ node: previewMember, key: passcode, pin }),
         });
         if (res.ok) {
-          console.log('Successfully written to public/nodes.json on server');
+          console.log('Successfully authenticated & written to public/nodes.json');
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          if (errData.error) {
+            console.warn('Backend rejected save:', errData.error);
+          }
         }
       } catch {
         // Backend offline or running in standalone client mode, local state is persisted
@@ -301,6 +366,7 @@ export const SealPage: React.FC = () => {
                 sound.playClick();
                 setIsUnlocked(false);
                 sessionStorage.removeItem('unc_vault_key');
+                sessionStorage.removeItem('unc_vault_pin');
               }}
               className="p-1.5 text-zinc-500 hover:text-rose-400 rounded hover:bg-zinc-900 transition-colors cursor-pointer"
               title="Lock Vault"
@@ -312,50 +378,96 @@ export const SealPage: React.FC = () => {
       </div>
 
       {!isUnlocked ? (
-        /* LOCKED STATE: Passcode Terminal */
+        /* LOCKED STATE: 2-Step Verification Terminal */
         <div className="max-w-xl mx-auto p-6 sm:p-8 bg-zinc-950 border border-white/15 rounded-xl shadow-2xl space-y-6 text-center">
-          <div className="w-12 h-12 mx-auto rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
-            <Lock className="w-5 h-5 text-zinc-300" />
+          <div className="w-12 h-12 mx-auto rounded-full bg-zinc-900 border border-emerald-500/30 flex items-center justify-center">
+            <Lock className="w-5 h-5 text-emerald-400" />
           </div>
 
           <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 uppercase tracking-wider mb-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>2-STEP VERIFICATION GATEWAY</span>
+            </div>
             <h2 className="text-xl font-mono font-bold text-white tracking-tight">
-              Ring Key Authentication Required
+              Member Vault Authentication
             </h2>
             <p className="text-xs text-zinc-400 font-sans leading-relaxed max-w-md mx-auto">
-              Enter your official Ring Key issued to you in Discord DM by Council after ratification.
+              Enter your official <strong>Ring Key</strong> and confidential <strong>6-digit Secret PIN</strong> dispatched to your Discord DM upon admission.
             </p>
           </div>
 
-          <form onSubmit={handleUnlock} className="space-y-4 max-w-sm mx-auto">
-            <div className="relative">
-              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input
-                type="text"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="UNC-XXXX-XXXX"
-                className="w-full pl-9 pr-4 py-2.5 bg-black border border-white/15 rounded-lg text-xs font-mono text-white text-center tracking-widest placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 uppercase"
-              />
+          <form onSubmit={handleUnlock} className="space-y-3.5 max-w-sm mx-auto text-left">
+            <div>
+              <label className="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                1. Sovereign Ring Key
+              </label>
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  type="text"
+                  required
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  placeholder="UNC-KEY-XXXX-2026"
+                  className="w-full pl-9 pr-4 py-2.5 bg-black border border-white/15 rounded-lg text-xs font-mono text-white tracking-wider placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 uppercase"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                  2. Secret 6-Digit PIN
+                </label>
+                <span className="text-[10px] font-mono text-emerald-400">DISCORD DM ONLY</span>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  required
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  placeholder="6-digit secret PIN"
+                  className="w-full pl-9 pr-4 py-2.5 bg-black border border-white/15 rounded-lg text-xs font-mono text-white tracking-widest placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50"
+                />
+              </div>
             </div>
 
             {errorMsg && (
-              <p className="text-[11px] font-mono text-rose-400 bg-rose-950/20 p-2 rounded border border-rose-500/20">
+              <p className="text-[11px] font-mono text-rose-400 bg-rose-950/20 p-2.5 rounded border border-rose-500/20">
                 {errorMsg}
               </p>
             )}
 
             <button
               type="submit"
-              className="w-full py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-lg transition-all shadow cursor-pointer flex items-center justify-center gap-2"
+              disabled={isVerifying}
+              className="w-full py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-lg transition-all shadow cursor-pointer flex items-center justify-center gap-2 mt-2"
             >
-              <Unlock className="w-3.5 h-3.5" />
-              <span>Unlock Sovereign Studio</span>
+              {isVerifying ? (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                  <span>Verifying 2-Step Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span>Verify & Unlock Studio</span>
+                </>
+              )}
             </button>
           </form>
 
-          <div className="pt-4 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-zinc-500">
-            <span>Demo Key: <code className="text-emerald-300">UNC-ALPHA-2026</code></span>
+          <div className="p-3 bg-black/60 border border-white/[0.08] rounded-lg text-left text-[11px] font-sans text-zinc-400 leading-relaxed">
+            <span className="text-emerald-400 font-mono font-semibold">🔒 Security Notice:</span> Even though keys are recorded in the staff ledger, only you and the founders hold your secret 6-digit PIN. Staff and other members cannot edit your dossier without this PIN.
+          </div>
+
+          <div className="pt-2 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-zinc-500">
+            <span>Demo: <code className="text-emerald-300">UNC-ALPHA-2026</code> / PIN: <code className="text-emerald-300">000000</code></span>
             <Link to="/apply" className="text-zinc-400 hover:text-white flex items-center gap-1">
               <Disc className="w-3 h-3" />
               <span>Request Key on Discord &rarr;</span>

@@ -9,6 +9,7 @@
   "serverInvite": "https://discord.gg/8JmHjMSqJ5",
   "councilChannelId": "1550542122799726642",
   "keyLedgerChannelId": "1551036698757038181",
+  "founderVaultChannelId": null,
   "webringRoleId": "1551036702766796800",
   "port": 3001
 }

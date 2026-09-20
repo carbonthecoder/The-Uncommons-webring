@@ -1,23 +1,10 @@
 [
   {
     "id": "NODE-001",
-    "name": "Ibrahim (Carbon)",
     "handle": "carbonthecoder",
     "domain": "carbonthecoder.github.io",
-    "url": "https://carbonthecoder.github.io",
-    "field": "Autonomous Agentic Systems & Sovereign Web",
-    "bio": "Founder of The Uncommons. Architect of distributed cognitive loops, high-autonomy agents, and sovereign digital gardens.",
-    "proofOfWork": "Agentic orchestration engines & persistent local-first knowledge systems.",
-    "proofUrl": "https://github.com/carbonthecoder",
-    "tags": [
-      "Founder",
-      "Systems",
-      "AI Agents",
-      "Architecture"
-    ],
-    "joinDate": "2026-01-01",
+    "name": "Ibrahim (Carbon)",
     "verified": true,
-    "ringPosition": 1,
     "status": "online"
   },
   {
