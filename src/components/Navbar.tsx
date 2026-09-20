@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { sound } from '../utils/audio';
-import { Volume2, VolumeX, Disc, Lock, Menu, X, ArrowRight, ShieldCheck, BookOpen, Globe, Crown } from 'lucide-react';
+import { Volume2, VolumeX, Disc, Lock, Menu, X, ArrowRight, ShieldCheck, BookOpen, Globe } from 'lucide-react';
 
 interface NavbarProps {
   nodeCount: number;
@@ -11,12 +11,6 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-
-
-
-  const [isOwnerActive, setIsOwnerActive] = useState(() => {
-    return sessionStorage.getItem('unc_owner_mode') === 'true';
-  });
 
   // Auto-close mobile menu when changing pages
   useEffect(() => {
@@ -41,20 +35,6 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
         ? 'bg-zinc-900 text-white font-semibold border border-white/15'
         : 'text-zinc-400 hover:text-white hover:bg-zinc-900/50'
     }`;
-
-  useEffect(() => {
-    const checkOwner = () => {
-      setIsOwnerActive(
-        sessionStorage.getItem('unc_owner_mode') === 'true'
-      );
-    };
-    window.addEventListener('unc_owner_activated', checkOwner);
-    window.addEventListener('storage', checkOwner);
-    return () => {
-      window.removeEventListener('unc_owner_activated', checkOwner);
-      window.removeEventListener('storage', checkOwner);
-    };
-  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-black/90 backdrop-blur-md">
@@ -106,19 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Owner Mode Button (if active) */}
-          {isOwnerActive && (
-            <button
-              onClick={() => {
-                sound.playClick();
-                window.dispatchEvent(new Event('unc_open_owner_modal'));
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-zinc-900 hover:bg-zinc-850 text-zinc-200 border border-zinc-700 font-medium rounded-md transition-all shadow-sm cursor-pointer"
-            >
-              <Crown className="w-3.5 h-3.5 text-zinc-300" />
-              <span className="hidden sm:inline">Orchestrator</span>
-            </button>
-          )}
+
 
           {/* Sound Toggle */}
           <button
@@ -237,19 +205,7 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
 
           {/* Quick Actions in Mobile Drawer */}
           <div className="pt-2 border-t border-white/[0.08] flex flex-col gap-2.5">
-            {isOwnerActive && (
-              <button
-                onClick={() => {
-                  sound.playClick();
-                  setIsMobileMenuOpen(false);
-                  window.dispatchEvent(new Event('unc_open_owner_modal'));
-                }}
-                className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-100 font-mono text-xs font-semibold rounded-md border border-zinc-700 transition-all shadow flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Crown className="w-4 h-4 text-zinc-300" />
-                <span>Founder Orchestrator</span>
-              </button>
-            )}
+
 
             <Link
               to="/apply"
