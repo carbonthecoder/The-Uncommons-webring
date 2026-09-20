@@ -10,7 +10,8 @@ import {
   Events,
   ModalBuilder,
   TextInputBuilder,
-  TextInputStyle
+  TextInputStyle,
+  ActivityType
 } from 'discord.js';
 import express from 'express';
 import cors from 'cors';
@@ -247,18 +248,25 @@ async function getOrCreateFounderVaultChannel(guild) {
 
     // Allow Guild Owner explicitly
     if (guild.ownerId) {
-      permissionOverwrites.push({
-        id: guild.ownerId,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.ReadMessageHistory,
-        ],
-      });
+      try {
+        const ownerUser = await client.users.fetch(guild.ownerId).catch(() => null);
+        if (ownerUser) {
+          permissionOverwrites.push({
+            id: ownerUser.id,
+            allow: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.SendMessages,
+              PermissionFlagsBits.ReadMessageHistory,
+            ],
+          });
+        }
+      } catch (e) {
+        console.warn('Could not fetch guild owner:', e.message);
+      }
     }
 
     // Explicitly hide from regular staff role so staff cannot see candidate PINs!
-    if (config.staffRoleId) {
+    if (config.staffRoleId && guild.roles.cache.has(config.staffRoleId)) {
       permissionOverwrites.push({
         id: config.staffRoleId,
         deny: [PermissionFlagsBits.ViewChannel],
@@ -950,16 +958,24 @@ client.on(Events.InteractionCreate, async (interaction) => {
         answers: { name, obsession, selfTaught, projects, why },
       });
 
+      // Visual Score Bar Helper
+      const filled = Math.min(10, Math.max(0, Math.round(aiResult.score / 10)));
+      const scoreBar = `\`[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}]\` **${aiResult.score}/100**`;
+
       const aiEmbed = new EmbedBuilder()
-        .setTitle(`🤖 AI Admissions Evaluation // @${interaction.user.username}`)
+        .setTitle(`🤖 THE UNCOMMONS // AI ADMISSIONS AUDIT`)
+        .setDescription(
+          `Autonomous candidate evaluation generated for <@${applicantId}> (\`${interaction.user.tag}\`).\n` +
+          `*Reviewers: inspect the alignment score and ask the candidate the generated interview prompts.*`
+        )
         .setColor(0x8b5cf6)
         .addFields(
-          { name: '🎯 Alignment Index', value: `**${aiResult.score}/100** — *${aiResult.verdict}*`, inline: true },
-          { name: '📊 Key Signals Identified', value: aiResult.signals.map(s => `• ${s}`).join('\n'), inline: false },
-          { name: '🔍 Verification & Scrutiny Focus', value: aiResult.scrutiny, inline: false },
-          { name: '🎙️ Bespoke AI Interview Prompts', value: aiResult.questions.map((q, i) => `**${i + 1}.** ${q}`).join('\n\n'), inline: false }
+          { name: '🎯 Alignment Index', value: `${scoreBar}\n**Verdict:** \`${aiResult.verdict}\``, inline: false },
+          { name: '📊 Candidate Signals Identified', value: aiResult.signals.map(s => `• ${s}`).join('\n'), inline: false },
+          { name: '🔍 Technical Scrutiny & Verification', value: `> *${aiResult.scrutiny}*`, inline: false },
+          { name: '🎙️ Tailored AI Interview Prompts', value: aiResult.questions.map((q, i) => `**${i + 1}.** ${q}`).join('\n\n'), inline: false }
         )
-        .setFooter({ text: 'The Uncommons AI Admissions Engine • Automated Candidate Intelligence' })
+        .setFooter({ text: 'The Uncommons AI Admissions Engine • Real-time Candidate Intelligence' })
         .setTimestamp();
 
       const staffControls = new ActionRowBuilder().addComponents(
@@ -1316,12 +1332,49 @@ client.once(Events.ClientReady, async () => {
   console.log(`🤖 The Uncommons Council Bot is live as ${client.user.tag}!`);
   console.log(`📡 Connected to Guild: ${config.guildId}`);
 
+  // Set rotating presence
+  const statusList = [
+    { name: 'the-uncommons.vercel.app', type: ActivityType.Watching },
+    { name: 'over the sovereign webring', type: ActivityType.Watching },
+    { name: 'for rare 1% builders', type: ActivityType.Listening },
+    { name: 'dossiers | 2-Step Gate', type: ActivityType.Watching },
+  ];
+
+  let statusIndex = 0;
+  const updatePresence = () => {
+    try {
+      client.user.setPresence({
+        activities: [statusList[statusIndex % statusList.length]],
+        status: 'online',
+      });
+      statusIndex++;
+    } catch {}
+  };
+
+  updatePresence();
+  setInterval(updatePresence, 45000);
+
+  // Set custom avatar if available
+  try {
+    const avatarPath = path.join(__dirname, 'avatar.jpg');
+    if (fs.existsSync(avatarPath)) {
+      await client.user.setAvatar(avatarPath);
+      console.log('✨ Bot avatar set to sovereign emblem.');
+    }
+  } catch (e) {
+    console.log('Avatar set note:', e.message);
+  }
+
   try {
     const guild = client.guilds.cache.get(config.guildId) || await client.guilds.fetch(config.guildId);
     if (guild) {
       const ledger = await getOrCreateKeyLedgerChannel(guild);
       const role = await getOrCreateWebringRole(guild);
+      const vault = await getOrCreateFounderVaultChannel(guild);
       console.log(`🔒 Staff Key Ledger Channel: #${ledger?.name} (${ledger?.id})`);
+      if (vault) {
+        console.log(`👑 Founder PIN Vault Channel: #${vault?.name} (${vault?.id})`);
+      }
       console.log(`🎭 Webring Member Role: ${role?.name} (${role?.id})`);
     }
   } catch (err) {
