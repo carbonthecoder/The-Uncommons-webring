@@ -1640,20 +1640,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
         answers: { name, obsession, selfTaught, projects, why },
       });
 
-      // Artificial buffer to let things go smooth and make the AI analysis feel real (2 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Artificial buffer to let things go smooth and make the AI analysis feel real (10 seconds)
+      await new Promise(resolve => setTimeout(resolve, 10000));
 
       // Visual Score Bar Helper
       const filled = Math.min(10, Math.max(0, Math.round(aiResult.score / 10)));
       const scoreBar = `[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}] ${aiResult.score}/100`;
 
+      // 1. Internal AI Audit Embed (PRIVATE FOR STAFF & COUNCIL ONLY)
       const aiEmbed = new EmbedBuilder()
-        .setTitle('🕵️ INSPECTOR BARTHOLOMEW // CANDIDATE AUDIT')
+        .setTitle('🕵️ INSPECTOR BARTHOLOMEW // INTERNAL CANDIDATE AUDIT')
         .setDescription(
-          `Candidate dossier scrutiny for <@${applicantId}> (\`${interaction.user.username}\`).\n` +
+          `Confidential audit for <@${applicantId}> (\`${interaction.user.username}\`).\n` +
           `*"I review Ring applications between espresso shots and unfiltered smokes. No vibecoding allowed on my watch."*\n\n` +
-          `**🎯 Alignment Index**\n` +
-          `\`${scoreBar}\`\n` +
+          `**🎯 Alignment Index:** \`${scoreBar}\`\n` +
           `**Verdict:** \`${aiResult.verdict}\`\n\n` +
           `**Auditor Assessment:** ${aiResult.summary}`
         )
@@ -1661,10 +1661,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
         .addFields(
           { name: '📊 Candidate Signals Identified', value: aiResult.signals.map((s) => `• ${s}`).join('\n'), inline: false }
         )
-        .setFooter({ text: 'Inspector Bartholomew • Chief Admissions Auditor' })
+        .setFooter({ text: 'Inspector Bartholomew • Confidential Staff Audit' })
         .setTimestamp();
 
-      // 5 Mandatory Technical Interview / Icebreaker Questions
+      // 2. 5 Mandatory Technical Interview Questions (PUBLIC FOR CANDIDATE IN TICKET)
       const questionsFormatted = aiResult.questions
         .map((q, idx) => `**${idx + 1}.** ${q}`)
         .join('\n\n');
@@ -1708,11 +1708,41 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setStyle(ButtonStyle.Danger)
       );
 
+      // Clean Staff Controls Embed (No internal score shown in public ticket channel)
+      const staffControlsEmbed = new EmbedBuilder()
+        .setTitle(`⚙️ Admissions Reviewer Controls // Docket ${ticketId}`)
+        .setDescription(`Reviewers: Evaluate the candidate's answers to the 5 questions above. Use these control buttons to claim, signal council, or ratify/reject the applicant:`)
+        .setColor(0x8b5cf6)
+        .setFooter({ text: 'The Uncommons Admissions • Reviewer Actions' });
+
+      // Send Candidate Dossier, 5 Questions & Staff Control buttons to ticket channel
       await interaction.channel.send({
         content: `🔔 **NEW APPLICATION SUBMITTED** by <@${applicantId}> | Reviewers: ${reviewerPings}`,
-        embeds: [answersEmbed, aiEmbed, icebreakerEmbed],
+        embeds: [answersEmbed, icebreakerEmbed, staffControlsEmbed],
         components: [staffRow1, staffRow2],
       });
+
+      // Send Confidential AI Audit to #council-review staff channel if configured
+      if (config.councilChannelId) {
+        try {
+          const councilCh = interaction.guild.channels.cache.get(config.councilChannelId) || await interaction.guild.channels.fetch(config.councilChannelId);
+          if (councilCh) {
+            const jumpBtn = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setLabel('⚡ Jump to Candidate Docket')
+                .setStyle(ButtonStyle.Link)
+                .setURL(`https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}`)
+            );
+            await councilCh.send({
+              content: `🕵️ **INTERNAL AI AUDIT REPORT** for Candidate <@${applicantId}> [${ticketId}]`,
+              embeds: [aiEmbed],
+              components: [jumpBtn],
+            });
+          }
+        } catch (cErr) {
+          console.warn('Could not post AI audit to council channel:', cErr.message);
+        }
+      }
       return;
     }
     return;
@@ -1724,15 +1754,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const [action, applicantId, ticketId] = interaction.customId.split(':');
   const guildMember = interaction.member;
 
-  // Applicant check: Applicants cannot click reviewer control buttons
+  // Applicant check: Non-admin applicants cannot click reviewer control buttons
   if (['claim_review', 'pass_review', 'ping_senior', 'ratify_key', 'close_ticket'].includes(action)) {
-    if (interaction.user.id === applicantId) {
+    const isAdmin = guildMember.permissions.has(PermissionFlagsBits.Administrator) || isReviewer(guildMember);
+    if (interaction.user.id === applicantId && !isAdmin) {
       return interaction.reply({
         content: '⛔ Only authorized admissions reviewers can perform actions on this application.',
         ephemeral: true,
       });
     }
-    if (!isReviewer(guildMember)) {
+    if (!isAdmin) {
       return interaction.reply({
         content: '⛔ You do not have reviewer permissions.',
         ephemeral: true,
