@@ -65,8 +65,10 @@ try {
     ringChannel = new BroadcastChannel('unc_ring_sync');
     ringChannel.onmessage = (event) => {
       if (event.data?.type === 'NODES_UPDATED') {
-        // Refresh local cache and notify listeners
         loadGenesisSlotsFromStorage();
+        syncServerNodes(true).then(() => {
+          window.dispatchEvent(new Event('unc_nodes_updated'));
+        });
         window.dispatchEvent(new Event('unc_nodes_updated'));
       }
     };
@@ -447,17 +449,25 @@ export function useLiveMembers(): Member[] {
       setMembers(getAllMembers());
     };
 
+    const handleFocus = () => {
+      syncServerNodes(true).then(m => setMembers(m));
+    };
+
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('unc_nodes_updated', handleUpdate);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
 
     const pollInterval = setInterval(() => {
       syncServerNodes().then(m => setMembers(m));
-    }, 15000);
+    }, 4000);
 
     return () => {
       clearInterval(pollInterval);
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('unc_nodes_updated', handleUpdate);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 
@@ -476,19 +486,29 @@ export function useGenesisSlots(): Member[] {
       setSlots([...getAllGenesisSlots()]);
     };
 
+    const handleFocus = () => {
+      syncServerNodes(true).then(() => {
+        setSlots([...getAllGenesisSlots()]);
+      });
+    };
+
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('unc_nodes_updated', handleUpdate);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
 
     const pollInterval = setInterval(() => {
       syncServerNodes().then(() => {
         setSlots([...getAllGenesisSlots()]);
       });
-    }, 15000);
+    }, 4000);
 
     return () => {
       clearInterval(pollInterval);
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('unc_nodes_updated', handleUpdate);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 

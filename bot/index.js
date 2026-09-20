@@ -475,6 +475,94 @@ async function getOrCreateKeyLedgerChannel(guild) {
   }
 }
 
+// Get or auto-create private Admin-Only Rejection Logs Channel
+async function getOrCreateRejectionLogsChannel(guild) {
+  if (config.rejectionLogsChannelId) {
+    const existing = guild.channels.cache.get(config.rejectionLogsChannelId);
+    if (existing) return existing;
+  }
+
+  // Look for channel by name
+  let ch = guild.channels.cache.find(c => c.name === 'rejection-logs' || c.name === 'rejections-vault');
+  if (ch) {
+    config.rejectionLogsChannelId = ch.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return ch;
+  }
+
+  // Auto-create private admin-only rejection logs channel
+  try {
+    const permissionOverwrites = [
+      {
+        id: guild.id, // @everyone hidden
+        deny: [PermissionFlagsBits.ViewChannel],
+      },
+      {
+        id: client.user.id, // bot
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.EmbedLinks,
+          PermissionFlagsBits.ManageChannels,
+        ],
+      },
+    ];
+
+    if (guild.ownerId) {
+      permissionOverwrites.push({
+        id: guild.ownerId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      });
+    }
+
+    if (config.seniorStaffRoleId) {
+      permissionOverwrites.push({
+        id: config.seniorStaffRoleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+        deny: [PermissionFlagsBits.SendMessages],
+      });
+    }
+
+    if (config.staffRoleId && config.staffRoleId !== config.seniorStaffRoleId) {
+      permissionOverwrites.push({
+        id: config.staffRoleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+        deny: [PermissionFlagsBits.SendMessages],
+      });
+    }
+
+    const channelOptions = {
+      name: 'rejection-logs',
+      type: ChannelType.GuildText,
+      topic: '🛑 Private Admissions Rejection Archive: Confidential audit log of candidate dockets not admitted to The Uncommons.',
+      permissionOverwrites,
+    };
+
+    if (config.ticketCategoryId) {
+      channelOptions.parent = config.ticketCategoryId;
+    }
+
+    ch = await guild.channels.create(channelOptions);
+    config.rejectionLogsChannelId = ch.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log(`🛑 Created private rejection logs channel: #${ch.name} (${ch.id})`);
+    return ch;
+  } catch (err) {
+    console.error('Failed to create rejection logs channel:', err);
+    return null;
+  }
+}
+
 // Get or auto-create Webring Member Discord Role
 async function getOrCreateWebringRole(guild) {
   if (config.webringRoleId) {
@@ -1837,7 +1925,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setFooter({ text: 'Staff Key Ledger • Audited by Inspector Bartholomew' });
 
           await ledgerChannel.send({
-            content: `<!-- UNC_KEY_ISSUED: ${JSON.stringify({ key: uniqueKey, username: applicantUser.username, applicantId, ticketId, issuedAt: new Date().toISOString() })} -->`,
             embeds: [auditEmbed],
           });
         }
@@ -1865,7 +1952,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setFooter({ text: 'Founder Vault • Inspector Bartholomew Confidential Vault Custodian' });
 
           await founderVaultChannel.send({
-            content: `<!-- UNC_CREDENTIAL: ${JSON.stringify({ key: uniqueKey, pin: secretPin, username: applicantUser.username, applicantId, ticketId, issuedAt: new Date().toISOString() })} -->`,
             embeds: [founderEmbed],
           });
         }
@@ -2009,13 +2095,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
 
-    // 3. Broadcast rejection record to Staff Key Ledger
+    // 3. Broadcast rejection record to Private Admin-Only Rejection Logs Channel
     try {
       const guild = interaction.guild;
-      const ledgerChannel = await getOrCreateKeyLedgerChannel(guild);
-      if (ledgerChannel) {
-        await ledgerChannel.send({
-          content: `<!-- UNC_TICKET_STATUS: ${JSON.stringify({ ticketId, applicantId, username: applicantUsername, status: 'rejected', timestamp: new Date().toISOString() })} -->`,
+      const rejectionChannel = await getOrCreateRejectionLogsChannel(guild);
+      if (rejectionChannel) {
+        await rejectionChannel.send({
           embeds: [
             new EmbedBuilder()
               .setTitle(`🛑 DOCKET REJECTED // ${ticketId}`)
@@ -2025,14 +2110,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 { name: 'Applicant', value: `<@${applicantId}> (\`${applicantUsername}\`)`, inline: true },
                 { name: 'Reviewer', value: `<@${interaction.user.id}>`, inline: true },
                 { name: 'Status', value: '🛑 Not Admitted / Encouragement Dispatched', inline: true },
+                { name: 'Ticket Serial', value: `\`${ticketId}\``, inline: true },
+                { name: 'Audit Ref', value: `\`UNC_TICKET_STATUS:${ticketId}\``, inline: true },
               )
-              .setFooter({ text: 'Audited by Inspector Bartholomew' })
+              .setFooter({ text: 'Audited by Inspector Bartholomew • Private Rejections Archive' })
               .setTimestamp(),
           ],
         });
       }
     } catch (lErr) {
-      console.warn('Could not log rejection to ledger channel:', lErr.message);
+      console.warn('Could not log rejection to rejection channel:', lErr.message);
     }
 
     await interaction.editReply({

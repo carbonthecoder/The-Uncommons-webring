@@ -5,14 +5,18 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=10');
-
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  const bypassCache = req.query?.refresh === 'true' || req.query?.force === 'true';
+  if (bypassCache) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  } else {
+    res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');
+  }
+
   try {
-    const bypassCache = req.query?.refresh === 'true' || req.query?.force === 'true';
     const nodes = await getAllNodes(bypassCache);
 
     return res.json({

@@ -12,8 +12,11 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  const isFounderKey = (k: string | null) => 
+    k === 'UNC-ALPHA-2026' || k === 'UNC-COUNCIL-01' || k === 'UNC-KEY-Z24R-2026' || k === 'UNC-KEY-FUVB-2026';
+
   const [isOwnerActive, setIsOwnerActive] = useState(() => {
-    return sessionStorage.getItem('unc_owner_mode') === 'true' || sessionStorage.getItem('unc_vault_key') === 'UNC-ALPHA-2026';
+    return sessionStorage.getItem('unc_owner_mode') === 'true' || isFounderKey(sessionStorage.getItem('unc_vault_key'));
   });
 
   // Auto-close mobile menu when changing pages
@@ -43,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   useEffect(() => {
     const checkOwner = () => {
       setIsOwnerActive(
-        sessionStorage.getItem('unc_owner_mode') === 'true' || sessionStorage.getItem('unc_vault_key') === 'UNC-ALPHA-2026'
+        sessionStorage.getItem('unc_owner_mode') === 'true' || isFounderKey(sessionStorage.getItem('unc_vault_key'))
       );
     };
     window.addEventListener('unc_owner_activated', checkOwner);
@@ -56,39 +59,6 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-black/90 backdrop-blur-md">
-      {/* Top micro announcement bar */}
-      <div className="flex items-center justify-between px-4 py-1 text-[11px] font-mono tracking-wider text-zinc-500 border-b border-white/[0.04]">
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500/80 animate-pulse shrink-0" />
-          <span className="text-zinc-400">NETWORK:</span> ACTIVE
-          <span className="text-zinc-700">|</span>
-          <span className="text-zinc-400">NODES:</span> {nodeCount} VETTED
-          <span className="hidden sm:inline text-zinc-700">|</span>
-          <span className="hidden sm:inline text-zinc-400">ACCEPTANCE:</span> <span className="hidden sm:inline text-zinc-300">&lt; 3%</span>
-        </div>
-        <div className="flex items-center gap-3">
-          {isOwnerActive && (
-            <button
-              onClick={() => {
-                sound.playClick();
-                window.dispatchEvent(new Event('unc_open_owner_modal'));
-              }}
-              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors font-bold cursor-pointer"
-            >
-              <Crown className="w-3 h-3 text-amber-400 animate-pulse" />
-              <span>OWNER MODE ACTIVE</span>
-            </button>
-          )}
-          <Link
-            to="/apply"
-            onClick={() => sound.playClick()}
-            className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <span>DISCORD ADMISSIONS OPEN</span>
-          </Link>
-        </div>
-      </div>
-
       {/* Main navigation row */}
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14">
         {/* Brand */}
@@ -268,6 +238,20 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
 
           {/* Quick Actions in Mobile Drawer */}
           <div className="pt-2 border-t border-white/[0.08] flex flex-col gap-2.5">
+            {isOwnerActive && (
+              <button
+                onClick={() => {
+                  sound.playClick();
+                  setIsMobileMenuOpen(false);
+                  window.dispatchEvent(new Event('unc_open_owner_modal'));
+                }}
+                className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-100 font-mono text-xs font-semibold rounded-md border border-zinc-700 transition-all shadow flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Crown className="w-4 h-4 text-zinc-300" />
+                <span>Founder Orchestrator</span>
+              </button>
+            )}
+
             <Link
               to="/apply"
               onClick={() => {

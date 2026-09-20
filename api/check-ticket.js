@@ -149,33 +149,76 @@ export default async function handler(req, res) {
         }
       }
 
-      // B. Check Key Ledger for rejections or approvals
-      if (keyLedgerChannelId) {
-        const ledgerRes = await fetch(`https://discord.com/api/v10/channels/${keyLedgerChannelId}/messages?limit=50`, {
-          headers: { Authorization: `Bot ${token}` },
-        });
-        if (ledgerRes.ok) {
-          const messages = await ledgerRes.json();
-          for (const msg of messages) {
-            if (msg.content && msg.content.includes('UNC_TICKET_STATUS:')) {
-              try {
-                const match = msg.content.match(/UNC_TICKET_STATUS:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
-                if (match) {
-                  const rec = JSON.parse(match[1]);
-                  if ((ticketId && rec.ticketId === ticketId) || (cleanHandle && rec.username?.toLowerCase() === cleanHandle)) {
-                    if (rec.status === 'rejected') {
-                      return res.json({
-                        status: 'rejected',
-                        ticketId: rec.ticketId || ticketId,
-                        username: rec.username || cleanHandle,
-                        message: 'You were not admitted in this cohort. Stay active in the server, level up, and learn new things! We actively monitor everyone in the server—even small contributions and builds—and may add you to the webring.',
-                      });
+      // B. Check Rejection Logs & Key Ledger channels for rejections or approvals
+      const channelsToCheck = [
+        process.env.DISCORD_REJECTION_LOGS_CHANNEL_ID,
+        keyLedgerChannelId,
+        founderVaultChannelId,
+      ].filter(Boolean);
+
+      for (const channelId of channelsToCheck) {
+        try {
+          const chRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages?limit=50`, {
+            headers: { Authorization: `Bot ${token}` },
+          });
+          if (chRes.ok) {
+            const messages = await chRes.json();
+            for (const msg of messages) {
+              // 1. Check structured comment (legacy)
+              if (msg.content && msg.content.includes('UNC_TICKET_STATUS:')) {
+                try {
+                  const match = msg.content.match(/UNC_TICKET_STATUS:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
+                  if (match) {
+                    const rec = JSON.parse(match[1]);
+                    if ((ticketId && rec.ticketId === ticketId) || (cleanHandle && rec.username?.toLowerCase() === cleanHandle)) {
+                      if (rec.status === 'rejected') {
+                        return res.json({
+                          status: 'rejected',
+                          ticketId: rec.ticketId || ticketId,
+                          username: rec.username || cleanHandle,
+                          message: 'You were not admitted in this cohort. Stay active in the server, level up, and learn new things! We actively monitor everyone in the server—even small contributions and builds—and may add you to the webring.',
+                        });
+                      }
                     }
                   }
+                } catch {}
+              }
+
+              // 2. Check Embed Fields (Clean & reliable)
+              for (const embed of (msg.embeds || [])) {
+                let tId = null;
+                let uName = null;
+                let isRejection = embed.title?.includes('DOCKET REJECTED');
+
+                for (const f of (embed.fields || [])) {
+                  if (f.name.includes('Ticket Serial')) tId = f.value.replace(/`/g, '').trim();
+                  if (f.name.includes('Applicant') || f.name.includes('Candidate Member')) {
+                    const uMatch = f.value.match(/\(`([^`]+)`\)/);
+                    if (uMatch) uName = uMatch[1].toLowerCase();
+                  }
+                  if (f.name.includes('Status') && (f.value.includes('Not Admitted') || f.value.includes('Rejected'))) {
+                    isRejection = true;
+                  }
+                  if (f.name.includes('Audit Ref') && f.value.includes('UNC_TICKET_STATUS:')) {
+                    isRejection = true;
+                    const refMatch = f.value.match(/UNC_TICKET_STATUS:([A-Z0-9_-]+)/);
+                    if (refMatch && !tId) tId = refMatch[1].trim();
+                  }
                 }
-              } catch {}
+
+                if (isRejection && ((ticketId && tId === ticketId) || (cleanHandle && uName === cleanHandle))) {
+                  return res.json({
+                    status: 'rejected',
+                    ticketId: tId || ticketId,
+                    username: uName || cleanHandle,
+                    message: 'You were not admitted in this cohort. Stay active in the server, level up, and learn new things! We actively monitor everyone in the server—even small contributions and builds—and may add you to the webring.',
+                  });
+                }
+              }
             }
           }
+        } catch (cErr) {
+          console.warn('Channel check error:', cErr.message);
         }
       }
 

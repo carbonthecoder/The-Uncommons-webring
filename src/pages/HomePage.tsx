@@ -1,18 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useGenesisSlots } from '../data/members';
+import { useGenesisSlots, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
 import { ConstellationCanvas } from '../components/ConstellationCanvas';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
-import { ArrowRight, Disc, BookOpen, ExternalLink } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Disc, BookOpen, ExternalLink, Shuffle } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [activeSurfedDomain, setActiveSurfedDomain] = useState<string>('');
   const genesisSlots = useGenesisSlots();
-  const verifiedCount = genesisSlots.filter(
-    (m) => m.verified && m.domain && !m.domain.includes('unclaimed') && m.handle !== 'vacant'
-  ).length;
+
+  const verifiedMembers = useMemo(() => {
+    return genesisSlots.filter(
+      (m) => m.verified && m.domain && !m.domain.includes('unclaimed') && m.handle !== 'vacant'
+    );
+  }, [genesisSlots]);
+
+  const verifiedCount = verifiedMembers.length;
+
+  const handlePrevNode = () => {
+    sound.playClick();
+    const target = getPrevMember(activeSurfedDomain || (verifiedMembers[0]?.domain || ''));
+    if (target) {
+      setActiveSurfedDomain(target.domain);
+      setSelectedMember(target);
+    }
+  };
+
+  const handleNextNode = () => {
+    sound.playClick();
+    const target = getNextMember(activeSurfedDomain || (verifiedMembers[0]?.domain || ''));
+    if (target) {
+      setActiveSurfedDomain(target.domain);
+      setSelectedMember(target);
+    }
+  };
+
+  const handleRandomNode = () => {
+    sound.playHarmonic();
+    const target = getRandomMember(activeSurfedDomain);
+    if (target) {
+      setActiveSurfedDomain(target.domain);
+      setSelectedMember(target);
+    }
+  };
 
   return (
     <div className="space-y-16 sm:space-y-20 w-full">
@@ -61,6 +94,65 @@ export const HomePage: React.FC = () => {
             <BookOpen className="w-3.5 h-3.5" />
             <span>Manifesto &rarr;</span>
           </Link>
+        </div>
+
+        {/* The Official Webring Seal Component (Interactive Traversal Badge in 1st Section) */}
+        <div className="pt-3 flex flex-col items-center justify-center gap-2">
+          <div className="inline-flex items-center gap-2.5 sm:gap-3.5 px-3.5 sm:px-4 py-2 bg-zinc-950 border border-white/15 rounded-md text-xs font-mono text-zinc-300 shadow-xl select-none hover:border-white/30 transition-all">
+            <button
+              onClick={handlePrevNode}
+              className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              title="Navigate to previous node in webring"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Prev</span>
+            </button>
+
+            <span className="text-zinc-700 select-none">|</span>
+
+            <button
+              onClick={() => {
+                sound.playHarmonic();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex items-center gap-1.5 text-white font-semibold tracking-wider hover:underline underline-offset-4 cursor-pointer"
+            >
+              <div className="w-2 h-2 rounded-full border border-zinc-400 animate-spin" style={{ animationDuration: '6s' }} />
+              <span>THE UNCOMMONS</span>
+            </button>
+
+            <span className="text-zinc-700 select-none">|</span>
+
+            <button
+              onClick={handleNextNode}
+              className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              title="Navigate to next node in webring"
+            >
+              <span>Next</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            <span className="text-zinc-700 select-none">|</span>
+
+            <button
+              onClick={handleRandomNode}
+              className="flex items-center gap-1 text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer"
+              title="Hop to random sovereign node"
+            >
+              <Shuffle className="w-3.5 h-3.5" />
+              <span>Random</span>
+            </button>
+          </div>
+
+          <div className="text-[10px] font-mono text-zinc-500 tracking-wider">
+            {activeSurfedDomain ? (
+              <span className="text-emerald-400">
+                ACTIVE HOP: <strong className="text-white">{activeSurfedDomain}</strong> &bull; CLICK ANY ACTION TO TRAVERSE
+              </span>
+            ) : (
+              <span>OFFICIAL EMBED SEAL &bull; LIVE RING TRAVERSAL ENGINE</span>
+            )}
+          </div>
         </div>
       </section>
 

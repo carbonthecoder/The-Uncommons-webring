@@ -120,7 +120,7 @@ async function fetchDiscordLedgerNodes() {
   if (!token || !keyLedgerChannelId) return [];
 
   try {
-    const res = await fetch(`https://discord.com/api/v10/channels/${keyLedgerChannelId}/messages?limit=50`, {
+    const res = await fetch(`https://discord.com/api/v10/channels/${keyLedgerChannelId}/messages?limit=100`, {
       headers: { Authorization: `Bot ${token}` },
     });
 
@@ -128,16 +128,28 @@ async function fetchDiscordLedgerNodes() {
       const messages = await res.json();
       const ledgerNodes = [];
       for (const msg of messages.reverse()) {
-        if (msg.content && msg.content.includes('UNC_NODE_DATA:')) {
-          try {
-            const match = msg.content.match(/UNC_NODE_DATA:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
-            if (match) {
-              const nodeData = JSON.parse(match[1]);
+        // 1. Check embed footer base64 (clean & hidden from UI)
+        for (const embed of (msg.embeds || [])) {
+          if (embed.footer?.text && embed.footer.text.includes('UNC_NODE_DATA:')) {
+            try {
+              const b64 = embed.footer.text.split('UNC_NODE_DATA:')[1].trim();
+              const jsonStr = Buffer.from(b64, 'base64').toString('utf8');
+              const nodeData = JSON.parse(jsonStr);
               if (nodeData && nodeData.id) {
                 ledgerNodes.push(nodeData);
               }
-            }
-          } catch {}
+            } catch {}
+          } else if (msg.content && msg.content.includes('UNC_NODE_DATA:')) {
+            try {
+              const match = msg.content.match(/UNC_NODE_DATA:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
+              if (match) {
+                const nodeData = JSON.parse(match[1]);
+                if (nodeData && nodeData.id) {
+                  ledgerNodes.push(nodeData);
+                }
+              }
+            } catch {}
+          }
         }
       }
       return ledgerNodes;
@@ -155,12 +167,20 @@ async function broadcastToDiscordLedger(node) {
   if (!token || !keyLedgerChannelId) return;
 
   try {
-    const payloadContent = `<!-- UNC_NODE_DATA: ${JSON.stringify(node)} -->`;
+    const isVacant = !node.verified || node.domain?.includes('unclaimed') || node.handle === 'vacant';
+    const b64Data = Buffer.from(JSON.stringify(node)).toString('base64');
+    
     const embedPayload = {
-      title: `🛰️ SOVEREIGN NODE PUBLISHED // ${node.id}`,
-      description: `Builder **${node.name}** (\`@${node.handle}\`) has updated node slot **${node.id}** on The Uncommons webring.`,
-      color: 0x10b981,
-      fields: [
+      title: isVacant ? `🔄 SLOT VACATED / RESET // ${node.id}` : `🛰️ SOVEREIGN NODE PUBLISHED // ${node.id}`,
+      description: isVacant
+        ? `Founder Orchestrator reset **${node.id}** to an open Genesis vacancy.`
+        : `Builder **${node.name}** (\`@${node.handle}\`) has updated node slot **${node.id}** on The Uncommons webring.`,
+      color: isVacant ? 0x71717a : 0x10b981,
+      fields: isVacant ? [
+        { name: '🎫 Slot ID', value: `\`${node.id}\``, inline: true },
+        { name: '📍 Ring Position', value: `#${node.ringPosition || 'Auto'}`, inline: true },
+        { name: 'Status', value: 'Open Genesis Vacancy', inline: true },
+      ] : [
         { name: '🌐 Sovereign Domain', value: `\`https://${node.domain}\``, inline: true },
         { name: '👤 Handle', value: `@${node.handle}`, inline: true },
         { name: '🎫 Slot ID', value: `\`${node.id}\``, inline: true },
@@ -171,7 +191,7 @@ async function broadcastToDiscordLedger(node) {
         { name: '🟢 Status', value: node.status || 'online', inline: true },
       ],
       timestamp: new Date().toISOString(),
-      footer: { text: 'The Uncommons Webring • Live Multi-Cloud DB Sync' },
+      footer: { text: `The Uncommons Webring • UNC_NODE_DATA:${b64Data}` },
     };
 
     await fetch(`https://discord.com/api/v10/channels/${keyLedgerChannelId}/messages`, {
@@ -473,10 +493,8 @@ export async function saveNodeRecord(updatedNode) {
   // 4. Commit directly to GitHub Repository ("Change in code live update")
   await commitToGitHubRepo(currentNodes, `chore(registry): update node ${node.id} (${node.handle}) [skip ci]`);
 
-  // 5. Broadcast to Discord Key Ledger only if verified and non-vacant
-  if (node.verified && !node.domain.includes('unclaimed') && node.handle !== 'vacant') {
-    await broadcastToDiscordLedger(node);
-  }
+  // 5. Broadcast to Discord Key Ledger (live multi-cloud event log)
+  await broadcastToDiscordLedger(node);
 
   // Invalidate memory cache
   memoryCacheNodes = null;
