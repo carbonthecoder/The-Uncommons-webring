@@ -1640,8 +1640,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
         answers: { name, obsession, selfTaught, projects, why },
       });
 
-      // Artificial buffer to let things go smooth and make the AI analysis feel real (12 seconds)
-      await new Promise(resolve => setTimeout(resolve, 12000));
+      // Artificial buffer to let things go smooth and make the AI analysis feel real (2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Visual Score Bar Helper
       const filled = Math.min(10, Math.max(0, Math.round(aiResult.score / 10)));

@@ -138,6 +138,57 @@ export default async function handler(req, res) {
       }),
     });
 
+    // Post separate Staff Review Controls message for Admins & Council
+    const staffEmbed = {
+      title: `⚙️ Admissions Staff & Council Controls [${ticketId}]`,
+      description: `Reviewers & Founders: Use these control buttons to manage docket \`${ticketId}\` for candidate <@${member.user.id}>.`,
+      color: 0x8b5cf6,
+      footer: { text: 'The Uncommons Admissions • Staff Operations' },
+      timestamp: new Date().toISOString(),
+    };
+
+    const staffActionRow = {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          custom_id: `claim_review:${member.user.id}:${ticketId}`,
+          label: '⚡ Take Over Review',
+          style: 1, // Primary (Blurple)
+        },
+        {
+          type: 2,
+          custom_id: `ping_senior:${member.user.id}:${ticketId}`,
+          label: '📢 Signal Council',
+          style: 2, // Secondary (Grey)
+        },
+        {
+          type: 2,
+          custom_id: `ratify_key:${member.user.id}:${ticketId}`,
+          label: '🟢 Ratify & Forge Key',
+          style: 3, // Success (Green)
+        },
+        {
+          type: 2,
+          custom_id: `close_ticket:${member.user.id}:${ticketId}`,
+          label: '🛑 Reject / Close',
+          style: 4, // Danger (Red)
+        },
+      ],
+    };
+
+    await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        embeds: [staffEmbed],
+        components: [staffActionRow],
+      }),
+    });
+
     return res.json({
       success: true,
       ticketId,
