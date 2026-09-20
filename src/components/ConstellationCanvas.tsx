@@ -97,7 +97,8 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       } else if (e.key === 'Enter') {
         e.preventDefault();
         sound.playClick();
-        onSelectMember(members[activeNodeIndex]);
+        const target = displayNodes[activeNodeIndex];
+        if (target) onSelectMember(target);
       }
     };
 

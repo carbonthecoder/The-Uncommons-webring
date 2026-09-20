@@ -139,7 +139,25 @@ export function getCustomActiveNodes(): Member[] {
   try {
     const raw = localStorage.getItem('unc_custom_nodes');
     if (!raw) return [];
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    // Sanitize against test submissions or corrupted slots
+    const sanitized = parsed.filter((m: any) => {
+      if (!m || typeof m !== 'object' || !m.id || !m.domain) return false;
+      // Strip test submissions
+      if (/^test/i.test(m.handle) || /^test/i.test(m.name) || /test/i.test(m.domain)) return false;
+      // Protect NODE-001
+      if (m.id === 'NODE-001' && m.handle !== 'carbonthecoder') return false;
+      // Protect NODE-002
+      if (m.id === 'NODE-002' && !String(m.handle).includes('priyxnshu')) return false;
+      return true;
+    });
+
+    if (sanitized.length !== parsed.length) {
+      localStorage.setItem('unc_custom_nodes', JSON.stringify(sanitized));
+    }
+    return sanitized;
   } catch {
     return [];
   }

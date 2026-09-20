@@ -113,6 +113,24 @@ export default async function handler(req, res) {
     });
   }
 
+  // 2b. Slot Lockout Protection: Prevent overwriting claimed nodes
+  if (node.id === 'NODE-001' && cleanKey !== 'UNC-ALPHA-2026') {
+    return res.status(403).json({
+      success: false,
+      error: 'Slot NODE-001 is reserved for Founder Ibrahim (Carbon) and is locked.',
+    });
+  }
+
+  if (node.id === 'NODE-002') {
+    const isPriyanshu = cleanKey === 'UNC-COUNCIL-01' || cleanKey === 'UNC-KEY-FUVB-2026' || (node.handle && String(node.handle).toLowerCase().includes('priyxnshu'));
+    if (!isPriyanshu) {
+      return res.status(403).json({
+        success: false,
+        error: 'Slot NODE-002 is claimed by Priyanshu (Aero) and is locked. Please select an available slot (NODE-003 to NODE-008).',
+      });
+    }
+  }
+
   const updatedNode = {
     ...node,
     verified: true,

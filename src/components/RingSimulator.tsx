@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
 import { sound } from '../utils/audio';
@@ -35,7 +35,7 @@ export const RingSimulator: React.FC<RingSimulatorProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
-          <span>CYCLE: CLOSED 12-NODE LOOP</span>
+          <span>CYCLE: GENESIS 8-NODE RING</span>
         </div>
       </div>
 

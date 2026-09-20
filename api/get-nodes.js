@@ -48,6 +48,19 @@ export default async function handler(req, res) {
               if (match) {
                 const nodeData = JSON.parse(match[1]);
                 if (nodeData && nodeData.id) {
+                  // Filter out test nodes or spam submissions
+                  if (/^test/i.test(nodeData.name) || /^test/i.test(nodeData.handle) || /test/i.test(nodeData.domain)) {
+                    continue;
+                  }
+                  // Slot protection: NODE-001 is exclusively Ibrahim (Carbon)
+                  if (nodeData.id === 'NODE-001' && nodeData.handle !== 'carbonthecoder') {
+                    continue;
+                  }
+                  // Slot protection: NODE-002 is exclusively Priyanshu (Aero)
+                  if (nodeData.id === 'NODE-002' && !String(nodeData.handle).includes('priyxnshu')) {
+                    continue;
+                  }
+
                   nodeMap.set(nodeData.id, {
                     ...nodeMap.get(nodeData.id),
                     ...nodeData,
@@ -68,8 +81,10 @@ export default async function handler(req, res) {
   }
 
   const mergedNodes = Array.from(nodeMap.values()).sort((a, b) => {
-    const posA = a.ringPosition || 999;
-    const posB = b.ringPosition || 999;
+    const numA = parseInt(String(a.id || '').replace(/\D/g, ''), 10) || 999;
+    const numB = parseInt(String(b.id || '').replace(/\D/g, ''), 10) || 999;
+    const posA = typeof a.ringPosition === 'number' ? a.ringPosition : numA;
+    const posB = typeof b.ringPosition === 'number' ? b.ringPosition : numB;
     return posA - posB;
   });
 

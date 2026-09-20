@@ -22,11 +22,13 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 import type { Member } from '../data/members';
-import { saveCustomNode, getCustomActiveNodes, syncServerNodes } from '../data/members';
+import { saveCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 
 
 export const SealPage: React.FC = () => {
+  const liveMembers = useLiveMembers();
+
   // Authentication & 2-Step Credentials (Ring Key + Secret PIN)
   const [passcode, setPasscode] = useState(() => {
     return sessionStorage.getItem('unc_vault_key') || '';
@@ -43,12 +45,10 @@ export const SealPage: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-
   // Tab View: 'studio' (Node Profile Editor) vs 'embed' (Seal Snippet)
   const [activeTab, setActiveTab] = useState<'studio' | 'embed'>('studio');
 
   // Node Editor Form State
-  const [slotId, setSlotId] = useState('NODE-002');
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
   const [domain, setDomain] = useState('');
@@ -59,6 +59,70 @@ export const SealPage: React.FC = () => {
   const [proofUrl, setProofUrl] = useState('');
   const [tagsInput, setTagsInput] = useState('Systems, AI Agents, Compilers');
   const [nodeStatus, setNodeStatus] = useState<'online' | 'dormant' | 'reviewing'>('online');
+
+  // Dynamic slot status calculation (1 to 8)
+  const slotStatusList = useMemo(() => {
+    const currentKey = passcode.trim().toUpperCase();
+    const isFounder = currentKey === 'UNC-ALPHA-2026';
+    const isCouncil2 = currentKey === 'UNC-COUNCIL-01';
+
+    return Array.from({ length: 8 }, (_, i) => {
+      const num = i + 1;
+      const id = `NODE-00${num}`;
+
+      // Check if slot has an active verified member
+      const memberInSlot = liveMembers.find(
+        (m) => (m.id === id || m.ringPosition === num) && m.verified && m.domain && !m.domain.includes('unclaimed')
+      );
+
+      let isOwner = false;
+      if (id === 'NODE-001' && isFounder) isOwner = true;
+      else if (id === 'NODE-002' && (isCouncil2 || currentKey === 'UNC-KEY-FUVB-2026' || (handle && handle.toLowerCase().includes('priyxnshu')))) isOwner = true;
+      else if (memberInSlot && handle && memberInSlot.handle.toLowerCase() === handle.trim().toLowerCase()) isOwner = true;
+
+      const isClaimed = !!memberInSlot;
+      const isLocked = isClaimed && !isOwner;
+
+      return {
+        id,
+        num,
+        isClaimed,
+        isLocked,
+        isOwner,
+        claimedMember: memberInSlot,
+        label: isClaimed
+          ? isOwner
+            ? `${id} (${memberInSlot.name} - Your Slot)`
+            : `${id} (${memberInSlot.name} - Claimed / Locked)`
+          : `${id} (Genesis Slot #${num} - Available)`,
+      };
+    });
+  }, [liveMembers, passcode, handle]);
+
+  // First available open slot (defaults new candidates to NODE-003 since NODE-001 and NODE-002 are claimed)
+  const firstAvailableSlot = useMemo(() => {
+    const currentKey = passcode.trim().toUpperCase();
+    if (currentKey === 'UNC-ALPHA-2026') return 'NODE-001';
+    if (currentKey === 'UNC-COUNCIL-01' || currentKey === 'UNC-KEY-FUVB-2026') return 'NODE-002';
+
+    const available = slotStatusList.find((s) => !s.isLocked);
+    return available ? available.id : 'NODE-003';
+  }, [slotStatusList, passcode]);
+
+  const [slotId, setSlotId] = useState(() => {
+    const savedKey = (sessionStorage.getItem('unc_vault_key') || '').trim().toUpperCase();
+    if (savedKey === 'UNC-ALPHA-2026') return 'NODE-001';
+    if (savedKey === 'UNC-COUNCIL-01' || savedKey === 'UNC-KEY-FUVB-2026') return 'NODE-002';
+    return 'NODE-003';
+  });
+
+  // Auto-switch to available slot if current slot is locked / claimed by another member
+  useEffect(() => {
+    const current = slotStatusList.find((s) => s.id === slotId);
+    if (current && current.isLocked) {
+      setSlotId(firstAvailableSlot);
+    }
+  }, [slotStatusList, slotId, firstAvailableSlot]);
 
   // Preview Mode: 'dossier' | 'seal'
   const [previewMode, setPreviewMode] = useState<'dossier' | 'seal'>('dossier');
@@ -74,13 +138,15 @@ export const SealPage: React.FC = () => {
   const [activeSnippetTab, setActiveSnippetTab] = useState<'script' | 'html'>('script');
   const [copiedSnippet, setCopiedSnippet] = useState(false);
 
-
   // Load existing node data when slotId or unlocked status changes
   useEffect(() => {
     if (!isUnlocked) return;
     const customNodes = getCustomActiveNodes();
-    const existing = customNodes.find((n) => n.id === slotId);
-    if (existing) {
+    const existingCustom = customNodes.find((n) => n.id === slotId);
+    const existingLive = liveMembers.find((n) => n.id === slotId);
+    const existing = existingCustom || existingLive;
+
+    if (existing && existing.verified && !existing.domain?.includes('unclaimed')) {
       setName(existing.name || '');
       setHandle(existing.handle || '');
       setDomain(existing.domain || '');
@@ -93,16 +159,16 @@ export const SealPage: React.FC = () => {
       setNodeStatus(existing.status || 'online');
     } else {
       // Pre-fill clean defaults for new slot
-      setName((prev) => prev || 'Polymath Builder');
-      setHandle((prev) => prev || 'youngbuilder');
-      setDomain((prev) => prev || 'builder.sovereign.dev');
-      setUrl((prev) => prev || 'https://builder.sovereign.dev');
-      setField((prev) => prev || 'Autonomous Systems & Deterministic AI');
-      setBio((prev) => prev || 'Obsessed with local LLM kernels, autonomous agents, and sovereign digital gardens.');
-      setProofOfWork((prev) => prev || 'High-throughput agent orchestration runtime with zero IPC overhead.');
-      setProofUrl((prev) => prev || 'https://github.com');
+      setName((prev) => (prev && prev !== 'Polymath Builder' ? prev : ''));
+      setHandle((prev) => (prev && prev !== 'youngbuilder' ? prev : ''));
+      setDomain((prev) => (prev && prev !== 'builder.sovereign.dev' ? prev : ''));
+      setUrl((prev) => (prev && prev !== 'https://builder.sovereign.dev' ? prev : ''));
+      setField((prev) => (prev && prev !== 'Autonomous Systems & Deterministic AI' ? prev : ''));
+      setBio((prev) => (prev && prev !== 'Obsessed with local LLM kernels, autonomous agents, and sovereign digital gardens.' ? prev : ''));
+      setProofOfWork((prev) => (prev && prev !== 'High-throughput agent orchestration runtime with zero IPC overhead.' ? prev : ''));
+      setProofUrl((prev) => (prev && prev !== 'https://github.com' ? prev : ''));
     }
-  }, [isUnlocked, slotId]);
+  }, [isUnlocked, slotId, liveMembers]);
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,6 +291,15 @@ export const SealPage: React.FC = () => {
     sound.playClick();
     setSaveError(null);
     setSaveSuccess(null);
+
+    const currentSlot = slotStatusList.find((s) => s.id === slotId);
+    if (currentSlot && currentSlot.isLocked) {
+      setSaveError(
+        `Slot ${slotId} is claimed by ${currentSlot.claimedMember?.name || 'another builder'} and is locked. Please choose an open vacant slot.`
+      );
+      sound.playTick();
+      return;
+    }
 
     if (!domain.trim()) {
       setSaveError('Please provide your sovereign domain (e.g. yourdomain.dev)');
@@ -550,23 +625,39 @@ export const SealPage: React.FC = () => {
               {/* Slot Selector & Status */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-mono text-zinc-400 mb-1">
-                    SLOT ALLOCATION *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-mono text-zinc-400">
+                      SLOT ALLOCATION *
+                    </label>
+                    {slotStatusList.find((s) => s.id === slotId)?.isClaimed && (
+                      <span className="text-[10px] font-mono text-amber-400 flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        {slotStatusList.find((s) => s.id === slotId)?.isOwner ? 'Your Slot' : 'Claimed / Locked'}
+                      </span>
+                    )}
+                  </div>
                   <select
                     value={slotId}
                     onChange={(e) => setSlotId(e.target.value)}
                     className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
                   >
-                    <option value="NODE-001">NODE-001 (Genesis Founder)</option>
-                    <option value="NODE-002">NODE-002 (Genesis Slot #2)</option>
-                    <option value="NODE-003">NODE-003 (Genesis Slot #3)</option>
-                    <option value="NODE-004">NODE-004 (Genesis Slot #4)</option>
-                    <option value="NODE-005">NODE-005 (Genesis Slot #5)</option>
-                    <option value="NODE-006">NODE-006 (Genesis Slot #6)</option>
-                    <option value="NODE-007">NODE-007 (Genesis Slot #7)</option>
-                    <option value="NODE-008">NODE-008 (Genesis Slot #8)</option>
+                    {slotStatusList.map((slot) => (
+                      <option
+                        key={slot.id}
+                        value={slot.id}
+                        disabled={slot.isLocked}
+                        className={slot.isLocked ? 'text-zinc-600 bg-zinc-950 font-sans' : 'text-white bg-black'}
+                      >
+                        {slot.label}
+                      </option>
+                    ))}
                   </select>
+                  {slotStatusList.find((s) => s.id === slotId)?.isLocked && (
+                    <p className="mt-1 text-[11px] font-mono text-rose-400 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      <span>This slot is claimed and cannot be overwritten.</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>

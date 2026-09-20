@@ -1,15 +1,29 @@
-﻿import React, { useState } from 'react';
-import { MEMBERS, getNextMember, getPrevMember, getRandomMember } from '../data/members';
+import React, { useState, useEffect } from 'react';
+import { useLiveMembers, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
 import { sound } from '../utils/audio';
 import { Terminal, ExternalLink, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export const RingEngineView: React.FC = () => {
-  const [selectedOrigin, setSelectedOrigin] = useState<string>(MEMBERS[0].domain);
+  const liveMembers = useLiveMembers();
+  const verifiedMembers = liveMembers.filter(m => m.verified && m.domain && !m.domain.includes('unclaimed'));
+
+  const [selectedOrigin, setSelectedOrigin] = useState<string>(() => {
+    return verifiedMembers[0]?.domain || 'carbonthecoder.github.io';
+  });
   const [action, setAction] = useState<'next' | 'prev' | 'random'>('next');
-  const [targetNode, setTargetNode] = useState<Member>(MEMBERS[1]);
+  const [targetNode, setTargetNode] = useState<Member>(() => {
+    return verifiedMembers[1] || verifiedMembers[0];
+  });
   const [isExecuting, setIsExecuting] = useState(false);
   const [latency, setLatency] = useState<number>(0.3);
+
+  useEffect(() => {
+    if (verifiedMembers.length > 0 && !verifiedMembers.some(m => m.domain === selectedOrigin)) {
+      setSelectedOrigin(verifiedMembers[0].domain);
+      setTargetNode(verifiedMembers[1] || verifiedMembers[0]);
+    }
+  }, [verifiedMembers, selectedOrigin]);
 
   const handleHopTest = (overrideAction?: 'next' | 'prev' | 'random') => {
     sound.playClick();
@@ -65,9 +79,9 @@ export const RingEngineView: React.FC = () => {
               onChange={(e) => setSelectedOrigin(e.target.value)}
               className="w-full px-3 py-2 bg-black border border-white/10 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-white/30"
             >
-              {MEMBERS.map((m) => (
+              {verifiedMembers.map((m) => (
                 <option key={m.id} value={m.domain}>
-                  {m.id} &mdash; {m.domain}
+                  {m.id} &mdash; {m.name} ({m.domain})
                 </option>
               ))}
             </select>
