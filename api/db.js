@@ -112,59 +112,84 @@ async function saveGistData(nodesList) {
   return false;
 }
 
-// 3. DISCORD KEY LEDGER ADAPTER
+// 3. DISCORD KEY LEDGER & NODE UPDATES ADAPTER
 async function fetchDiscordLedgerNodes() {
   const token = process.env.DISCORD_BOT_TOKEN;
   const keyLedgerChannelId = process.env.DISCORD_KEY_LEDGER_CHANNEL_ID || '1551036698757038181';
+  const nodeUpdatesChannelId = process.env.DISCORD_NODE_UPDATES_CHANNEL_ID;
 
-  if (!token || !keyLedgerChannelId) return [];
+  if (!token) return [];
 
-  try {
-    const res = await fetch(`https://discord.com/api/v10/channels/${keyLedgerChannelId}/messages?limit=100`, {
-      headers: { Authorization: `Bot ${token}` },
-    });
+  const channelsToScan = [nodeUpdatesChannelId, keyLedgerChannelId].filter(Boolean);
+  const ledgerNodes = [];
 
-    if (res.ok) {
-      const messages = await res.json();
-      const ledgerNodes = [];
-      for (const msg of messages.reverse()) {
-        // 1. Check embed footer base64 (clean & hidden from UI)
-        for (const embed of (msg.embeds || [])) {
-          if (embed.footer?.text && embed.footer.text.includes('UNC_NODE_DATA:')) {
-            try {
-              const b64 = embed.footer.text.split('UNC_NODE_DATA:')[1].trim();
-              const jsonStr = Buffer.from(b64, 'base64').toString('utf8');
-              const nodeData = JSON.parse(jsonStr);
-              if (nodeData && nodeData.id) {
-                ledgerNodes.push(nodeData);
-              }
-            } catch {}
-          } else if (msg.content && msg.content.includes('UNC_NODE_DATA:')) {
-            try {
-              const match = msg.content.match(/UNC_NODE_DATA:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
-              if (match) {
-                const nodeData = JSON.parse(match[1]);
+  for (const channelId of channelsToScan) {
+    try {
+      const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages?limit=100`, {
+        headers: { Authorization: `Bot ${token}` },
+      });
+
+      if (res.ok) {
+        const messages = await res.json();
+        for (const msg of messages.reverse()) {
+          for (const embed of (msg.embeds || [])) {
+            if (embed.footer?.text && embed.footer.text.includes('UNC_NODE_DATA:')) {
+              try {
+                const b64 = embed.footer.text.split('UNC_NODE_DATA:')[1].trim();
+                const jsonStr = Buffer.from(b64, 'base64').toString('utf8');
+                const nodeData = JSON.parse(jsonStr);
                 if (nodeData && nodeData.id) {
                   ledgerNodes.push(nodeData);
                 }
-              }
-            } catch {}
+              } catch {}
+            } else if (msg.content && msg.content.includes('UNC_NODE_DATA:')) {
+              try {
+                const match = msg.content.match(/UNC_NODE_DATA:\s*({[\s\S]*?})(?:\s*-->|\n|$)/);
+                if (match) {
+                  const nodeData = JSON.parse(match[1]);
+                  if (nodeData && nodeData.id) {
+                    ledgerNodes.push(nodeData);
+                  }
+                }
+              } catch {}
+            }
           }
         }
       }
-      return ledgerNodes;
+    } catch (err) {
+      console.warn(`Discord ledger fetch warning for channel ${channelId}:`, err.message);
     }
-  } catch (err) {
-    console.warn('Discord ledger fetch warning:', err.message);
   }
-  return [];
+
+  return ledgerNodes;
 }
 
 async function broadcastToDiscordLedger(node) {
   const token = process.env.DISCORD_BOT_TOKEN;
-  const keyLedgerChannelId = process.env.DISCORD_KEY_LEDGER_CHANNEL_ID || '1551036698757038181';
+  const guildId = process.env.DISCORD_GUILD_ID || '1372095730696716379';
+  let targetChannelId = process.env.DISCORD_NODE_UPDATES_CHANNEL_ID;
 
-  if (!token || !keyLedgerChannelId) return;
+  if (!token) return;
+
+  // Dynamically find #node-updates or fallback to key ledger
+  if (!targetChannelId) {
+    try {
+      const chRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
+        headers: { Authorization: `Bot ${token}` },
+      });
+      if (chRes.ok) {
+        const channels = await chRes.json();
+        const foundCh = channels.find((c) => c.name === 'node-updates' || c.name === 'node-registry-logs');
+        if (foundCh) {
+          targetChannelId = foundCh.id;
+        }
+      }
+    } catch {}
+  }
+
+  if (!targetChannelId) {
+    targetChannelId = process.env.DISCORD_KEY_LEDGER_CHANNEL_ID || '1551036698757038181';
+  }
 
   try {
     const isVacant = !node.verified || node.domain?.includes('unclaimed') || node.handle === 'vacant';
@@ -194,7 +219,7 @@ async function broadcastToDiscordLedger(node) {
       footer: { text: `The Uncommons Webring • UNC_NODE_DATA:${b64Data}` },
     };
 
-    await fetch(`https://discord.com/api/v10/channels/${keyLedgerChannelId}/messages`, {
+    await fetch(`https://discord.com/api/v10/channels/${targetChannelId}/messages`, {
       method: 'POST',
       headers: {
         Authorization: `Bot ${token}`,

@@ -563,6 +563,83 @@ async function getOrCreateRejectionLogsChannel(guild) {
   }
 }
 
+// Get or auto-create private Staff-Only Node Updates Log Channel
+async function getOrCreateNodeUpdatesChannel(guild) {
+  if (config.nodeUpdatesChannelId) {
+    const existing = guild.channels.cache.get(config.nodeUpdatesChannelId);
+    if (existing) return existing;
+  }
+
+  // Look for channel by name
+  let ch = guild.channels.cache.find(c => c.name === 'node-updates' || c.name === 'node-registry-logs');
+  if (ch) {
+    config.nodeUpdatesChannelId = ch.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return ch;
+  }
+
+  // Auto-create private staff-only channel
+  try {
+    const permissionOverwrites = [
+      {
+        id: guild.id,
+        deny: [PermissionFlagsBits.ViewChannel],
+      },
+      {
+        id: client.user.id,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.EmbedLinks,
+          PermissionFlagsBits.ManageChannels,
+        ],
+      },
+    ];
+
+    if (config.staffRoleId) {
+      permissionOverwrites.push({
+        id: config.staffRoleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+        deny: [PermissionFlagsBits.SendMessages],
+      });
+    }
+
+    if (config.seniorStaffRoleId && config.seniorStaffRoleId !== config.staffRoleId) {
+      permissionOverwrites.push({
+        id: config.seniorStaffRoleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+        deny: [PermissionFlagsBits.SendMessages],
+      });
+    }
+
+    const channelOptions = {
+      name: 'node-updates',
+      type: ChannelType.GuildText,
+      topic: '🛰️ Sovereign Node Updates Archive: Real-time record of all webring node publications, edits, and slot vacancies.',
+      permissionOverwrites,
+    };
+
+    if (config.ticketCategoryId) {
+      channelOptions.parent = config.ticketCategoryId;
+    }
+
+    ch = await guild.channels.create(channelOptions);
+    config.nodeUpdatesChannelId = ch.id;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log(`🛰️ Created private node updates channel: #${ch.name} (${ch.id})`);
+    return ch;
+  } catch (err) {
+    console.error('Failed to create node updates channel:', err);
+    return null;
+  }
+}
+
 // Get or auto-create Webring Member Discord Role
 async function getOrCreateWebringRole(guild) {
   if (config.webringRoleId) {

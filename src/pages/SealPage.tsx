@@ -19,8 +19,7 @@ import {
   Save, 
   Code, 
   CheckCircle2, 
-  AlertTriangle,
-  Layers
+  AlertTriangle
 } from 'lucide-react';
 import type { Member } from '../data/members';
 import { saveCustomNode, saveGenesisSlot, vacateCustomNode, getCustomActiveNodes, syncServerNodes, useLiveMembers } from '../data/members';
@@ -102,7 +101,6 @@ export const SealPage: React.FC = () => {
   const [tagsInput, setTagsInput] = useState('Systems, AI Agents, Compilers');
   const [nodeStatus, setNodeStatus] = useState<'online' | 'dormant' | 'reviewing'>('online');
   const [ringPosition, setRingPosition] = useState<number>(1);
-  const [showOrchestrator, setShowOrchestrator] = useState(false);
 
   // Founder Superadmin check
   const isFounder = useMemo(() => {
@@ -222,9 +220,8 @@ export const SealPage: React.FC = () => {
       setBio((prev) => (prev && prev !== 'Obsessed with local LLM kernels, autonomous agents, and sovereign digital gardens.' ? prev : ''));
       setProofOfWork((prev) => (prev && prev !== 'High-throughput agent orchestration runtime with zero IPC overhead.' ? prev : ''));
       setProofUrl((prev) => (prev && prev !== 'https://github.com' ? prev : ''));
-      setRingPosition(parseInt(slotId.replace(/\D/g, ''), 10) || 1);
     }
-  }, [isUnlocked, slotId, liveMembers]);
+  }, [isUnlocked, slotId]);
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -739,144 +736,6 @@ export const SealPage: React.FC = () => {
             <div className="p-3 bg-rose-950/30 border border-rose-500/40 rounded-xl font-mono text-xs text-rose-300 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{saveError}</span>
-            </div>
-          )}
-
-          {/* FOUNDER MASTER OVERRIDE & CONSTELLATION ORCHESTRATOR BANNER */}
-          {isFounder && (
-            <div className="bg-gradient-to-r from-amber-950/40 via-zinc-950 to-emerald-950/30 border border-amber-500/30 rounded-xl p-4 sm:p-5 space-y-4 animate-in fade-in">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start sm:items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 text-base shadow-lg shadow-amber-500/5">
-                    👑
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs font-bold text-amber-300">
-                        FOUNDER SUPERADMIN ORCHESTRATOR
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono font-semibold border border-amber-500/30">
-                        ALL SLOTS UNLOCKED
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
-                      Full authority active. You can edit any node, rearrange ring places (positions 1-8), swap slots, or vacate occupied positions.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      setShowOrchestrator((prev) => !prev);
-                    }}
-                    className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded font-mono text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
-                  >
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>{showOrchestrator ? 'Hide Constellation Grid' : 'Orchestrate Constellation (8 Slots)'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* EXPANDABLE CONSTELLATION SLOTS GRID & POSITION SWAPPER */}
-              {showOrchestrator && (
-                <div className="pt-3 border-t border-white/10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono font-semibold text-zinc-300 flex items-center gap-1.5">
-                      <Terminal className="w-3.5 h-3.5 text-amber-400" />
-                      <span>CONSTELLATION SLOT REGISTRY &amp; POSITION SWAPPER</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-zinc-500">
-                      CLICK &quot;LOAD&quot; TO EDIT OR USE ARROWS TO SHIFT POSITIONS
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    {slotStatusList.map((slot) => {
-                      const member = liveMembers.find((m) => m.id === slot.id);
-                      const isOccupied = slot.isClaimed && member && !member.domain?.includes('unclaimed');
-                      const currentPos = member?.ringPosition || slot.num;
-
-                      return (
-                        <div
-                          key={slot.id}
-                          className={`p-3 rounded-lg border transition-all ${
-                            slotId === slot.id
-                              ? 'bg-amber-950/30 border-amber-500/50 shadow-md shadow-amber-500/10'
-                              : 'bg-black/60 border-white/10 hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-mono text-[10px] font-bold">
-                              {slot.id}
-                            </span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                              Pos #{currentPos}
-                            </span>
-                          </div>
-
-                          <div className="space-y-0.5 mb-2.5">
-                            <div className="font-mono text-xs font-semibold text-white truncate">
-                              {isOccupied ? member.name : 'Awaiting Review'}
-                            </div>
-                            <div className="font-mono text-[10px] text-zinc-500 truncate">
-                              {isOccupied ? member.domain : 'Vacant Genesis Slot'}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-2 border-t border-white/5 gap-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                sound.playClick();
-                                setSlotId(slot.id);
-                              }}
-                              className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded text-[10px] font-mono border border-white/10 transition-colors cursor-pointer flex-1 text-center"
-                            >
-                              Load &amp; Edit
-                            </button>
-
-                            <div className="flex items-center gap-0.5">
-                              <button
-                                type="button"
-                                disabled={currentPos <= 1}
-                                onClick={() => handleShiftPosition(slot.id, 'up')}
-                                className="p-1 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-zinc-900 text-zinc-300 hover:text-white rounded text-[10px] font-mono border border-white/10 transition-colors cursor-pointer"
-                                title="Shift Ring Position Up"
-                              >
-                                &uarr;
-                              </button>
-                              <button
-                                type="button"
-                                disabled={currentPos >= 8}
-                                onClick={() => handleShiftPosition(slot.id, 'down')}
-                                className="p-1 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-zinc-900 text-zinc-300 hover:text-white rounded text-[10px] font-mono border border-white/10 transition-colors cursor-pointer"
-                                title="Shift Ring Position Down"
-                              >
-                                &darr;
-                              </button>
-                            </div>
-
-                            {isOccupied && (
-                              <button
-                                type="button"
-                                disabled={isVacating}
-                                onClick={() => handleVacateSlot(slot.id)}
-                                className="px-1.5 py-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded text-[10px] font-mono border border-rose-500/30 transition-colors cursor-pointer"
-                                title="Vacate &amp; reset this slot"
-                              >
-                                Reset
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
