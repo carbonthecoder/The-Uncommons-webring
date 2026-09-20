@@ -159,7 +159,19 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, height);
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radiusX = Math.min(width, height) * 0.40;
+      const radiusY = radiusX * 0.50; // Perspective ellipse
+
+      // 0. Deep Space Nebula Background
+      const nebula = ctx.createRadialGradient(centerX * 0.8, centerY * 0.8, 0, centerX, centerY, Math.max(width, height) * 0.8);
+      nebula.addColorStop(0, '#0a0518'); // subtle deep space purple/blue
+      nebula.addColorStop(0.4, '#05020a');
+      nebula.addColorStop(1, '#000000');
+      ctx.fillStyle = nebula;
+      ctx.fillRect(0, 0, width, height);
 
       // 1. Draw Starfield Dust
       starsRef.current.forEach((star) => {
@@ -170,11 +182,6 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
         ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha})`;
         ctx.fill();
       });
-
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const radiusX = Math.min(width, height) * 0.40;
-      const radiusY = radiusX * 0.50; // Perspective ellipse
 
       // Smooth interpolation if user clicked next/prev
       if (targetAngleRef.current !== null) {
@@ -195,8 +202,8 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       // 2. Pulsing Cosmic Sovereign Core (Monochrome / Aesthetic)
       const corePulse = 0.85 + Math.sin(Date.now() * 0.0025) * 0.15;
       const coreGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 70 * corePulse);
-      coreGlow.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
-      coreGlow.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
+      coreGlow.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+      coreGlow.addColorStop(0.5, 'rgba(255, 255, 255, 0.03)');
       coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = coreGlow;
       ctx.beginPath();
@@ -206,9 +213,9 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
       // Soft Central Star
       ctx.beginPath();
       ctx.arc(centerX, centerY, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-      ctx.shadowBlur = 10;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.6)';
+      ctx.shadowBlur = 12;
       ctx.fill();
       ctx.shadowBlur = 0; // reset
 
@@ -222,10 +229,27 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
         return { member: m, x, y, depth, theta, originalIndex: i };
       });
 
-      // 3. Draw Luminous Energy Comets (Without the hard lines)
+      // 3. Draw Connecting Ring Threads & Luminous Energy Comets
       for (let i = 0; i < total; i++) {
         const current = nodes[i];
         const next = nodes[(i + 1) % total];
+        const across = nodes[(i + Math.floor(total / 2)) % total]; // Cross-ring connection
+
+        // Outer Ring Threads
+        ctx.beginPath();
+        ctx.moveTo(current.x, current.y);
+        ctx.lineTo(next.x, next.y);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Inner Web Threads (creates a cool space web effect)
+        ctx.beginPath();
+        ctx.moveTo(current.x, current.y);
+        ctx.lineTo(across.x, across.y);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
 
         // Light Trails / Comets flying between nodes for a dynamic aesthetic
         for (let c = 0; c < 2; c++) {
@@ -239,13 +263,13 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
 
           const grad = ctx.createLinearGradient(tailX, tailY, cometX, cometY);
           grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-          grad.addColorStop(1, 'rgba(255, 255, 255, 0.3)');
+          grad.addColorStop(1, 'rgba(255, 255, 255, 0.4)');
 
           ctx.beginPath();
           ctx.moveTo(tailX, tailY);
           ctx.lineTo(cometX, cometY);
           ctx.strokeStyle = grad;
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 1.2;
           ctx.stroke();
 
           ctx.beginPath();
