@@ -1,19 +1,20 @@
 [
   {
     "id": "NODE-001",
-    "name": "Ibrahim (Carbon)",
+    "name": "Mohammed Ibrahim (Carbon)",
     "handle": "carbonthecoder",
-    "domain": "carbonthecoder.github.io",
-    "url": "https://carbonthecoder.github.io",
-    "field": "Autonomous Agentic Systems & Sovereign Web",
-    "bio": "Founder of The Uncommons. Architect of distributed cognitive loops, high-autonomy agents, and sovereign digital gardens.",
+    "domain": "crbn-coder.vercel.app",
+    "url": "https://crbn-coder.vercel.app",
+    "field": "Backend Systems, Linux Infrastructure & Autonomous AI Agents",
+    "bio": "Founder of The Uncommons. Self-taught engineer focused on low-level backend architecture, C/C++ runtimes, and autonomous agent loops.",
     "proofOfWork": "Agentic orchestration engines & persistent local-first knowledge systems.",
     "proofUrl": "https://github.com/carbonthecoder",
     "tags": [
       "Founder",
-      "Systems",
+      "Backend",
+      "C/C++",
       "AI Agents",
-      "Architecture"
+      "Linux"
     ],
     "joinDate": "2026-01-01",
     "verified": true,
