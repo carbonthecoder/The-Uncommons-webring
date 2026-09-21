@@ -4,7 +4,6 @@ import { useLiveMembers } from './data/members';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
 import { NodesPage } from './pages/NodesPage';
-import { SealPage } from './pages/SealPage';
 import { ApplyPage } from './pages/ApplyPage';
 import { ManifestoPage } from './pages/ManifestoPage';
 import { GoPage } from './pages/GoPage';
@@ -111,7 +110,6 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/nodes" element={<NodesPage />} />
             <Route path="/members" element={<NodesPage />} />
-            <Route path="/seal" element={<SealPage />} />
             <Route path="/apply" element={<ApplyPage />} />
             <Route path="/manifesto" element={<ManifestoPage />} />
             <Route path="/go" element={<GoPage />} />
@@ -140,9 +138,6 @@ export default function App() {
               </Link>
               <Link to="/manifesto" className="hover:text-white transition-colors">
                 Manifesto
-              </Link>
-              <Link to="/seal" className="hover:text-white transition-colors">
-                The Seal
               </Link>
               <Link to="/apply" className="hover:text-white transition-colors">
                 Apply via Discord

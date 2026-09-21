@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { sound } from '../utils/audio';
-import { Volume2, VolumeX, Disc, Lock, Menu, X, ArrowRight, ShieldCheck, BookOpen, Globe } from 'lucide-react';
+import { Volume2, VolumeX, Disc, Menu, X, ArrowRight, ShieldCheck, BookOpen, Globe } from 'lucide-react';
 
 interface NavbarProps {
   nodeCount: number;
@@ -73,10 +73,6 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
           </NavLink>
           <NavLink to="/manifesto" className={navClass} onClick={() => sound.playClick()}>
             Manifesto
-          </NavLink>
-          <NavLink to="/seal" className={navClass} onClick={() => sound.playClick()}>
-            <Lock className="w-3 h-3 text-zinc-500" />
-            The Seal
           </NavLink>
           <NavLink to="/apply" className={navClass} onClick={() => sound.playClick()}>
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1" />
@@ -176,18 +172,6 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
                 <span>Manifesto</span>
               </div>
               <span className="text-[10px] text-zinc-500 uppercase">ESSAY</span>
-            </NavLink>
-
-            <NavLink
-              to="/seal"
-              className={mobileLinkClass}
-              onClick={() => sound.playClick()}
-            >
-              <div className="flex items-center gap-2.5">
-                <Lock className="w-4 h-4 text-zinc-400" />
-                <span>The Seal</span>
-              </div>
-              <span className="text-[10px] text-amber-500/90 font-mono">GATED</span>
             </NavLink>
 
             <NavLink

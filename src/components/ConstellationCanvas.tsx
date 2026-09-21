@@ -231,20 +231,23 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
         const next = nodes[(i + 1) % total];
         const across = nodes[(i + Math.floor(total / 2)) % total]; // Cross-ring connection
 
-        // Outer Ring Threads
+        // Outer Ring Threads (Highly Visible, High-Contrast Glow)
         ctx.beginPath();
         ctx.moveTo(current.x, current.y);
         ctx.lineTo(next.x, next.y);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+        ctx.shadowBlur = 6;
         ctx.stroke();
+        ctx.shadowBlur = 0; // reset
 
         // Inner Web Threads (creates a cool space web effect)
         ctx.beginPath();
         ctx.moveTo(current.x, current.y);
         ctx.lineTo(across.x, across.y);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 0.8;
         ctx.stroke();
 
         // Light Trails / Comets flying between nodes for a dynamic aesthetic
@@ -253,26 +256,26 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
           const prog = (pulseProgress + streamOffset) % 1;
           const cometX = current.x + (next.x - current.x) * prog;
           const cometY = current.y + (next.y - current.y) * prog;
-          const tailProg = Math.max(0, prog - 0.1);
+          const tailProg = Math.max(0, prog - 0.12);
           const tailX = current.x + (next.x - current.x) * tailProg;
           const tailY = current.y + (next.y - current.y) * tailProg;
 
           const grad = ctx.createLinearGradient(tailX, tailY, cometX, cometY);
           grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-          grad.addColorStop(1, 'rgba(255, 255, 255, 0.4)');
+          grad.addColorStop(1, 'rgba(255, 255, 255, 0.85)');
 
           ctx.beginPath();
           ctx.moveTo(tailX, tailY);
           ctx.lineTo(cometX, cometY);
           ctx.strokeStyle = grad;
-          ctx.lineWidth = 1.2;
+          ctx.lineWidth = 1.8;
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.arc(cometX, cometY, 1, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-          ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-          ctx.shadowBlur = 4;
+          ctx.arc(cometX, cometY, 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+          ctx.shadowBlur = 8;
           ctx.fill();
           ctx.shadowBlur = 0;
         }

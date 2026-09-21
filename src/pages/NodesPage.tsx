@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { GENESIS_TOTAL_SLOTS, useLiveMembers, useGenesisSlots, ensureHttps } from '../data/members';
+import { useLiveMembers, ensureHttps } from '../data/members';
 import type { Member } from '../data/members';
 import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
@@ -23,52 +23,28 @@ import {
 export const NodesPage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [query, setQuery] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'verified' | 'vacant'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'verified'>('all');
   const [viewFormat, setViewFormat] = useState<'table' | 'json'>('table');
   const [copiedJson, setCopiedJson] = useState(false);
 
   const liveMembers = useLiveMembers();
-  const genesisSlots = useGenesisSlots();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Construct full genesis 8-node registry list ordered by ringPosition
-  const fullRegistry = useMemo(() => {
-    return [...genesisSlots].sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1)).map(slot => {
-      const isClaimed = !!(slot.verified && slot.domain && !slot.domain.includes('unclaimed') && slot.handle !== 'vacant');
-      return {
-        id: slot.id,
-        member: isClaimed ? slot : undefined,
-        isVacant: !isClaimed,
-      };
-    });
-  }, [genesisSlots]);
+  // Filtered members based on search query
+  const filteredMembers = useMemo(() => {
+    const verifiedOnly = liveMembers.filter(m => m.verified && m.domain && !m.domain.includes('unclaimed'));
+    if (!query.trim()) return verifiedOnly;
 
-  // Filtered registry based on query and filter mode
-  const filteredRegistry = useMemo(() => {
-    return fullRegistry.filter(item => {
-      // Filter Mode
-      if (filterMode === 'verified' && item.isVacant) return false;
-      if (filterMode === 'vacant' && !item.isVacant) return false;
-
-      // Search Query
-      if (!query.trim()) return true;
-      const q = query.toLowerCase();
-
-      if (item.id.toLowerCase().includes(q)) return true;
-      if (item.isVacant) {
-        return q.includes('vacant') || q.includes('open') || q.includes('claim') || q.includes('genesis');
-      }
-
-      const m = item.member!;
-      return (
-        m.name.toLowerCase().includes(q) ||
-        m.domain.toLowerCase().includes(q) ||
-        m.field.toLowerCase().includes(q) ||
-        m.proofOfWork.toLowerCase().includes(q) ||
-        m.tags.some(t => t.toLowerCase().includes(q))
-      );
-    });
-  }, [fullRegistry, filterMode, query]);
+    const q = query.toLowerCase();
+    return verifiedOnly.filter(m => 
+      m.id.toLowerCase().includes(q) ||
+      m.name.toLowerCase().includes(q) ||
+      m.domain.toLowerCase().includes(q) ||
+      m.field.toLowerCase().includes(q) ||
+      m.proofOfWork.toLowerCase().includes(q) ||
+      (m.tags && m.tags.some(t => t.toLowerCase().includes(q)))
+    );
+  }, [liveMembers, query]);
 
   // Keyboard Shortcuts: '/' to search, 'S' to surf random, 'Esc' to clear
   useEffect(() => {
@@ -109,15 +85,13 @@ export const NodesPage: React.FC = () => {
 
   const copyJsonManifest = () => {
     sound.playClick();
-    const dataToExport = filterMode === 'verified' ? liveMembers : genesisSlots;
-    const jsonStr = JSON.stringify(dataToExport, null, 2);
+    const jsonStr = JSON.stringify(liveMembers, null, 2);
     navigator.clipboard.writeText(jsonStr);
     setCopiedJson(true);
     setTimeout(() => setCopiedJson(false), 2000);
   };
 
-  const verifiedCount = fullRegistry.filter(item => !item.isVacant).length;
-  const vacantCount = fullRegistry.filter(item => item.isVacant).length;
+  const verifiedCount = liveMembers.filter(m => m.verified).length;
 
   return (
     <div className="space-y-8 w-full max-w-6xl mx-auto px-2 sm:px-4">
@@ -153,31 +127,26 @@ export const NodesPage: React.FC = () => {
             The Sovereign Ledger
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-2xl leading-relaxed">
-            The canonical directory of vetted nodes and genesis vacancies. Every verified entry operates on an autonomous personal domain with shipped proof of work.
+            The canonical directory of vetted sovereign nodes. Every verified entry operates on an autonomous personal domain with shipped proof of work.
           </p>
         </div>
 
         {/* Telemetry Strip */}
         <div className="pt-2 flex items-center gap-4 sm:gap-6 overflow-x-auto text-[11px] font-mono text-zinc-400 border-t border-white/[0.06] pb-1">
           <div className="flex items-center gap-1.5 whitespace-nowrap">
-            <span className="text-zinc-500">CAPACITY:</span>
-            <span className="text-white font-semibold">{GENESIS_TOTAL_SLOTS} SLOTS</span>
+            <span className="text-zinc-500">NODES:</span>
+            <span className="text-white font-semibold">{verifiedCount} ACTIVE</span>
           </div>
           <span className="text-zinc-700">|</span>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
-            <span className="text-zinc-500">VERIFIED:</span>
-            <span className="text-emerald-400 font-semibold">{verifiedCount} ACTIVE</span>
-          </div>
-          <span className="text-zinc-700">|</span>
-          <div className="flex items-center gap-1.5 whitespace-nowrap">
-            <span className="text-zinc-500">VACANCIES:</span>
-            <span className="text-amber-400 font-semibold">{vacantCount} OPEN</span>
+            <span className="text-zinc-500">STATUS:</span>
+            <span className="text-emerald-400 font-semibold">100% VERIFIED</span>
           </div>
           <span className="text-zinc-700 hidden sm:inline">|</span>
           <div className="flex items-center gap-1.5 whitespace-nowrap hidden sm:flex">
-            <span className="text-zinc-500">ADMISSIONS:</span>
-            <a href={DISCORD_LINKS.councilReview} target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">
-              KAVYON #COUNCIL-REVIEW
+            <span className="text-zinc-500">COMMUNITY:</span>
+            <a href={DISCORD_LINKS.kavyonServer} target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">
+              KAVYON DISCORD SERVER
             </a>
           </div>
           <span className="text-zinc-700 hidden md:inline">|</span>
@@ -198,7 +167,7 @@ export const NodesPage: React.FC = () => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search domain, builder, field, or slot ID..."
+            placeholder="Search domain, builder, field, or node ID..."
             className="w-full pl-9 pr-12 py-2 bg-zinc-950 border border-white/10 rounded-md text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 transition-colors"
           />
           {query ? (
@@ -225,23 +194,7 @@ export const NodesPage: React.FC = () => {
                 filterMode === 'all' ? 'bg-zinc-100 text-zinc-950 font-semibold' : 'text-zinc-400 hover:text-white'
               }`}
             >
-              All ({fullRegistry.length})
-            </button>
-            <button
-              onClick={() => { sound.playClick(); setFilterMode('verified'); }}
-              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
-                filterMode === 'verified' ? 'bg-emerald-400 text-zinc-950 font-semibold' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Verified ({verifiedCount})
-            </button>
-            <button
-              onClick={() => { sound.playClick(); setFilterMode('vacant'); }}
-              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
-                filterMode === 'vacant' ? 'bg-amber-400 text-zinc-950 font-semibold' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Vacancies ({vacantCount})
+              All Verified ({verifiedCount})
             </button>
           </div>
 
@@ -291,158 +244,109 @@ export const NodesPage: React.FC = () => {
             </button>
           </div>
           <pre className="p-4 bg-zinc-950 border border-white/10 rounded-lg text-xs font-mono text-emerald-400 overflow-x-auto leading-relaxed selection:bg-emerald-950">
-            {JSON.stringify(filterMode === 'verified' ? liveMembers : genesisSlots, null, 2)}
+            {JSON.stringify(liveMembers, null, 2)}
           </pre>
         </div>
       ) : (
         /* CANONICAL CARD GRID DIRECTORY */
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {filteredRegistry.map((item) => {
-              if (!item.isVacant && item.member) {
-                const m = item.member;
-                return (
-                  <div
-                    key={m.id}
-                    onClick={() => {
-                      sound.playClick();
-                      setSelectedMember(m);
-                    }}
-                    className="group relative bg-[#09090b] border border-white/10 hover:border-emerald-500/40 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-0.5 select-none overflow-hidden"
-                  >
-                    {/* Top Row: Slot ID & Status */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-mono text-xs font-bold">
-                          {m.id}
-                        </span>
-                        {m.tags.includes('Founder') && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                            FOUNDER
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-mono font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                        <span>ONLINE &bull; VERIFIED</span>
-                      </div>
-                    </div>
-
-                    {/* Builder Profile Info */}
-                    <div className="space-y-1.5">
-                      <h3 className="font-syne text-lg font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                        <span>{m.name}</span>
-                      </h3>
-                      
-                      <a
-                        href={ensureHttps(m.url || m.domain)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 font-mono text-xs text-zinc-400 hover:text-white transition-colors"
-                      >
-                        <span>{m.domain}</span>
-                        <ExternalLink className="w-3 h-3 text-zinc-500" />
-                      </a>
-
-                      <p className="text-xs text-zinc-400 font-sans line-clamp-2 leading-relaxed pt-1">
-                        {m.field}
-                      </p>
-                    </div>
-
-                    {/* Stack Tags */}
-                    {m.tags && m.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {m.tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 rounded bg-zinc-900 border border-white/5 text-zinc-400 font-mono text-[10px]"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Bottom Row: Actions */}
-                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          sound.playClick();
-                          setSelectedMember(m);
-                        }}
-                        className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-md text-zinc-200 hover:text-white transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
-                      >
-                        <span>Inspect Dossier</span>
-                        <ArrowRight className="w-3 h-3 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-                      </button>
-
-                      <a
-                        href={ensureHttps(m.url || m.domain)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
-                        title="Visit Sovereign Site"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </div>
-                  </div>
-                );
-              }
-
-              // VACANT SLOT CARD
+            {filteredMembers.map((m) => {
               return (
                 <div
-                  key={item.id}
-                  className="relative bg-[#09090b]/60 border border-white/10 hover:border-amber-500/30 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 shadow-md select-none overflow-hidden"
+                  key={m.id}
+                  onClick={() => {
+                    sound.playClick();
+                    setSelectedMember(m);
+                  }}
+                  className="group relative bg-[#09090b] border border-white/10 hover:border-emerald-500/40 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-0.5 select-none overflow-hidden"
                 >
                   {/* Top Row: Slot ID & Status */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-400 font-mono text-xs font-bold">
-                        {item.id}
+                      <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-mono text-xs font-bold">
+                        {m.id}
                       </span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-500 border border-white/5">
-                        GENESIS
-                      </span>
+                      {m.tags && m.tags.includes('Founder') && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                          FOUNDER
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5 text-amber-400 text-[10px] font-mono font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-                      <span>VACANT &bull; OPEN TO APPLY</span>
+                    <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-mono font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <span>ONLINE &bull; VERIFIED</span>
                     </div>
                   </div>
 
-                  {/* Vacant Info */}
+                  {/* Builder Profile Info */}
                   <div className="space-y-1.5">
-                    <h3 className="font-mono text-sm font-semibold text-zinc-400 italic">
-                      unclaimed-slot.xyz
+                    <h3 className="font-syne text-lg font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
+                      <span>{m.name}</span>
                     </h3>
-                    <p className="text-xs text-zinc-500 font-sans leading-relaxed">
-                      Open to polymaths, systems hackers &amp; sovereign creators. Applications reviewed in Kavyon Discord.
+                    
+                    <a
+                      href={ensureHttps(m.url || m.domain)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 font-mono text-xs text-zinc-400 hover:text-white transition-colors"
+                    >
+                      <span>{m.domain}</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-500" />
+                    </a>
+
+                    <p className="text-xs text-zinc-400 font-sans line-clamp-2 leading-relaxed pt-1">
+                      {m.field}
                     </p>
                   </div>
 
-                  {/* Bottom Row: Apply Button */}
-                  <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between font-mono text-xs">
-                    <Link
-                      to="/apply"
-                      onClick={() => sound.playClick()}
-                      className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5"
+                  {/* Stack Tags */}
+                  {m.tags && m.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {m.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded bg-zinc-900 border border-white/5 text-zinc-400 font-mono text-[10px]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Bottom Row: Actions */}
+                  <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sound.playClick();
+                        setSelectedMember(m);
+                      }}
+                      className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-md text-zinc-200 hover:text-white transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
                     >
-                      <span>Apply for Slot</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
-                    </Link>
+                      <span>Inspect Dossier</span>
+                      <ArrowRight className="w-3 h-3 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+
+                    <a
+                      href={ensureHttps(m.url || m.domain)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                      title="Visit Sovereign Site"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {filteredRegistry.length === 0 && (
+          {filteredMembers.length === 0 && (
             <div className="p-12 bg-zinc-950 border border-white/10 rounded-xl text-center font-mono text-xs text-zinc-500 space-y-2">
               <div>No nodes or slots matched &quot;{query}&quot;.</div>
               <button
