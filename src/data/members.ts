@@ -94,6 +94,21 @@ function saveVacatedSlots(set: Set<string>) {
 
 
 
+function sanitizeMember(m: Member): Member {
+  if (m.id === 'NODE-001') {
+    const isStale = !m.domain || 
+      m.domain.includes('carbonthecoder.github.io') || 
+      m.bio === 'Verified member of The Uncommons webring.' ||
+      m.proofOfWork === 'Awaiting candidate build submission.' ||
+      (m.tags && m.tags.includes('Founder Edit'));
+
+    if (isStale) {
+      return { ...MEMBERS[0] };
+    }
+  }
+  return m;
+}
+
 function loadGenesisSlotsFromStorage(): Member[] | null {
   try {
     if (typeof window === 'undefined') return null;
@@ -101,8 +116,9 @@ function loadGenesisSlotsFromStorage(): Member[] | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      allGenesisSlotsCache = parsed;
-      return parsed;
+      const sanitized = parsed.map(sanitizeMember);
+      allGenesisSlotsCache = sanitized;
+      return sanitized;
     }
   } catch {}
   return null;
@@ -121,12 +137,12 @@ export function broadcastRingUpdate() {
 
 export function getAllGenesisSlots(): Member[] {
   if (allGenesisSlotsCache.length > 0) {
-    return allGenesisSlotsCache.filter((s) => s.verified && !s.domain?.includes('unclaimed') && s.handle !== 'vacant');
+    return allGenesisSlotsCache.map(sanitizeMember).filter((s) => s.verified && !s.domain?.includes('unclaimed') && s.handle !== 'vacant');
   }
 
   const fromStorage = loadGenesisSlotsFromStorage();
   if (fromStorage && fromStorage.length > 0) {
-    const filtered = fromStorage.filter((s) => s.verified && !s.domain?.includes('unclaimed') && s.handle !== 'vacant');
+    const filtered = fromStorage.map(sanitizeMember).filter((s) => s.verified && !s.domain?.includes('unclaimed') && s.handle !== 'vacant');
     if (filtered.length > 0) return filtered;
   }
 
