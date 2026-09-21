@@ -240,10 +240,14 @@ export const NodesPage: React.FC = () => {
                   {/* Stack Tags */}
                   {m.tags && m.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {m.tags.slice(0, 3).map((tag) => (
+                      {m.tags.slice(0, 4).map((tag) => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 rounded bg-zinc-900 border border-white/5 text-zinc-400 font-mono text-[10px]"
+                          className={`px-2 py-0.5 rounded font-mono text-[10px] font-medium border ${
+                            tag === 'Founder' 
+                              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30' 
+                              : 'bg-zinc-900 text-zinc-300 border-white/10'
+                          }`}
                         >
                           {tag}
                         </span>

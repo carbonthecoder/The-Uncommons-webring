@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import type { Member } from '../data/members';
 import { getNextMember, getPrevMember, ensureHttps } from '../data/members';
 import { sound } from '../utils/audio';
-import { ExternalLink, X, ArrowRight, ArrowLeft } from 'lucide-react';
+import { ExternalLink, X, ArrowRight, ArrowLeft, ShieldCheck, Terminal, Cpu } from 'lucide-react';
 
 interface MemberDossierModalProps {
   member: Member | null;
@@ -45,22 +45,18 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-xl bg-black border border-white/15 rounded-xl p-6 sm:p-7 shadow-2xl my-auto space-y-6 text-zinc-100"
+        className="relative w-full max-w-xl bg-[#09090b] border border-white/15 rounded-2xl p-6 sm:p-7 shadow-2xl my-auto space-y-6 text-zinc-100 select-none"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Header Bar */}
+        {/* 1. Header Navigation Bar */}
         <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
           <div className="flex items-center gap-2.5 font-mono text-xs">
-            <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-semibold">
+            <span className="px-2.5 py-1 rounded-md bg-zinc-900 border border-white/10 text-white font-bold tracking-wide">
               {member.id}
             </span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              VERIFIED NODE
-            </span>
-            <span className="text-zinc-600 hidden sm:inline">&bull;</span>
-            <span className="text-zinc-400 hidden sm:inline">
-              SLOT #{member.ringPosition} / 8
+            <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span>ONLINE &bull; VERIFIED</span>
             </span>
           </div>
 
@@ -69,114 +65,145 @@ export const MemberDossierModal: React.FC<MemberDossierModalProps> = ({
               sound.playClick();
               onClose();
             }}
-            className="p-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
+            title="Close Dossier (Esc)"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Identity & Domain (No nested box cards) */}
-        <div className="space-y-1.5">
-          <a
-            href={targetUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-mono text-lg sm:text-xl font-bold text-white hover:text-emerald-300 transition-colors inline-flex items-center gap-1.5 hover:underline underline-offset-4"
-          >
-            <span>{member.domain}</span>
-            <ExternalLink className="w-4 h-4 text-zinc-500 shrink-0" />
-          </a>
-          <div className="text-xs sm:text-sm font-sans text-zinc-400">
-            {member.name} &bull; <span className="font-mono text-zinc-300">{member.field}</span>
+        {/* 2. Builder Identity & Domain Hero */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-syne text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              {member.name}
+            </h2>
+            {member.tags && member.tags.includes('Founder') && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30 uppercase tracking-widest font-semibold shrink-0">
+                FOUNDER
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-0.5">
+            <a
+              href={targetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-sm sm:text-base font-semibold text-emerald-400 hover:text-emerald-300 transition-colors inline-flex items-center gap-1.5 hover:underline underline-offset-4"
+            >
+              <span>{member.domain}</span>
+              <ExternalLink className="w-3.5 h-3.5 text-emerald-400/70" />
+            </a>
+
+            <div className="text-xs font-mono text-zinc-400 flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-zinc-500" />
+              <span>{member.field}</span>
+            </div>
           </div>
         </div>
 
-        {/* Dossier Data Lines (Pure linear rows, zero cards) */}
-        <div className="space-y-4 pt-1 text-xs">
+        {/* 3. Main Data Content (Clean Linear Sections) */}
+        <div className="space-y-4 pt-1">
           {/* Bio Statement */}
-          <div className="space-y-1">
-            <div className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
-              STATEMENT &bull; BIO
+          <div className="p-4 bg-zinc-950/80 border border-white/[0.08] rounded-xl space-y-1.5">
+            <div className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+              <Terminal className="w-3 h-3 text-emerald-400" />
+              <span>BIO STATEMENT</span>
             </div>
-            <p className="text-zinc-300 font-sans leading-relaxed text-sm">
+            <p className="text-zinc-200 font-sans leading-relaxed text-xs sm:text-sm">
               {member.bio}
             </p>
           </div>
 
           {/* Proof of Work */}
-          <div className="space-y-1 border-t border-white/[0.06] pt-3">
+          <div className="p-4 bg-zinc-950/80 border border-white/[0.08] rounded-xl space-y-2">
             <div className="flex items-center justify-between font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
-              <span>VERIFIED PROOF OF WORK</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>SHIPPED PROOF OF WORK</span>
+              </div>
               <a
                 href={proofUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-zinc-400 hover:text-white flex items-center gap-1 transition-colors hover:underline"
+                className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors hover:underline text-[11px] font-mono"
               >
-                <span>Inspect Evidence</span>
+                <span>Inspect Repository</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
-            <p className="font-mono text-zinc-200 text-xs leading-relaxed pt-0.5">
+            <p className="font-mono text-zinc-300 text-xs leading-relaxed">
               {member.proofOfWork}
             </p>
           </div>
 
-          {/* Tags & Metadata */}
-          <div className="flex items-center justify-between border-t border-white/[0.06] pt-3 font-mono text-[11px] text-zinc-400 flex-wrap gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-zinc-600">TAGS:</span>
+          {/* Tech Stack Pills */}
+          <div className="space-y-2 pt-1">
+            <div className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
+              VERIFIED STACK &amp; SPECIALIZATIONS
+            </div>
+            <div className="flex flex-wrap gap-1.5">
               {member.tags.map(tag => (
-                <span key={tag} className="text-zinc-300">
-                  #{tag}
+                <span 
+                  key={tag} 
+                  className={`px-2.5 py-1 rounded-md font-mono text-xs font-medium border ${
+                    tag === 'Founder' 
+                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40' 
+                      : 'bg-zinc-900 text-zinc-300 border-white/10'
+                  }`}
+                >
+                  {tag}
                 </span>
               ))}
             </div>
-            <span className="text-zinc-500 text-[10px]">
-              ADMITTED: {member.joinDate}
-            </span>
           </div>
         </div>
 
-        {/* Footer Navigation Bar */}
-        <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
-          <button
-            onClick={() => {
-              sound.playClick();
-              onNavigate(prevNode);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Prev Node</span>
-          </button>
+        {/* 4. Action Bar & Ring Surfer Navigation */}
+        <div className="pt-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                sound.playClick();
+                onNavigate(prevNode);
+              }}
+              className="flex-1 sm:flex-initial px-3 py-2 text-xs font-mono rounded-md bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              title="Previous Node in Ring (Left Arrow / [ )"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Prev Node</span>
+            </button>
+
+            <button
+              onClick={() => {
+                sound.playClick();
+                onNavigate(nextNode);
+              }}
+              className="flex-1 sm:flex-initial px-3 py-2 text-xs font-mono rounded-md bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              title="Next Node in Ring (Right Arrow / ] )"
+            >
+              <span>Next Node</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           <a
             href={targetUrl}
             target="_blank"
             rel="noreferrer"
-            className="px-4 py-1.5 text-xs font-mono rounded bg-zinc-100 hover:bg-white text-zinc-950 font-bold flex items-center gap-1.5 shadow"
+            className="px-5 py-2 text-xs font-mono rounded-md bg-zinc-100 hover:bg-white text-zinc-950 font-bold flex items-center justify-center gap-1.5 shadow transition-all cursor-pointer"
           >
             <span>Visit {member.domain}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
-
-          <button
-            onClick={() => {
-              sound.playClick();
-              onNavigate(nextNode);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-          >
-            <span>Next Node</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
         </div>
 
-        <div className="text-center text-[10px] font-mono text-zinc-600">
-          Use [ and ] or arrow keys to surf ring &bull; Esc to close
+        <div className="text-center text-[10px] font-mono text-zinc-600 pt-1">
+          Use <kbd className="px-1 bg-zinc-900 border border-white/10 rounded">[</kbd> and <kbd className="px-1 bg-zinc-900 border border-white/10 rounded">]</kbd> or arrow keys to surf ring &bull; Esc to close
         </div>
       </div>
     </div>
   );
 };
+
