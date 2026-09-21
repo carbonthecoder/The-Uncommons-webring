@@ -18,8 +18,7 @@
     "joinDate": "2026-01-01",
     "verified": true,
     "ringPosition": 1,
-    "status": "online",
-    "updatedAt": "2026-09-20T08:30:54.411Z"
+    "status": "online"
   },
   {
     "id": "NODE-002",
@@ -40,122 +39,6 @@
     "joinDate": "2026-01-15",
     "verified": true,
     "ringPosition": 2,
-    "status": "online",
-    "updatedAt": "2026-09-20T08:30:54.411Z"
-  },
-  {
-    "id": "NODE-003",
-    "name": "Awaiting Candidate",
-    "handle": "vacant",
-    "domain": "unclaimed-slot-003.xyz",
-    "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open Genesis Vacancy",
-    "bio": "Genesis vacancy slot #3. Applications open via Kavyon Discord community.",
-    "proofOfWork": "Awaiting candidate build submission.",
-    "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": [
-      "Genesis",
-      "Vacancy"
-    ],
-    "joinDate": "2026-01-01",
-    "verified": false,
-    "ringPosition": 3,
-    "status": "reviewing",
-    "updatedAt": "2026-09-20T08:30:54.403Z"
-  },
-  {
-    "id": "NODE-004",
-    "name": "Awaiting Council Review",
-    "handle": "vacant",
-    "domain": "unclaimed-slot-004.xyz",
-    "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open to polymaths, systems hackers & sovereign creators",
-    "bio": "Genesis vacancy slot #4. Applications open via Kavyon Discord community.",
-    "proofOfWork": "Awaiting candidate build submission.",
-    "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": [
-      "Genesis",
-      "Vacancy"
-    ],
-    "joinDate": "2026-01-01",
-    "verified": false,
-    "ringPosition": 4,
-    "status": "reviewing"
-  },
-  {
-    "id": "NODE-005",
-    "name": "Awaiting Council Review",
-    "handle": "vacant",
-    "domain": "unclaimed-slot-005.xyz",
-    "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open to polymaths, systems hackers & sovereign creators",
-    "bio": "Genesis vacancy slot #5. Applications open via Kavyon Discord community.",
-    "proofOfWork": "Awaiting candidate build submission.",
-    "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": [
-      "Genesis",
-      "Vacancy"
-    ],
-    "joinDate": "2026-01-01",
-    "verified": false,
-    "ringPosition": 5,
-    "status": "reviewing"
-  },
-  {
-    "id": "NODE-006",
-    "name": "Awaiting Council Review",
-    "handle": "vacant",
-    "domain": "unclaimed-slot-006.xyz",
-    "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open to polymaths, systems hackers & sovereign creators",
-    "bio": "Genesis vacancy slot #6. Applications open via Kavyon Discord community.",
-    "proofOfWork": "Awaiting candidate build submission.",
-    "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": [
-      "Genesis",
-      "Vacancy"
-    ],
-    "joinDate": "2026-01-01",
-    "verified": false,
-    "ringPosition": 6,
-    "status": "reviewing"
-  },
-  {
-    "id": "NODE-007",
-    "name": "Awaiting Council Review",
-    "handle": "vacant",
-    "domain": "unclaimed-slot-007.xyz",
-    "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open to polymaths, systems hackers & sovereign creators",
-    "bio": "Genesis vacancy slot #7. Applications open via Kavyon Discord community.",
-    "proofOfWork": "Awaiting candidate build submission.",
-    "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": [
-      "Genesis",
-      "Vacancy"
-    ],
-    "joinDate": "2026-01-01",
-    "verified": false,
-    "ringPosition": 7,
-    "status": "reviewing"
-  },
-  {
-    "id": "NODE-008",
-    "name": "Awaiting Council Review",
-    "handle": "vacant",
-    "domain": "unclaimed-slot-008.xyz",
-    "url": "https://the-uncommons.vercel.app/apply",
-    "field": "Open to polymaths, systems hackers & sovereign creators",
-    "bio": "Genesis vacancy slot #8. Applications open via Kavyon Discord community.",
-    "proofOfWork": "Awaiting candidate build submission.",
-    "proofUrl": "https://the-uncommons.vercel.app/apply",
-    "tags": [
-      "Genesis",
-      "Vacancy"
-    ],
-    "joinDate": "2026-01-01",
-    "verified": false,
-    "ringPosition": 8,
-    "status": "reviewing"
+    "status": "online"
   }
 ]

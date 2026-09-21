@@ -92,35 +92,7 @@ function saveVacatedSlots(set: Set<string>) {
   } catch {}
 }
 
-function createDefaultGenesisSlot(index: number): Member {
-  const num = index + 1;
-  const id = `NODE-00${num}`;
-  const vacated = getVacatedSlots();
 
-  if (!vacated.has(id)) {
-    const defaultMember = MEMBERS.find((m) => m.id === id);
-    if (defaultMember) {
-      return { ...defaultMember, ringPosition: num };
-    }
-  }
-
-  return {
-    id,
-    name: 'Awaiting Candidate',
-    handle: 'vacant',
-    domain: `unclaimed-slot-00${num}.xyz`,
-    url: 'https://the-uncommons.vercel.app/apply',
-    field: 'Open Genesis Vacancy',
-    bio: `Genesis vacancy slot #${num}. Applications open via Kavyon Discord community.`,
-    proofOfWork: 'Awaiting candidate build submission.',
-    proofUrl: 'https://the-uncommons.vercel.app/apply',
-    tags: ['Genesis', 'Vacancy'],
-    joinDate: '2026-01-01',
-    verified: false,
-    ringPosition: num,
-    status: 'reviewing',
-  };
-}
 
 function loadGenesisSlotsFromStorage(): Member[] | null {
   try {
@@ -148,28 +120,18 @@ export function broadcastRingUpdate() {
 }
 
 export function getAllGenesisSlots(): Member[] {
-  if (allGenesisSlotsCache.length >= GENESIS_TOTAL_SLOTS) {
-    return allGenesisSlotsCache;
+  if (allGenesisSlotsCache.length > 0) {
+    return allGenesisSlotsCache.filter((s) => s.verified && !s.domain?.includes('unclaimed') && s.handle !== 'vacant');
   }
 
   const fromStorage = loadGenesisSlotsFromStorage();
-  if (fromStorage && fromStorage.length >= GENESIS_TOTAL_SLOTS) {
-    return fromStorage;
+  if (fromStorage && fromStorage.length > 0) {
+    const filtered = fromStorage.filter((s) => s.verified && !s.domain?.includes('unclaimed') && s.handle !== 'vacant');
+    if (filtered.length > 0) return filtered;
   }
 
-  // Construct initial 8 slots
-  const initialSlots: Member[] = Array.from({ length: GENESIS_TOTAL_SLOTS }, (_, i) => {
-    return createDefaultGenesisSlot(i);
-  });
-
-  allGenesisSlotsCache = initialSlots;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(GENESIS_SLOTS_KEY, JSON.stringify(initialSlots));
-    }
-  } catch {}
-
-  return initialSlots;
+  // Return static verified members only
+  return MEMBERS.filter((m) => m.verified);
 }
 
 export function saveGenesisSlot(newMember: Member) {

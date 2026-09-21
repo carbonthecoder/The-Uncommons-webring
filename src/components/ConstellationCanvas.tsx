@@ -26,35 +26,9 @@ export const ConstellationCanvas: React.FC<ConstellationCanvasProps> = ({
   // Background starfield dust
   const starsRef = useRef<Array<{ x: number; y: number; size: number; alpha: number; speed: number }>>([]);
 
-  // Virtualize ring to at least 8 celestial nodes so the 3D orbit remains intact with open candidate slots
+  // Render ONLY active verified members in 3D constellation
   const displayNodes = useMemo(() => {
-    if (members.length >= 8) {
-      return [...members].sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
-    }
-    const existingIds = new Set(members.map(m => m.id));
-    const slots: Member[] = [...members];
-    for (let i = 1; i <= 8; i++) {
-      const id = `NODE-00${i}`;
-      if (!existingIds.has(id) && slots.length < 8) {
-        slots.push({
-          id,
-          name: 'Awaiting Candidate',
-          handle: 'vacant',
-          domain: `unclaimed-slot-00${i}.xyz`,
-          url: '/apply',
-          field: 'Open Genesis Vacancy',
-          bio: `Genesis vacancy slot #${i}. Applications open via Kavyon Discord community.`,
-          proofOfWork: 'Awaiting candidate build submission.',
-          proofUrl: '/apply',
-          tags: ['Genesis', 'Vacancy'],
-          joinDate: '2026',
-          verified: false,
-          ringPosition: i,
-          status: 'reviewing',
-        });
-      }
-    }
-    return slots.sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
+    return [...members].sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
   }, [members]);
 
   const activeMember = displayNodes[activeNodeIndex] || displayNodes[0];
