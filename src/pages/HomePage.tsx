@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useGenesisSlots, getNextMember, getPrevMember, getRandomMember } from '../data/members';
+import { useLiveMembers, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
 import { ConstellationCanvas } from '../components/ConstellationCanvas';
 import { MemberDossierModal } from '../components/MemberDossierModal';
@@ -10,13 +10,13 @@ import { ArrowRight, ArrowLeft, Disc, BookOpen, ExternalLink, Shuffle } from 'lu
 export const HomePage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [activeSurfedDomain, setActiveSurfedDomain] = useState<string>('');
-  const genesisSlots = useGenesisSlots();
+  const liveMembers = useLiveMembers();
 
   const verifiedMembers = useMemo(() => {
-    return genesisSlots.filter(
+    return liveMembers.filter(
       (m) => m.verified && m.domain && !m.domain.includes('unclaimed') && m.handle !== 'vacant'
     );
-  }, [genesisSlots]);
+  }, [liveMembers]);
 
   const verifiedCount = verifiedMembers.length;
 
@@ -48,14 +48,14 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-16 sm:space-y-20 w-full">
+    <div className="space-y-16 sm:space-y-24 w-full animate-in fade-in duration-300">
       {/* 1. Hero Section (Full width, bold, effortless) */}
       <section className="text-center space-y-6 pt-4 sm:pt-8 max-w-4xl mx-auto px-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-[11px] sm:text-xs font-mono text-zinc-300">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-[11px] sm:text-xs font-mono text-zinc-300 shadow-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <span>THE UNCOMMONS // CLOSED WEBRING</span>
+          <span>THE UNCOMMONS // PRIVATE WEBRING</span>
           <span className="text-zinc-600 hidden sm:inline">&bull;</span>
-          <span className="text-zinc-400 hidden sm:inline">{verifiedCount === 1 ? '1 VETTED NODE' : `${verifiedCount} VETTED NODES`}</span>
+          <span className="text-emerald-400 font-semibold hidden sm:inline">{verifiedCount === 1 ? '1 VETTED NODE' : `${verifiedCount} VETTED NODES`}</span>
         </div>
 
         <h1 className="font-syne text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] sm:leading-[1.15] text-balance max-w-4xl mx-auto">
@@ -63,7 +63,7 @@ export const HomePage: React.FC = () => {
         </h1>
 
         <p className="text-sm sm:text-base text-zinc-400 font-sans max-w-2xl mx-auto leading-relaxed break-words">
-          The Uncommons is an invite-only webring connecting personal sites, dev gardens, and deep research logs into one closed loop. A place for cracked builders and rare thinkers to showcase their most precious, obsessive work and who they actually are &mdash; zero algorithms, no engagement farming, and no corporate slop.
+          The Uncommons is an invite-only webring connecting personal sites, dev gardens, and deep research logs into one closed loop. A place for cracked builders and rare thinkers to showcase their most precious, obsessive work &mdash; zero algorithms, no engagement farming, zero corporate slop.
         </p>
 
         {/* Action Buttons */}
@@ -102,7 +102,7 @@ export const HomePage: React.FC = () => {
             <button
               onClick={handlePrevNode}
               className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              title="Navigate to previous node in webring"
+              title="Navigate to previous node in webring (or press '[' / Left Arrow)"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Prev</span>
@@ -126,7 +126,7 @@ export const HomePage: React.FC = () => {
             <button
               onClick={handleNextNode}
               className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              title="Navigate to next node in webring"
+              title="Navigate to next node in webring (or press ']' / Right Arrow)"
             >
               <span>Next</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -150,7 +150,7 @@ export const HomePage: React.FC = () => {
                 ACTIVE HOP: <strong className="text-white">{activeSurfedDomain}</strong> &bull; CLICK ANY ACTION TO TRAVERSE
               </span>
             ) : (
-              <span>OFFICIAL EMBED SEAL &bull; LIVE RING TRAVERSAL ENGINE</span>
+              <span>OFFICIAL EMBED SEAL &bull; PRESS <code className="text-zinc-300 px-1 py-0.5 rounded bg-zinc-900 border border-white/10">[</code> OR <code className="text-zinc-300 px-1 py-0.5 rounded bg-zinc-900 border border-white/10">]</code> KEYS TO SURF</span>
             )}
           </div>
         </div>
@@ -159,13 +159,14 @@ export const HomePage: React.FC = () => {
       {/* 2. The 3D Orbital Canvas */}
       <section className="space-y-3">
         <ConstellationCanvas
-          members={genesisSlots}
+          members={verifiedMembers}
           onSelectMember={setSelectedMember}
         />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] font-mono text-zinc-500 px-1 text-center sm:text-left">
-          <span>Drag orbit to rotate &bull; Click any node to view proof &bull; Use [ and ] to surf</span>
-          <Link to="/nodes" className="hover:text-zinc-300 transition-colors">
-            View full node registry ({verifiedCount}) &rarr;
+          <span>Drag orbit to rotate &bull; Click node to inspect &bull; Press [ and ] keys to surf</span>
+          <Link to="/nodes" className="hover:text-zinc-300 transition-colors flex items-center gap-1">
+            <span>View node registry ({verifiedCount})</span>
+            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </section>
