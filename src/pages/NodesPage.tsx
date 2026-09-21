@@ -8,24 +8,17 @@ import { DISCORD_LINKS } from '../utils/discord';
 import { 
   Search, 
   ExternalLink, 
-  Terminal, 
   ArrowRight, 
   ShieldCheck, 
   Disc, 
-  Code, 
-  Copy, 
-  Check, 
   X, 
   RefreshCw,
-  Layers,
 } from 'lucide-react';
 
 export const NodesPage: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'verified'>('all');
-  const [viewFormat, setViewFormat] = useState<'table' | 'json'>('table');
-  const [copiedJson, setCopiedJson] = useState(false);
 
   const liveMembers = useLiveMembers();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -82,14 +75,6 @@ export const NodesPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [liveMembers]);
-
-  const copyJsonManifest = () => {
-    sound.playClick();
-    const jsonStr = JSON.stringify(liveMembers, null, 2);
-    navigator.clipboard.writeText(jsonStr);
-    setCopiedJson(true);
-    setTimeout(() => setCopiedJson(false), 2000);
-  };
 
   const verifiedCount = liveMembers.filter(m => m.verified).length;
 
@@ -184,9 +169,8 @@ export const NodesPage: React.FC = () => {
           )}
         </div>
 
-        {/* Filter Tabs + View Format Switcher */}
+        {/* Filter Tabs */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Status Filters */}
           <div className="flex items-center p-1 bg-zinc-950 border border-white/10 rounded-md">
             <button
               onClick={() => { sound.playClick(); setFilterMode('all'); }}
@@ -197,60 +181,12 @@ export const NodesPage: React.FC = () => {
               All Verified ({verifiedCount})
             </button>
           </div>
-
-          {/* View Format Switcher */}
-          <div className="flex items-center p-1 bg-zinc-950 border border-white/10 rounded-md">
-            <button
-              onClick={() => { sound.playClick(); setViewFormat('table'); }}
-              className={`px-2 py-1 text-xs font-mono rounded transition-colors flex items-center gap-1 cursor-pointer ${
-                viewFormat === 'table' ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Table Directory View"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ledger</span>
-            </button>
-            <button
-              onClick={() => { sound.playClick(); setViewFormat('json'); }}
-              className={`px-2 py-1 text-xs font-mono rounded transition-colors flex items-center gap-1 cursor-pointer ${
-                viewFormat === 'json' ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Raw JSON Stream API"
-            >
-              <Code className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">JSON</span>
-            </button>
-          </div>
         </div>
       </div>
 
       {/* 3. Main Directory Display */}
-      {viewFormat === 'json' ? (
-        /* RAW JSON STREAM VIEW */
-        <div className="space-y-3">
-          <div className="flex items-center justify-between bg-zinc-950 border border-white/10 p-3 rounded-lg text-xs font-mono">
-            <div className="flex items-center gap-2 text-zinc-400">
-              <Terminal className="w-4 h-4 text-emerald-400" />
-              <span>API ENDPOINT // GET /nodes.json</span>
-              <span className="text-zinc-600">&bull;</span>
-              <span className="text-zinc-500 font-mono">curl https://the-uncommons.vercel.app/nodes.json</span>
-            </div>
-            <button
-              onClick={copyJsonManifest}
-              className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded text-zinc-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              {copiedJson ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedJson ? 'Copied Manifest' : 'Copy JSON'}</span>
-            </button>
-          </div>
-          <pre className="p-4 bg-zinc-950 border border-white/10 rounded-lg text-xs font-mono text-emerald-400 overflow-x-auto leading-relaxed selection:bg-emerald-950">
-            {JSON.stringify(liveMembers, null, 2)}
-          </pre>
-        </div>
-      ) : (
-        /* CANONICAL CARD GRID DIRECTORY */
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredMembers.map((m) => {
               return (
                 <div
@@ -358,7 +294,6 @@ export const NodesPage: React.FC = () => {
             </div>
           )}
         </div>
-      )}
 
       {/* 4. Admissions Protocol Guide */}
       <div className="pt-8 border-t border-white/[0.08] space-y-6">
