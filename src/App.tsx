@@ -159,7 +159,7 @@ export default function App() {
               <span className="text-zinc-700">|</span>
               <span
                 onClick={handleFooterHashClick}
-                className="text-zinc-400 hover:text-emerald-400 cursor-pointer select-none transition-colors"
+                className="text-zinc-400 hover:text-white cursor-pointer select-none transition-colors"
                 title="Tap 4x for Founder Access"
               >
                 HASH: 0x9f7a...3c21

@@ -52,7 +52,7 @@ export const GoPage: React.FC = () => {
         </div>
 
         <div className="p-4 rounded-xl bg-black border border-white/10 text-left space-y-1">
-          <div className="flex items-center justify-between text-[10px] font-mono text-emerald-400">
+          <div className="flex items-center justify-between text-[10px] font-mono text-zinc-300">
             <span>RESOLVED NODE</span>
             <span>{target.id}</span>
           </div>

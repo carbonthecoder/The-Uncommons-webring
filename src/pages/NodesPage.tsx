@@ -84,7 +84,7 @@ export const NodesPage: React.FC = () => {
       <div className="border-b border-white/[0.08] pb-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-xs font-mono text-zinc-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0" />
             <span>LEDGER // CONSTELLATION NODES</span>
             <span className="text-zinc-600 hidden sm:inline">&bull;</span>
             <span className="text-zinc-400 hidden sm:inline">GENESIS EPOCH MMXXVI</span>
@@ -102,7 +102,7 @@ export const NodesPage: React.FC = () => {
             }}
             className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-xs font-mono text-zinc-300 hover:text-white rounded transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <RefreshCw className="w-3 h-3 text-emerald-400" />
+            <RefreshCw className="w-3 h-3 text-white" />
             <span>Surf Random Node <kbd className="px-1 py-0.5 text-[10px] bg-zinc-800 border border-white/10 rounded text-zinc-400">S</kbd></span>
           </button>
         </div>
@@ -125,7 +125,7 @@ export const NodesPage: React.FC = () => {
           <span className="text-zinc-700">|</span>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="text-zinc-500">STATUS:</span>
-            <span className="text-emerald-400 font-semibold">100% VERIFIED</span>
+            <span className="text-white font-semibold">100% VERIFIED</span>
           </div>
           <span className="text-zinc-700 hidden sm:inline">|</span>
           <div className="flex items-center gap-1.5 whitespace-nowrap hidden sm:flex">
@@ -137,7 +137,7 @@ export const NodesPage: React.FC = () => {
           <span className="text-zinc-700 hidden md:inline">|</span>
           <div className="flex items-center gap-1.5 whitespace-nowrap hidden md:flex">
             <span className="text-zinc-500">LATENCY:</span>
-            <span className="text-emerald-400">24ms (TLS 1.3)</span>
+            <span className="text-zinc-300">24ms (TLS 1.3)</span>
           </div>
         </div>
       </div>
@@ -195,7 +195,7 @@ export const NodesPage: React.FC = () => {
                     sound.playClick();
                     setSelectedMember(m);
                   }}
-                  className="group relative bg-[#09090b] border border-white/10 hover:border-emerald-500/40 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-0.5 select-none overflow-hidden"
+                  className="group relative bg-[#09090b] border border-white/10 hover:border-white/30 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-0.5 select-none overflow-hidden"
                 >
                   {/* Top Row: Slot ID & Status */}
                   <div className="flex items-center justify-between">
@@ -204,21 +204,21 @@ export const NodesPage: React.FC = () => {
                         {m.id}
                       </span>
                       {m.tags && m.tags.includes('Founder') && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-200 border border-white/20">
                           FOUNDER
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-mono font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    <div className="flex items-center gap-1.5 text-zinc-300 text-[10px] font-mono font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0" />
                       <span>ONLINE &bull; VERIFIED</span>
                     </div>
                   </div>
 
                   {/* Builder Profile Info */}
                   <div className="space-y-1.5">
-                    <h3 className="font-syne text-lg font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                      <span>{m.name}</span>
+                    <h3 className="font-syne text-lg font-bold text-white group-hover:text-zinc-200 transition-colors flex items-center gap-2 break-words">
+                      <span className="break-words">{m.name}</span>
                     </h3>
                     
                     <a
@@ -226,13 +226,13 @@ export const NodesPage: React.FC = () => {
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 font-mono text-xs text-zinc-400 hover:text-white transition-colors"
+                      className="inline-flex items-center gap-1 font-mono text-xs text-zinc-400 hover:text-white transition-colors break-all"
                     >
-                      <span>{m.domain}</span>
-                      <ExternalLink className="w-3 h-3 text-zinc-500" />
+                      <span className="break-all">{m.domain}</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-500 shrink-0" />
                     </a>
 
-                    <p className="text-xs text-zinc-400 font-sans line-clamp-2 leading-relaxed pt-1">
+                    <p className="text-xs text-zinc-400 font-sans line-clamp-2 leading-relaxed pt-1 break-words">
                       {m.field}
                     </p>
                   </div>
@@ -243,11 +243,7 @@ export const NodesPage: React.FC = () => {
                       {m.tags.slice(0, 4).map((tag) => (
                         <span
                           key={tag}
-                          className={`px-2 py-0.5 rounded font-mono text-[10px] font-medium border ${
-                            tag === 'Founder' 
-                              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30' 
-                              : 'bg-zinc-900 text-zinc-300 border-white/10'
-                          }`}
+                          className="px-2 py-0.5 rounded font-mono text-[10px] font-medium border bg-zinc-900 text-zinc-300 border-white/10"
                         >
                           {tag}
                         </span>
@@ -291,7 +287,7 @@ export const NodesPage: React.FC = () => {
               <div>No nodes or slots matched &quot;{query}&quot;.</div>
               <button
                 onClick={() => setQuery('')}
-                className="text-emerald-400 underline hover:text-emerald-300 cursor-pointer"
+                className="text-white underline hover:text-zinc-300 cursor-pointer"
               >
                 Reset search query
               </button>
@@ -304,7 +300,7 @@ export const NodesPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 mb-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-white" />
               <span>RATIFICATION PROTOCOL</span>
             </div>
             <h2 className="font-syne text-xl sm:text-2xl font-bold text-white tracking-tight">

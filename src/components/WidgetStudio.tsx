@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { sound } from '../utils/audio';
 import { Copy, Check, Terminal, Code2, ShieldCheck, ArrowRight, ArrowLeft } from 'lucide-react';
 
@@ -208,7 +208,7 @@ export const WidgetStudio: React.FC = () => {
                   </span>
                   <span className="text-zinc-600">&bull;</span>
                   <span className="text-zinc-100 font-medium tracking-wide flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
                     The Uncommons
                   </span>
                   <span className="text-zinc-600">&bull;</span>
@@ -282,7 +282,7 @@ export const WidgetStudio: React.FC = () => {
               >
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <Check className="w-3.5 h-3.5 text-zinc-950" />
                     <span>Copied!</span>
                   </>
                 ) : (
@@ -334,7 +334,7 @@ export const WidgetStudio: React.FC = () => {
               <div
                 className={`p-3 rounded-lg border text-xs font-mono leading-relaxed ${
                   verifyResult.status === 'success'
-                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                    ? 'bg-zinc-900 border-white/20 text-zinc-200'
                     : 'bg-zinc-900/60 border-red-500/30 text-zinc-300'
                 }`}
               >

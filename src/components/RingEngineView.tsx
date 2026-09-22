@@ -140,7 +140,7 @@ export const RingEngineView: React.FC = () => {
             <label className="block text-[11px] font-mono text-zinc-400 mb-1.5">
               3. RESOLVED PEER TARGET
             </label>
-            <div className="px-3.5 py-2 bg-black border border-white/10 rounded-lg text-xs font-mono text-emerald-400 flex items-center justify-between">
+            <div className="px-3.5 py-2 bg-black border border-white/10 rounded-lg text-xs font-mono text-zinc-300 flex items-center justify-between">
               <span className="font-semibold">{targetNode.domain}</span>
               <span className="text-[10px] text-zinc-500">{targetNode.id}</span>
             </div>
@@ -151,7 +151,7 @@ export const RingEngineView: React.FC = () => {
         <div className="mt-4 p-5 bg-black rounded-xl border border-white/10 space-y-3">
           <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
             <span>INTERSTITIAL HOP PREVIEW (HTTP 302 / CLIENT TRANSITION)</span>
-            <span className="flex items-center gap-1 text-emerald-400">
+            <span className="flex items-center gap-1 text-zinc-300">
               <CheckCircle2 className="w-3.5 h-3.5" />
               RESOLVED IN {latency}ms
             </span>

@@ -81,7 +81,7 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
       {
         title: `🎫 COUNCIL REVIEW TICKET // #${ticketId} — @${data.discordHandle.trim().replace(/^@/, '')}`,
         description: `Candidate admission ticket received for **The Uncommons Sovereign Webring** (Kavyon Community).`,
-        color: 0x10b981, // Emerald Green
+        color: 0xffffff, // Emerald Green
         fields: [
           {
             name: '📋 Ticket Metadata',
@@ -306,7 +306,7 @@ export const dispatchNodeActivationToDiscord = async (nodeId: string, domain: st
       {
         title: `🟢 GENESIS NODE RATIFIED & ACTIVATED: ${nodeId}`,
         description: `Candidate **${name}** has successfully redeemed their activation key and claimed slot **${nodeId}** on the sovereign ledger!`,
-        color: 0x10b981,
+        color: 0xffffff,
         fields: [
           { name: '🌐 Sovereign Domain', value: `\`https://${normalizeDomain(domain)}\``, inline: true },
           { name: '🔑 Node Slot ID', value: `\`${nodeId}\``, inline: true },
@@ -346,7 +346,7 @@ export const dispatchKeyIssuanceToDiscord = async (key: string, slotId: string, 
       {
         title: `🔑 SOVEREIGN ACTIVATION KEY ISSUED // ${slotId}`,
         description: `Council has ratified candidate **${candidateHandle}** and granted an official Genesis Activation Key for slot **${slotId}**.`,
-        color: 0x10b981,
+        color: 0xffffff,
         fields: [
           { name: '🎫 Allocated Slot', value: `\`${slotId}\``, inline: true },
           { name: '👤 Candidate', value: `\`${candidateHandle}\``, inline: true },

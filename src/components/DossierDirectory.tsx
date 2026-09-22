@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Member } from '../data/members';
 import { sound } from '../utils/audio';
 import { Search, ExternalLink, ShieldCheck, Cpu, Terminal, Filter } from 'lucide-react';
@@ -113,7 +113,7 @@ export const DossierDirectory: React.FC<DossierDirectoryProps> = ({
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-zinc-400">
                   {member.id}
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400">
+                <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-300">
                   <ShieldCheck className="w-3 h-3" />
                   VETTED
                 </span>

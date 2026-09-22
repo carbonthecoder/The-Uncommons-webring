@@ -488,7 +488,7 @@ export const SealPage: React.FC = () => {
       <div className="border-b border-white/[0.08] pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 mb-1.5">
-            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+            <Terminal className="w-3.5 h-3.5 text-white" />
             <span>CRYPTO-VAULT // SOVEREIGN MEMBER SETUP &amp; DOSSIER STUDIO</span>
           </div>
           <h1 className="text-3xl font-syne font-bold text-white tracking-tight">
@@ -551,12 +551,12 @@ export const SealPage: React.FC = () => {
         /* LOCKED STATE: 2-Step Verification Terminal */
         <div className="max-w-xl mx-auto p-6 sm:p-8 bg-zinc-950 border border-white/15 rounded-xl shadow-2xl space-y-6 text-center">
           <div className="w-12 h-12 mx-auto rounded-full bg-zinc-900 border border-emerald-500/30 flex items-center justify-center">
-            <Lock className="w-5 h-5 text-emerald-400" />
+            <Lock className="w-5 h-5 text-white" />
           </div>
 
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 uppercase tracking-wider mb-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border-white/20 text-zinc-300 uppercase tracking-wider mb-1">
+              <ShieldCheck className="w-3 h-3 text-white" />
               <span>2-STEP VERIFICATION GATEWAY</span>
             </div>
             <h2 className="text-xl font-mono font-bold text-white tracking-tight">
@@ -580,7 +580,7 @@ export const SealPage: React.FC = () => {
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value)}
                   placeholder="UNC-KEY-XXXX-2026"
-                  className="w-full pl-9 pr-4 py-2.5 bg-black border border-white/15 rounded-lg text-xs font-mono text-white tracking-wider placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 uppercase"
+                  className="w-full pl-9 pr-4 py-2.5 bg-black border border-white/15 rounded-lg text-xs font-mono text-white tracking-wider placeholder-zinc-600 focus:outline-none focus:border-white/40 uppercase"
                 />
               </div>
             </div>
@@ -590,7 +590,7 @@ export const SealPage: React.FC = () => {
                 <label className="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
                   2. Secret 6-Digit PIN
                 </label>
-                <span className="text-[10px] font-mono text-emerald-400">DISCORD DM ONLY</span>
+                <span className="text-[10px] font-mono text-white">DISCORD DM ONLY</span>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -602,7 +602,7 @@ export const SealPage: React.FC = () => {
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   placeholder="6-digit secret PIN"
-                  className="w-full pl-9 pr-4 py-2.5 bg-black border border-white/15 rounded-lg text-xs font-mono text-white tracking-widest placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50"
+                  className="w-full pl-9 pr-4 py-2.5 bg-black border border-white/15 rounded-lg text-xs font-mono text-white tracking-widest placeholder-zinc-600 focus:outline-none focus:border-white/40"
                 />
               </div>
             </div>
@@ -633,7 +633,7 @@ export const SealPage: React.FC = () => {
           </form>
 
           <div className="p-3 bg-black/60 border border-white/[0.08] rounded-lg text-left text-[11px] font-sans text-zinc-400 leading-relaxed">
-            <span className="text-emerald-400 font-mono font-semibold">🔒 Security Notice:</span> Even though keys are recorded in the staff ledger, only you and the founders hold your secret 6-digit PIN. Staff and other members cannot edit your dossier without this PIN.
+            <span className="text-white font-mono font-semibold">🔒 Security Notice:</span> Even though keys are recorded in the staff ledger, only you and the founders hold your secret 6-digit PIN. Staff and other members cannot edit your dossier without this PIN.
           </div>
 
           <div className="pt-2 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-zinc-500">
@@ -650,11 +650,11 @@ export const SealPage: React.FC = () => {
           {/* Key Accepted Banner */}
           <div className="p-3.5 bg-zinc-950 border border-emerald-500/30 rounded-xl flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-full bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+              <span className="w-7 h-7 rounded-full bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-white">
                 <ShieldCheck className="w-4 h-4" />
               </span>
               <div>
-                <div className="font-mono text-xs text-emerald-400 font-semibold flex items-center gap-2">
+                <div className="font-mono text-xs text-white font-semibold flex items-center gap-2">
                   <span>KEY AUTHENTICATED // {passcode || 'UNC-ALPHA-2026'}</span>
                 </div>
                 <div className="text-[11px] text-zinc-400 font-sans">
@@ -675,7 +675,7 @@ export const SealPage: React.FC = () => {
                   : 'bg-zinc-900 text-zinc-400 border border-white/10 hover:text-white'
               }`}
             >
-              {isAudioActive ? <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" /> : <VolumeX className="w-3.5 h-3.5" />}
+              {isAudioActive ? <Volume2 className="w-3.5 h-3.5 text-white animate-pulse" /> : <VolumeX className="w-3.5 h-3.5" />}
               <span>{isAudioActive ? 'Space Hum Active (55Hz)' : 'Enable Ambient Space Hum'}</span>
             </button>
           </div>
@@ -684,7 +684,7 @@ export const SealPage: React.FC = () => {
           {saveSuccess && (
             <div className="p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl font-mono text-xs text-emerald-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
                 <span>{saveSuccess}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -749,7 +749,7 @@ export const SealPage: React.FC = () => {
                   <select
                     value={slotId}
                     onChange={(e) => setSlotId(e.target.value)}
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   >
                     {slotStatusList.map((slot) => (
                       <option
@@ -777,7 +777,7 @@ export const SealPage: React.FC = () => {
                   <select
                     value={nodeStatus}
                     onChange={(e) => setNodeStatus(e.target.value as 'online' | 'dormant' | 'reviewing')}
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   >
                     <option value="online">🟢 Online / Active</option>
                     <option value="reviewing">🟡 Building / Reviewing</option>
@@ -797,7 +797,7 @@ export const SealPage: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Priyanshu (Aero)"
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   />
                 </div>
 
@@ -810,7 +810,7 @@ export const SealPage: React.FC = () => {
                     value={handle}
                     onChange={(e) => setHandle(e.target.value)}
                     placeholder="e.g. the_priyxnshu_"
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   />
                 </div>
               </div>
@@ -826,7 +826,7 @@ export const SealPage: React.FC = () => {
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
                     placeholder="e.g. aero.build"
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   />
                 </div>
 
@@ -839,7 +839,7 @@ export const SealPage: React.FC = () => {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="e.g. https://aero.build"
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   />
                 </div>
               </div>
@@ -854,7 +854,7 @@ export const SealPage: React.FC = () => {
                   value={field}
                   onChange={(e) => setField(e.target.value)}
                   placeholder="e.g. Distributed Systems &amp; Low-Level Agent Runtimes"
-                  className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                  className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                 />
               </div>
 
@@ -868,7 +868,7 @@ export const SealPage: React.FC = () => {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Tell the ring what you are building and what obsesses you..."
-                  className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50 leading-relaxed"
+                  className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40 leading-relaxed"
                 />
               </div>
 
@@ -883,7 +883,7 @@ export const SealPage: React.FC = () => {
                     value={proofOfWork}
                     onChange={(e) => setProofOfWork(e.target.value)}
                     placeholder="e.g. High-throughput memory engine"
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   />
                 </div>
 
@@ -896,7 +896,7 @@ export const SealPage: React.FC = () => {
                     value={proofUrl}
                     onChange={(e) => setProofUrl(e.target.value)}
                     placeholder="e.g. https://github.com/yourhandle/project"
-                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                   />
                 </div>
               </div>
@@ -911,7 +911,7 @@ export const SealPage: React.FC = () => {
                   value={tagsInput}
                   onChange={(e) => setTagsInput(e.target.value)}
                   placeholder="e.g. Rust, Compilers, Distributed, AI"
-                  className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50"
+                  className="w-full px-3 py-2 bg-black border border-white/15 rounded text-xs font-mono text-white focus:outline-none focus:border-white/40"
                 />
               </div>
 
@@ -958,7 +958,7 @@ export const SealPage: React.FC = () => {
             <div className="lg:col-span-6 bg-zinc-950 border border-white/[0.08] rounded-xl p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                 <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-emerald-400" />
+                  <Eye className="w-4 h-4 text-white" />
                   <span className="font-mono text-xs font-semibold text-white">REAL-TIME LIVE PREVIEW</span>
                 </div>
 
@@ -1004,7 +1004,7 @@ export const SealPage: React.FC = () => {
                       <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-white font-semibold">
                         {previewMember.id}
                       </span>
-                      <span className="flex items-center gap-1 text-emerald-400">
+                      <span className="flex items-center gap-1 text-white">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         VERIFIED NODE
                       </span>
@@ -1051,7 +1051,7 @@ export const SealPage: React.FC = () => {
                         href={previewMember.proofUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] text-emerald-400 hover:underline shrink-0 flex items-center gap-1"
+                        className="text-[11px] text-white hover:underline shrink-0 flex items-center gap-1"
                       >
                         <span>Evidence</span>
                         <ExternalLink className="w-3 h-3" />
@@ -1120,7 +1120,7 @@ export const SealPage: React.FC = () => {
                     </div>
 
                     <span className="text-[10px] font-mono text-zinc-500">
-                      Bound to: <code className="text-emerald-400">{previewMember.domain}</code>
+                      Bound to: <code className="text-white">{previewMember.domain}</code>
                     </span>
                   </div>
                 </div>
@@ -1132,7 +1132,7 @@ export const SealPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Link
                     to="/nodes"
-                    className="text-zinc-300 hover:text-emerald-400 flex items-center gap-1"
+                    className="text-zinc-300 hover:text-white flex items-center gap-1"
                   >
                     <span>Inspect /nodes</span>
                     <ArrowRight className="w-3 h-3" />
@@ -1140,7 +1140,7 @@ export const SealPage: React.FC = () => {
                   <span className="text-zinc-700">&bull;</span>
                   <Link
                     to="/"
-                    className="text-zinc-300 hover:text-emerald-400 flex items-center gap-1"
+                    className="text-zinc-300 hover:text-white flex items-center gap-1"
                   >
                     <span>The Ring</span>
                     <ArrowRight className="w-3 h-3" />
@@ -1159,7 +1159,7 @@ export const SealPage: React.FC = () => {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
                   <span>FOOTER INTEGRATION</span>
-                  <span className="text-emerald-400">OFFICIAL BADGE</span>
+                  <span className="text-white">OFFICIAL BADGE</span>
                 </div>
                 <p className="text-xs text-zinc-400 font-sans">
                   The exact mark you place at the bottom of your sovereign domain.

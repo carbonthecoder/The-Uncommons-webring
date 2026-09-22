@@ -42,7 +42,7 @@ UNCOMMON_THESIS:
       particleCount: 45,
       spread: 60,
       origin: { y: 0.7 },
-      colors: ['#ffffff', '#a1a1aa', '#52525b', '#10b981'],
+      colors: ['#ffffff', '#a1a1aa', '#52525b', '#71717a'],
     });
   };
 
@@ -248,7 +248,7 @@ UNCOMMON_THESIS:
                     onClick={handleCopyTicket}
                     className="flex items-center gap-1 text-white hover:text-zinc-300 transition-colors cursor-pointer"
                   >
-                    {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    {copied ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3" />}
                     <span>{copied ? 'Copied!' : 'Copy'}</span>
                   </button>
                 </div>

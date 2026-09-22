@@ -75,7 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
             Manifesto
           </NavLink>
           <NavLink to="/apply" className={navClass} onClick={() => sound.playClick()}>
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse mr-1" />
             Apply
           </NavLink>
         </nav>
@@ -180,10 +180,10 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
               onClick={() => sound.playClick()}
             >
               <div className="flex items-center gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-300">Apply to Council</span>
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                <span className="text-white font-medium">Apply to Council</span>
               </div>
-              <span className="text-[10px] text-emerald-400 uppercase font-mono">OPEN</span>
+              <span className="text-[10px] text-zinc-400 uppercase font-mono">OPEN</span>
             </NavLink>
           </nav>
 

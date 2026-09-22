@@ -86,7 +86,7 @@ const SlotCard = React.memo<SlotCardProps>(({
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
           {isShifting ? (
             <div className="p-1 text-zinc-400">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
             </div>
           ) : (
             <>
@@ -592,7 +592,7 @@ export const OwnerOrchestratorModal: React.FC<OwnerOrchestratorModalProps> = ({ 
           <div className="flex items-center gap-2">
             {(isShifting || isSaving) && (
               <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-300 bg-zinc-900 border border-zinc-700/80 px-2.5 py-1 rounded select-none">
-                <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />
+                <RefreshCw className="w-3 h-3 text-white animate-spin" />
                 <span>CLOUD SYNCING...</span>
               </div>
             )}

@@ -53,8 +53,8 @@ export const RingSimulator: React.FC<RingSimulatorProps> = ({
             <span className="font-mono text-sm font-semibold text-white">
               {current.domain}
             </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               RESOLVED
             </span>
           </div>

@@ -52,10 +52,10 @@ export const HomePage: React.FC = () => {
       {/* 1. Hero Section (Full width, bold, effortless) */}
       <section className="text-center space-y-6 pt-4 sm:pt-8 max-w-4xl mx-auto px-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-[11px] sm:text-xs font-mono text-zinc-300 shadow-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0" />
           <span>THE UNCOMMONS // PRIVATE WEBRING</span>
           <span className="text-zinc-600 hidden sm:inline">&bull;</span>
-          <span className="text-emerald-400 font-semibold hidden sm:inline">{verifiedCount === 1 ? '1 VETTED NODE' : `${verifiedCount} VETTED NODES`}</span>
+          <span className="text-zinc-300 font-semibold hidden sm:inline">{verifiedCount === 1 ? '1 VETTED NODE' : `${verifiedCount} VETTED NODES`}</span>
         </div>
 
         <h1 className="font-syne text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] sm:leading-[1.15] text-balance max-w-4xl mx-auto">
@@ -136,7 +136,7 @@ export const HomePage: React.FC = () => {
 
             <button
               onClick={handleRandomNode}
-              className="flex items-center gap-1 text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
               title="Hop to random sovereign node"
             >
               <Shuffle className="w-3.5 h-3.5" />
@@ -146,7 +146,7 @@ export const HomePage: React.FC = () => {
 
           <div className="text-[10px] font-mono text-zinc-500 tracking-wider">
             {activeSurfedDomain ? (
-              <span className="text-emerald-400">
+              <span className="text-zinc-300">
                 ACTIVE HOP: <strong className="text-white">{activeSurfedDomain}</strong> &bull; CLICK ANY ACTION TO TRAVERSE
               </span>
             ) : (
@@ -175,7 +175,7 @@ export const HomePage: React.FC = () => {
       <section className="space-y-8 pt-6 max-w-5xl mx-auto px-4">
         <div className="space-y-1.5 border-b border-white/[0.08] pb-4">
           <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500 uppercase tracking-widest">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             <span>HOW IT WORKS</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
