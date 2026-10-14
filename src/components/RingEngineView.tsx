@@ -54,7 +54,7 @@ export const RingEngineView: React.FC = () => {
           Ring Navigation Engine
         </h1>
         <p className="mt-2 text-sm text-zinc-400 font-sans max-w-2xl leading-relaxed">
-          The Uncommons uses a deterministic circular routing engine. Member widgets query the ring router with their origin domain, which dynamically computes the next or previous peer in the cycle.
+          NICHENET uses a deterministic circular routing engine. Member widgets query the ring router with their origin domain, which dynamically computes the next or previous peer in the cycle.
         </p>
       </div>
 
@@ -160,7 +160,7 @@ export const RingEngineView: React.FC = () => {
           <div className="p-4 bg-zinc-950 rounded-lg border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="text-xs font-mono text-zinc-400 flex items-center gap-2">
-                <span>Traversing The Uncommons Ring...</span>
+                <span>Traversing NICHENET Ring...</span>
               </div>
               <div className="text-sm font-mono text-white font-semibold">
                 Navigating to: {targetNode.domain}

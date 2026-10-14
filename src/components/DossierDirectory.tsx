@@ -48,7 +48,7 @@ export const DossierDirectory: React.FC<DossierDirectoryProps> = ({
           Vetted Member Dossiers
         </h1>
         <p className="mt-2 text-sm text-zinc-400 font-sans max-w-2xl leading-relaxed">
-          The sovereign nodes comprising The Uncommons ring. Every member has demonstrated verifiable, rare proof-of-work and passed direct conversational vetting with the council.
+          The sovereign nodes comprising NICHENET. Every member has demonstrated verifiable, rare proof-of-work and passed direct conversational vetting with the council.
         </p>
       </div>
 

@@ -54,11 +54,11 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
             <div className="absolute w-1 h-1 bg-white rounded-full" />
           </div>
           <div className="flex flex-col">
-            <span className="font-mono text-sm tracking-widest text-zinc-100 font-semibold uppercase group-hover:text-white transition-colors">
-              The Uncommons
+            <span className="font-mono text-sm tracking-widest text-zinc-100 font-bold uppercase group-hover:text-white transition-colors">
+              NICHENET
             </span>
             <span className="text-[10px] font-mono text-zinc-500 tracking-wider">
-              SOVEREIGN WEBRING
+              CURATED WEBRING
             </span>
           </div>
         </Link>
@@ -181,7 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
             >
               <div className="flex items-center gap-2.5">
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                <span className="text-white font-medium">Apply to Council</span>
+                <span className="text-white font-medium">Apply</span>
               </div>
               <span className="text-[10px] text-zinc-400 uppercase font-mono">OPEN</span>
             </NavLink>

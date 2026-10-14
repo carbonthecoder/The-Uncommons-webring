@@ -39,7 +39,7 @@ export const GoPage: React.FC = () => {
 
         <div className="space-y-1">
           <div className="text-[11px] font-mono tracking-widest text-zinc-500 uppercase">
-            The Uncommons // Peer Hop
+            NICHENET // Peer Hop
           </div>
           <h1 className="text-xl font-mono font-bold text-white">
             Traversing Webring...

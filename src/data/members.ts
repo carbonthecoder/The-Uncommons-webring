@@ -98,6 +98,7 @@ function sanitizeMember(m: Member): Member {
   if (m.id === 'NODE-001') {
     const isStale = !m.domain || 
       m.domain.includes('carbonthecoder.github.io') || 
+      m.bio === 'Verified member of NICHENET webring.' ||
       m.bio === 'Verified member of The Uncommons webring.' ||
       m.proofOfWork === 'Awaiting candidate build submission.' ||
       (m.tags && m.tags.includes('Founder Edit'));
@@ -224,11 +225,11 @@ export function vacateCustomNode(slotId: string) {
       name: 'Awaiting Candidate',
       handle: 'vacant',
       domain: `unclaimed-slot-00${slotNum}.xyz`,
-      url: 'https://the-uncommons.vercel.app/apply',
+      url: '/apply',
       field: 'Open Genesis Vacancy',
       bio: `Genesis vacancy slot #${slotNum}. Applications open via Kavyon Discord community.`,
       proofOfWork: 'Awaiting candidate build submission.',
-      proofUrl: 'https://the-uncommons.vercel.app/apply',
+      proofUrl: '/apply',
       tags: ['Genesis', 'Vacancy'],
       joinDate: '2026-01-01',
       verified: false,
@@ -272,7 +273,7 @@ export function getAllMembers(): Member[] {
     .filter((s) => s.verified && s.domain && !s.domain.includes('unclaimed') && s.handle !== 'vacant')
     .sort((a, b) => (a.ringPosition || 1) - (b.ringPosition || 1));
 }
-export function ensureHttps(urlOrDomain?: string, fallback: string = 'https://theuncommons.vercel.app'): string {
+export function ensureHttps(urlOrDomain?: string, fallback: string = '/'): string {
   if (!urlOrDomain) return fallback;
   const clean = urlOrDomain.trim();
   if (!clean) return fallback;
@@ -296,8 +297,8 @@ export async function syncServerNodes(bypassCache: boolean = false): Promise<Mem
           const slotId = d.id || `NODE-00${i + 1}`;
           const isClaimed = !!d.verified && !d.domain?.includes('unclaimed') && d.handle !== 'vacant';
           const cleanDomain = d.domain ? d.domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase() : `unclaimed-slot-00${i + 1}.xyz`;
-          const formattedUrl = isClaimed ? ensureHttps(d.url || cleanDomain) : 'https://theuncommons.vercel.app/apply';
-          const formattedProofUrl = isClaimed ? ensureHttps(d.proofUrl || `https://github.com/${d.handle || 'builder'}`) : 'https://theuncommons.vercel.app/apply';
+          const formattedUrl = isClaimed ? ensureHttps(d.url || cleanDomain) : '/apply';
+          const formattedProofUrl = isClaimed ? ensureHttps(d.proofUrl || `https://github.com/${d.handle || 'builder'}`) : '/apply';
 
           return {
             id: slotId,

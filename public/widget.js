@@ -98,9 +98,9 @@
         <div class="ring-container">
           <a href="${prevUrl}" title="Previous Node" class="nav-btn">← Prev</a>
           <span class="divider"></span>
-          <a href="${hubUrl}" title="The Uncommons Webring Hub" class="hub-link">
+          <a href="${hubUrl}" title="NICHENET Webring Hub" class="hub-link">
             <span class="icon"></span>
-            The Uncommons
+            NICHENET
           </a>
           <span class="divider"></span>
           <a href="${nextUrl}" title="Next Node" class="nav-btn">Next →</a>
@@ -109,6 +109,9 @@
     }
   }
 
+  if (!customElements.get('nichenet-ring')) {
+    customElements.define('nichenet-ring', UncommonsRing);
+  }
   if (!customElements.get('uncommons-ring')) {
     customElements.define('uncommons-ring', UncommonsRing);
   }

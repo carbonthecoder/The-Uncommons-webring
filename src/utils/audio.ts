@@ -1,4 +1,4 @@
-// Web Audio API Sound Generator for The Uncommons (Subtle, cyber-academic, non-intrusive)
+// Web Audio API Sound Generator for NICHENET (Subtle, cyber-academic, non-intrusive)
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = true;

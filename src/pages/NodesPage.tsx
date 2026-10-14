@@ -85,7 +85,7 @@ export const NodesPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-xs font-mono text-zinc-300">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0" />
-            <span>LEDGER // CONSTELLATION NODES</span>
+            <span>NICHENET // CONSTELLATION NODES</span>
             <span className="text-zinc-600 hidden sm:inline">&bull;</span>
             <span className="text-zinc-400 hidden sm:inline">GENESIS EPOCH MMXXVI</span>
           </div>

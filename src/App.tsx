@@ -122,10 +122,10 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-1 text-center md:text-left">
               <div className="text-zinc-200 font-semibold tracking-wider uppercase">
-                The Uncommons Webring
+                NICHENET WEBRING
               </div>
               <div className="text-zinc-400">
-                A private sovereign network for rare intellects &bull; Est. 2026
+                Connecting the web&apos;s rarest minds &amp; personal domains &bull; Est. 2026
               </div>
             </div>
 
@@ -140,7 +140,7 @@ export default function App() {
                 Manifesto
               </Link>
               <Link to="/apply" className="hover:text-white transition-colors">
-                Apply via Discord
+                Apply
               </Link>
             </div>
 

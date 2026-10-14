@@ -16,17 +16,17 @@ export const WidgetStudio: React.FC = () => {
     message: '',
   });
 
-  const webComponentSnippet = `<!-- The Uncommons Webring Badge -->
-<script src="https://the-uncommons.network/widget.js" async></script>
-<uncommons-ring site="${siteDomain || 'your-domain.xyz'}" theme="${theme}"></uncommons-ring>`;
+  const webComponentSnippet = `<!-- NICHENET Webring Badge -->
+<script src="https://nichenet.dev/widget.js" async></script>
+<nichenet-ring site="${siteDomain || 'your-domain.xyz'}" theme="${theme}"></nichenet-ring>`;
 
-  const staticHtmlSnippet = `<!-- The Uncommons Webring (Zero-JS Static HTML) -->
+  const staticHtmlSnippet = `<!-- NICHENET Webring (Zero-JS Static HTML) -->
 <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#09090b;border:1px solid #27272a;border-radius:6px;font-family:monospace;font-size:12px;color:#d4d4d8;">
-  <a href="https://the-uncommons.network/go?from=${siteDomain}&action=prev" style="color:#a1a1aa;text-decoration:none;">◄ Prev</a>
+  <a href="https://nichenet.dev/go?from=${siteDomain}&action=prev" style="color:#a1a1aa;text-decoration:none;">◄ Prev</a>
   <span style="color:#52525b;">|</span>
-  <a href="https://the-uncommons.network" style="color:#f4f4f5;text-decoration:none;font-weight:600;">◉ The Uncommons</a>
+  <a href="https://nichenet.dev" style="color:#f4f4f5;text-decoration:none;font-weight:600;">◉ NICHENET</a>
   <span style="color:#52525b;">|</span>
-  <a href="https://the-uncommons.network/go?from=${siteDomain}&action=next" style="color:#a1a1aa;text-decoration:none;">Next ►</a>
+  <a href="https://nichenet.dev/go?from=${siteDomain}&action=next" style="color:#a1a1aa;text-decoration:none;">Next ►</a>
 </div>`;
 
   const currentSnippet = activeSnippetTab === 'webcomponent' ? webComponentSnippet : staticHtmlSnippet;
@@ -73,7 +73,7 @@ export const WidgetStudio: React.FC = () => {
           Webring Widget Studio
         </h1>
         <p className="mt-2 text-sm text-zinc-400 font-sans max-w-2xl leading-relaxed">
-          Every member of The Uncommons places a quiet, sovereign seal on their website. It connects their domain to the circular ring without tracking, external cookies, or algorithmic middlemen.
+          Every member of NICHENET places a quiet, sovereign seal on their website. It connects their domain to the circular ring without tracking, external cookies, or algorithmic middlemen.
         </p>
       </div>
 
@@ -182,7 +182,7 @@ export const WidgetStudio: React.FC = () => {
                     className="flex items-center gap-1.5 text-white font-semibold tracking-wider hover:underline underline-offset-4 cursor-pointer"
                   >
                     <div className="w-2 h-2 rounded-full border border-zinc-400 animate-spin" style={{ animationDuration: '6s' }} />
-                    <span>THE UNCOMMONS</span>
+                    <span>NICHENET</span>
                   </a>
 
                   <span className="text-zinc-700">|</span>
@@ -209,7 +209,7 @@ export const WidgetStudio: React.FC = () => {
                   <span className="text-zinc-600">&bull;</span>
                   <span className="text-zinc-100 font-medium tracking-wide flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                    The Uncommons
+                    NICHENET
                   </span>
                   <span className="text-zinc-600">&bull;</span>
                   <span className="text-zinc-400 hover:text-white cursor-pointer" onClick={() => sound.playClick()}>
@@ -221,7 +221,7 @@ export const WidgetStudio: React.FC = () => {
               {theme === 'retro88' && (
                 <div className="inline-flex items-stretch border border-zinc-700 bg-zinc-950 font-mono text-[10px] select-none shadow-md overflow-hidden rounded-[2px]">
                   <div className="bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center justify-center font-bold tracking-tighter border-r border-zinc-700">
-                    UNCOMMONS
+                    NICHENET
                   </div>
                   <div className="flex items-center gap-1 px-2 py-1 text-zinc-400 bg-black">
                     <span className="hover:text-white cursor-pointer" onClick={() => sound.playClick()}>

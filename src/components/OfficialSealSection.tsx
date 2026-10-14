@@ -7,17 +7,17 @@ export const OfficialSealSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'script' | 'html'>('script');
   const [sampleDomain, setSampleDomain] = useState('yourdomain.xyz');
 
-  const scriptSnippet = `<!-- The Uncommons Webring Badge -->
-<script src="https://the-uncommons.network/widget.js" async></script>
-<uncommons-ring site="${sampleDomain || 'yourdomain.xyz'}"></uncommons-ring>`;
+  const scriptSnippet = `<!-- NICHENET Webring Badge -->
+<script src="https://nichenet.dev/widget.js" async></script>
+<nichenet-ring site="${sampleDomain || 'yourdomain.xyz'}"></nichenet-ring>`;
 
-  const htmlSnippet = `<!-- The Uncommons Webring (Pure Static HTML) -->
-<div class="uncommons-ring" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#09090b;border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-family:ui-monospace,monospace;font-size:11px;color:#d4d4d8;">
-  <a href="https://the-uncommons.network/go?from=${sampleDomain}&action=prev" style="color:#a1a1aa;text-decoration:none;">◄ Prev</a>
+  const htmlSnippet = `<!-- NICHENET Webring (Pure Static HTML) -->
+<div class="nichenet-ring" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#09090b;border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-family:ui-monospace,monospace;font-size:11px;color:#d4d4d8;">
+  <a href="https://nichenet.dev/go?from=${sampleDomain}&action=prev" style="color:#a1a1aa;text-decoration:none;">◄ Prev</a>
   <span style="color:#3f3f46;">|</span>
-  <a href="https://the-uncommons.network" style="color:#ffffff;text-decoration:none;font-weight:600;letter-spacing:0.05em;">◉ The Uncommons</a>
+  <a href="https://nichenet.dev" style="color:#ffffff;text-decoration:none;font-weight:600;letter-spacing:0.05em;">◉ NICHENET</a>
   <span style="color:#3f3f46;">|</span>
-  <a href="https://the-uncommons.network/go?from=${sampleDomain}&action=next" style="color:#a1a1aa;text-decoration:none;">Next ►</a>
+  <a href="https://nichenet.dev/go?from=${sampleDomain}&action=next" style="color:#a1a1aa;text-decoration:none;">Next ►</a>
 </div>`;
 
   const currentCode = activeTab === 'script' ? scriptSnippet : htmlSnippet;
@@ -37,7 +37,7 @@ export const OfficialSealSection: React.FC = () => {
           <span>MEMBER SPECIFICATION // THE OFFICIAL EMBED SEAL</span>
         </div>
         <h2 className="text-2xl font-mono font-bold text-white tracking-tight">
-          The Uncommons Member Seal
+          NICHENET Member Seal
         </h2>
         <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 font-sans max-w-2xl leading-relaxed">
           No complicated settings. Every admitted member hosts this quiet, sovereign seal in their site footer. It connects their domain to the distributed ring without ads, cookies, or tracking.
@@ -84,7 +84,7 @@ export const OfficialSealSection: React.FC = () => {
                 className="flex items-center gap-1.5 text-white font-semibold tracking-wider hover:underline underline-offset-4 cursor-pointer"
               >
                 <div className="w-2 h-2 rounded-full border border-zinc-400 animate-spin" style={{ animationDuration: '6s' }} />
-                <span>THE UNCOMMONS</span>
+                <span>NICHENET</span>
               </a>
 
               <span className="text-zinc-700">|</span>
@@ -122,7 +122,7 @@ export const OfficialSealSection: React.FC = () => {
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                Web Component (&lt;uncommons-ring&gt;)
+                Web Component (&lt;nichenet-ring&gt;)
               </button>
               <button
                 onClick={() => {

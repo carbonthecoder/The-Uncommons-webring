@@ -75,12 +75,12 @@ export const createDiscordEmbedPayload = (data: ApplicationData, ticketId: strin
   const now = new Date();
 
   return {
-    username: 'The Uncommons — Admissions Ticket Desk',
+    username: 'NICHENET — Admissions Ticket Desk',
     avatar_url: 'https://raw.githubusercontent.com/carbonthecoder/The-Uncommons-webring/main/public/favicon.svg',
     embeds: [
       {
         title: `🎫 COUNCIL REVIEW TICKET // #${ticketId} — @${data.discordHandle.trim().replace(/^@/, '')}`,
-        description: `Candidate admission ticket received for **The Uncommons Sovereign Webring** (Kavyon Community).`,
+        description: `Candidate admission ticket received for **NICHENET Sovereign Webring** (Kavyon Community).`,
         color: 0xffffff, // Emerald Green
         fields: [
           {
@@ -300,7 +300,7 @@ export const dispatchNodeActivationToDiscord = async (nodeId: string, domain: st
   if (!webhookUrl || !webhookUrl.startsWith('https://discord.com/api/webhooks/')) return false;
 
   const payload = {
-    username: 'The Uncommons — Node Activation Service',
+    username: 'NICHENET — Node Activation Service',
     avatar_url: 'https://raw.githubusercontent.com/carbonthecoder/The-Uncommons-webring/main/public/favicon.svg',
     embeds: [
       {
@@ -313,7 +313,7 @@ export const dispatchNodeActivationToDiscord = async (nodeId: string, domain: st
           { name: '⚡ Focus Field', value: field, inline: false },
           { name: '📜 Webring Seal', value: 'Webring widget embed code generated and issued.', inline: false }
         ],
-        footer: { text: `The Uncommons × Kavyon Ecosystem` },
+        footer: { text: `NICHENET × Kavyon Ecosystem` },
         timestamp: new Date().toISOString()
       }
     ]
@@ -340,7 +340,7 @@ export const dispatchKeyIssuanceToDiscord = async (key: string, slotId: string, 
   if (!webhookUrl || !webhookUrl.startsWith('https://discord.com/api/webhooks/')) return false;
 
   const payload = {
-    username: 'The Uncommons — Council Key Authority',
+    username: 'NICHENET — Council Key Authority',
     avatar_url: 'https://raw.githubusercontent.com/carbonthecoder/The-Uncommons-webring/main/public/favicon.svg',
     embeds: [
       {
@@ -353,7 +353,7 @@ export const dispatchKeyIssuanceToDiscord = async (key: string, slotId: string, 
           { name: '🔐 Activation Key', value: `\`${key}\``, inline: false },
           { name: '🚀 Next Step', value: 'Candidate can navigate to [the-uncommons.vercel.app/nodes](https://the-uncommons.vercel.app/nodes), click **Claim Slot**, and enter their key.', inline: false }
         ],
-        footer: { text: `The Uncommons × Kavyon Council Key Registry` },
+        footer: { text: `NICHENET × Kavyon Council Key Registry` },
         timestamp: new Date().toISOString()
       }
     ]

@@ -47,10 +47,10 @@ export const ManifestoPage: React.FC = () => {
 
         <section className="space-y-4">
           <h2 className="text-lg sm:text-xl font-display font-semibold text-white tracking-tight">
-            III. The Uncommons
+            III. NICHENET
           </h2>
           <p className="text-zinc-400 leading-relaxed">
-            The Uncommons is a closed-loop webring designed to connect these isolated outposts. It is an invite-only network of rare minds, crack engineers, and obsessive creators. 
+            NICHENET is a closed-loop webring designed to connect these isolated outposts. It is an invite-only network of rare minds, crack engineers, and obsessive creators. 
           </p>
           <p className="text-zinc-400 leading-relaxed">
             There are no metrics here. No follower counts, no likes, and no algorithmic discovery. Just a continuous loop of high-signal, human-curated domains passing the torch to one another.

@@ -13,10 +13,10 @@ export const ManifestoExplanation: React.FC<ManifestoExplanationProps> = ({ onSc
       <div className="border-b border-white/[0.08] pb-4">
         <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 mb-1">
           <Terminal className="w-3.5 h-3.5 text-zinc-400" />
-          <span>CANONICAL THESIS // WHY THE UNCOMMONS EXISTS</span>
+          <span>CANONICAL THESIS // WHY NICHENET EXISTS</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight">
-          What is The Uncommons?
+          What is NICHENET?
         </h2>
         <p className="mt-2 text-xs sm:text-sm text-zinc-400 font-sans max-w-2xl leading-relaxed">
           A decentralized guild and sovereign webring for idiosyncratic builders, polymaths, and independent researchers. Here is how it works and how members are vetted.
