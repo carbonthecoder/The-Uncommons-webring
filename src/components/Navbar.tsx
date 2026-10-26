@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { sound } from '../utils/audio';
-import { Volume2, VolumeX, Menu, X, ArrowUpRight, Palette } from 'lucide-react';
+import { Volume2, VolumeX, Menu, X, ArrowUpRight, Palette, Check } from 'lucide-react';
 
 interface NavbarProps {
   nodeCount: number;
@@ -9,7 +9,7 @@ interface NavbarProps {
 
 const THEMES = [
   { id: 'espresso', label: 'Espresso', dot: '#d97706' },
-  { id: 'nordic', label: 'Nordic Pine', dot: '#10b981' },
+  { id: 'midnight', label: 'Midnight', dot: '#38bdf8' },
   { id: 'obsidian', label: 'Obsidian', dot: '#e4e4e7' },
   { id: 'parchment', label: 'Parchment', dot: '#b45309' },
 ] as const;
@@ -25,6 +25,8 @@ const ForgejoIcon: React.FC<{ className?: string }> = ({ className = "w-3.5 h-3.
 export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
   const [theme, setTheme] = useState<ThemeId>(() => {
@@ -42,15 +44,20 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
     }
   }, [theme]);
 
-  const cycleTheme = () => {
-    sound.playClick();
-    const currentIndex = THEMES.findIndex(t => t.id === theme);
-    const nextTheme = THEMES[(currentIndex + 1) % THEMES.length].id;
-    setTheme(nextTheme);
-  };
+  // Close theme menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setIsThemeMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsThemeMenuOpen(false);
   }, [location.pathname]);
 
   const toggleSound = () => {
@@ -125,21 +132,62 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
             <ArrowUpRight className="w-3 h-3 text-[#756e63]" />
           </a>
 
-          {/* Theme Switcher (Zero emojis - SVG icon & palette indicator) */}
-          <button
-            onClick={cycleTheme}
-            title={`Current theme: ${THEMES.find(t => t.id === theme)?.label}. Click to cycle.`}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-mono rounded-lg border border-white/10 hover:border-white/20 text-[#8c8376] hover:text-[#f5f0e8] bg-[#181614] transition-colors cursor-pointer"
-          >
-            <Palette className="w-3.5 h-3.5 text-amber-500" />
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: THEMES.find(t => t.id === theme)?.dot }}
-            />
-            <span className="hidden sm:inline uppercase text-[10px] tracking-wider text-[#c4bcaf]">
-              {THEMES.find(t => t.id === theme)?.label}
-            </span>
-          </button>
+          {/* Cute Theme Selector Popover (Zero emojis) */}
+          <div className="relative" ref={themeMenuRef}>
+            <button
+              onClick={() => {
+                sound.playClick();
+                setIsThemeMenuOpen(!isThemeMenuOpen);
+              }}
+              title="Select color palette"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-mono rounded-lg border border-white/10 hover:border-white/20 text-[#8c8376] hover:text-[#f5f0e8] bg-[#181614] transition-colors cursor-pointer"
+            >
+              <Palette className="w-3.5 h-3.5 text-amber-500" />
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: THEMES.find(t => t.id === theme)?.dot }}
+              />
+              <span className="hidden sm:inline uppercase text-[10px] tracking-wider text-[#c4bcaf]">
+                {THEMES.find(t => t.id === theme)?.label}
+              </span>
+            </button>
+
+            {/* Cute Popover Box */}
+            {isThemeMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#181614] p-1.5 shadow-2xl backdrop-blur-md z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[#756e63]">
+                  Color Palette
+                </div>
+                {THEMES.map((t) => {
+                  const isSelected = t.id === theme;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        sound.playClick();
+                        setTheme(t.id);
+                        setIsThemeMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-mono transition-colors text-left cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#25221e] text-amber-400 font-semibold border border-white/10'
+                          : 'text-[#c4bcaf] hover:text-white hover:bg-[#201d1a]'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: t.dot }}
+                        />
+                        <span>{t.label}</span>
+                      </span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-amber-500" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Sound Toggle */}
           <button
@@ -200,22 +248,40 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
 
-          <button
-            onClick={cycleTheme}
-            className="w-full flex items-center justify-between px-3.5 py-3 rounded-lg text-sm font-mono text-[#c4bcaf] bg-[#181614] border border-white/10"
-          >
-            <span className="flex items-center gap-2">
-              <Palette className="w-4 h-4 text-amber-500" />
-              <span>Theme</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-xs font-mono uppercase text-[#8c8376]">
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: THEMES.find(t => t.id === theme)?.dot }}
-              />
-              <span>{THEMES.find(t => t.id === theme)?.label}</span>
-            </span>
-          </button>
+          <div className="pt-2 border-t border-white/[0.08] space-y-1.5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#756e63] px-1">
+              Select Palette
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {THEMES.map((t) => {
+                const isSelected = t.id === theme;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      sound.playClick();
+                      setTheme(t.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono border transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#25221e] text-amber-400 font-semibold border-white/20'
+                        : 'text-[#c4bcaf] bg-[#181614] border-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: t.dot }}
+                      />
+                      <span>{t.label}</span>
+                    </span>
+                    {isSelected && <Check className="w-3 h-3 text-amber-500" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </header>
