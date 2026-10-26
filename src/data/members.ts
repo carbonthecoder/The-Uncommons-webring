@@ -6,6 +6,7 @@ export interface Member {
   handle: string;
   domain: string;
   url: string;
+  rss?: string;
   field: string;
   bio: string;
   proofOfWork: string;
@@ -20,15 +21,16 @@ export interface Member {
 export const MEMBERS: Member[] = [
   {
     id: 'NODE-001',
-    name: 'Mohammed Ibrahim (Carbon)',
-    handle: 'carbonthecoder',
-    domain: 'crbn-coder.vercel.app',
-    url: 'https://crbn-coder.vercel.app',
-    field: 'Backend Systems, Linux, Networking & AI Systems',
-    bio: 'Self-taught engineer focused on backend infrastructure, network protocols, and autonomous AI systems.',
-    proofOfWork: 'Agentic orchestration engines & persistent local-first knowledge systems.',
-    proofUrl: 'https://github.com/carbonthecoder',
-    tags: ['Founder', 'Python', 'C', 'FastAPI', 'Linux', 'Networking', 'AI Systems'],
+    name: 'Carbon',
+    handle: 'carbon',
+    domain: 'carbon.is-a.dev',
+    url: 'https://carbon.is-a.dev',
+    rss: 'https://carbon.is-a.dev/rss.xml',
+    field: 'Systems & Infrastructure',
+    bio: 'Curator of The Uncommons.',
+    proofOfWork: 'Sovereign infrastructure, local agents, and personal webring network.',
+    proofUrl: 'https://carbon.is-a.dev',
+    tags: ['Curator', 'Systems', 'Linux'],
     joinDate: '2026-01-01',
     verified: true,
     ringPosition: 1,
@@ -40,11 +42,12 @@ export const MEMBERS: Member[] = [
     handle: 'the_priyxnshu_',
     domain: 'aero.build',
     url: 'https://aero.build',
-    field: 'Distributed Systems & Low-Level Agent Runtimes',
-    bio: 'Architecting deterministic multi-agent systems and compiler IR pipelines.',
+    rss: 'https://aero.build/feed.xml',
+    field: 'Distributed Systems',
+    bio: 'Multi-agent runtimes and compiler pipelines.',
     proofOfWork: 'High-throughput agent orchestration engine with zero IPC overhead.',
-    proofUrl: 'https://github.com/carbonthecoder/The-Uncommons-webring',
-    tags: ['Systems', 'Rust', 'Compilers', 'AI'],
+    proofUrl: 'https://github.com/the_priyxnshu_',
+    tags: ['Systems', 'Rust', 'Compilers'],
     joinDate: '2026-01-15',
     verified: true,
     ringPosition: 2,
@@ -97,11 +100,9 @@ function saveVacatedSlots(set: Set<string>) {
 function sanitizeMember(m: Member): Member {
   if (m.id === 'NODE-001') {
     const isStale = !m.domain || 
-      m.domain.includes('carbonthecoder.github.io') || 
-      m.bio === 'Verified member of NICHENET webring.' ||
-      m.bio === 'Verified member of The Uncommons webring.' ||
-      m.proofOfWork === 'Awaiting candidate build submission.' ||
-      (m.tags && m.tags.includes('Founder Edit'));
+      m.domain !== 'carbon.is-a.dev' || 
+      m.name !== 'Carbon' ||
+      m.handle !== 'carbon';
 
     if (isStale) {
       return { ...MEMBERS[0] };

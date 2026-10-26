@@ -2,15 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveMembers, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
-import { ConstellationCanvas } from '../components/ConstellationCanvas';
-import { MemberDossierModal } from '../components/MemberDossierModal';
 import { sound } from '../utils/audio';
-import { ArrowRight, ArrowLeft, Disc, BookOpen, ExternalLink, Shuffle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Shuffle, Copy, Check, Terminal, Rss, ArrowUpRight } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [activeSurfedDomain, setActiveSurfedDomain] = useState<string>('');
   const liveMembers = useLiveMembers();
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [activeSurfedDomain, setActiveSurfedDomain] = useState<string>('');
+  const [activeMemberPreview, setActiveMemberPreview] = useState<Member | null>(null);
 
   const verifiedMembers = useMemo(() => {
     return liveMembers.filter(
@@ -20,21 +19,35 @@ export const HomePage: React.FC = () => {
 
   const verifiedCount = verifiedMembers.length;
 
+  const quickSnippet = `<a href="https://uncommons.network/prev/your-name">←</a>
+<a href="https://uncommons.network">the uncommons</a>
+<a href="https://uncommons.network/rand?from=your-name">✦</a>
+<a href="https://uncommons.network/next/your-name">→</a>`;
+
+  const handleCopySnippet = () => {
+    navigator.clipboard.writeText(quickSnippet);
+    sound.playClick();
+    setCopiedSnippet(true);
+    setTimeout(() => setCopiedSnippet(false), 2000);
+  };
+
   const handlePrevNode = () => {
     sound.playClick();
-    const target = getPrevMember(activeSurfedDomain || (verifiedMembers[0]?.domain || ''));
+    const current = activeSurfedDomain || (verifiedMembers[0]?.domain || '');
+    const target = getPrevMember(current);
     if (target) {
       setActiveSurfedDomain(target.domain);
-      setSelectedMember(target);
+      setActiveMemberPreview(target);
     }
   };
 
   const handleNextNode = () => {
     sound.playClick();
-    const target = getNextMember(activeSurfedDomain || (verifiedMembers[0]?.domain || ''));
+    const current = activeSurfedDomain || (verifiedMembers[0]?.domain || '');
+    const target = getNextMember(current);
     if (target) {
       setActiveSurfedDomain(target.domain);
-      setSelectedMember(target);
+      setActiveMemberPreview(target);
     }
   };
 
@@ -43,229 +56,268 @@ export const HomePage: React.FC = () => {
     const target = getRandomMember(activeSurfedDomain);
     if (target) {
       setActiveSurfedDomain(target.domain);
-      setSelectedMember(target);
+      setActiveMemberPreview(target);
     }
   };
 
   return (
-    <div className="space-y-16 sm:space-y-24 w-full animate-in fade-in duration-300">
-      {/* 1. Hero Section (Full width, bold, effortless) */}
-      <section className="text-center space-y-6 pt-4 sm:pt-8 max-w-4xl mx-auto px-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950 border border-white/10 text-[11px] sm:text-xs font-mono text-zinc-300 shadow-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0" />
-          <span>NICHENET // CURATED WEBRING</span>
-          <span className="text-zinc-600 hidden sm:inline">&bull;</span>
-          <span className="text-zinc-300 font-semibold hidden sm:inline">{verifiedCount === 1 ? '1 VETTED NODE' : `${verifiedCount} VETTED NODES`}</span>
+    <div className="max-w-4xl mx-auto space-y-16 sm:space-y-20 py-4 animate-in fade-in duration-300">
+      {/* 1. Masthead & Tagline */}
+      <header className="space-y-4 text-left border-b border-white/[0.08] pb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1c1a17] border border-white/[0.08] text-xs font-mono text-[#c4bcaf]">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span>{verifiedCount} {verifiedCount === 1 ? 'ACTIVE DOMAIN' : 'ACTIVE DOMAINS'} IN ORBIT</span>
         </div>
 
-        <h1 className="font-syne text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] sm:leading-[1.15] text-balance max-w-4xl mx-auto">
-          A curated webring connecting the web&apos;s rarest minds.
+        <h1 className="font-serif text-4xl sm:text-6xl font-normal tracking-tight text-[#fbf9f5] leading-[1.1]">
+          The Uncommons
         </h1>
 
-        <p className="text-sm sm:text-base text-zinc-400 font-sans max-w-2xl mx-auto leading-relaxed break-words">
-          NICHENET is a curated webring connecting personal domains and obsessive builders into one closed sovereign loop. Linking the web&apos;s rarest minds and raw craft &mdash; zero algorithms, no engagement farming, zero corporate slop.
+        <p className="font-mono text-xs sm:text-sm text-[#9c9387] tracking-wide">
+          Connecting the web&apos;s rarest minds &amp; personal domains &bull; Est. 2026
         </p>
+      </header>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-center gap-2.5 sm:gap-3 pt-2 flex-wrap">
-          <Link
-            to="/nodes"
-            onClick={() => sound.playClick()}
-            className="w-full sm:w-auto px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-md transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>Explore Nodes ({verifiedCount})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-
-          <Link
-            to="/apply"
-            onClick={() => sound.playClick()}
-            className="w-full sm:w-auto px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/15 text-white font-mono text-xs font-medium rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Disc className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Apply to Ring</span>
-          </Link>
-
-          <Link
-            to="/manifesto"
-            onClick={() => sound.playClick()}
-            className="w-full sm:w-auto px-4 py-2 text-zinc-400 hover:text-white font-mono text-xs transition-colors flex items-center justify-center gap-1"
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Manifesto &rarr;</span>
-          </Link>
+      {/* 2. Casual Letter / Manifesto (Option C) */}
+      <section className="bg-[#181614] border border-white/[0.08] rounded-xl p-6 sm:p-8 space-y-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-amber-600/70" />
+        <h2 className="font-serif text-xl sm:text-2xl text-[#f5f0e8] font-normal">
+          A quiet corner outside the feed
+        </h2>
+        <div className="space-y-3 text-sm sm:text-base text-[#c4bcaf] leading-relaxed font-sans">
+          <p>
+            Most of the internet has been corralled into walled gardens, noisy feeds, and algorithmic hamster wheels. We built The Uncommons to link personal domains together again&mdash;quiet corners of the web maintained by makers with distinct taste.
+          </p>
+          <p>
+            No engagement metrics, no sponsored posts, no corporate telemetry. If you publish on your own domain and build with intentionality, this circle is for you.
+          </p>
         </div>
 
-        {/* The Official Webring Seal Component (Interactive Traversal Badge in 1st Section) */}
-        <div className="pt-3 flex flex-col items-center justify-center gap-2">
-          <div className="inline-flex items-center gap-2.5 sm:gap-3.5 px-3.5 sm:px-4 py-2 bg-zinc-950 border border-white/15 rounded-md text-xs font-mono text-zinc-300 shadow-xl select-none hover:border-white/30 transition-all">
+        {/* Ring Surfer Bar */}
+        <div className="pt-4 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+          <span className="text-[#8c8376]">Surf the active ring:</span>
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePrevNode}
-              className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              title="Navigate to previous node in webring (or press '[' / Left Arrow)"
+              className="px-3 py-1.5 rounded-lg bg-[#221f1c] hover:bg-[#2b2723] text-[#dcd5c9] border border-white/[0.08] transition-colors flex items-center gap-1 cursor-pointer"
+              title="Previous member"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Prev</span>
             </button>
-
-            <span className="text-zinc-700 select-none">|</span>
-
-            <button
-              onClick={() => {
-                sound.playHarmonic();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="flex items-center gap-1.5 text-white font-semibold tracking-wider hover:underline underline-offset-4 cursor-pointer"
-            >
-              <div className="w-2 h-2 rounded-full border border-zinc-400 animate-spin" style={{ animationDuration: '6s' }} />
-              <span>NICHENET</span>
-            </button>
-
-            <span className="text-zinc-700 select-none">|</span>
-
-            <button
-              onClick={handleNextNode}
-              className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              title="Navigate to next node in webring (or press ']' / Right Arrow)"
-            >
-              <span>Next</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-
-            <span className="text-zinc-700 select-none">|</span>
-
             <button
               onClick={handleRandomNode}
-              className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              title="Hop to random sovereign node"
+              className="px-3 py-1.5 rounded-lg bg-[#221f1c] hover:bg-[#2b2723] text-amber-400 border border-amber-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Random member"
             >
               <Shuffle className="w-3.5 h-3.5" />
               <span>Random</span>
             </button>
-          </div>
-
-          <div className="text-[10px] font-mono text-zinc-500 tracking-wider">
-            {activeSurfedDomain ? (
-              <span className="text-zinc-300">
-                ACTIVE HOP: <strong className="text-white">{activeSurfedDomain}</strong> &bull; CLICK ANY ACTION TO TRAVERSE
-              </span>
-            ) : (
-              <span>OFFICIAL EMBED SEAL &bull; PRESS <code className="text-zinc-300 px-1 py-0.5 rounded bg-zinc-900 border border-white/10">[</code> OR <code className="text-zinc-300 px-1 py-0.5 rounded bg-zinc-900 border border-white/10">]</code> KEYS TO SURF</span>
-            )}
+            <button
+              onClick={handleNextNode}
+              className="px-3 py-1.5 rounded-lg bg-[#221f1c] hover:bg-[#2b2723] text-[#dcd5c9] border border-white/[0.08] transition-colors flex items-center gap-1 cursor-pointer"
+              title="Next member"
+            >
+              <span>Next</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
+
+        {/* Dynamic preview card if surfed */}
+        {activeMemberPreview && (
+          <div className="mt-3 p-3.5 rounded-lg bg-[#121110] border border-amber-500/30 text-xs font-mono flex items-center justify-between animate-in fade-in">
+            <div className="space-y-0.5">
+              <div className="text-amber-400 font-semibold">{activeMemberPreview.name}</div>
+              <div className="text-[#8c8376]">{activeMemberPreview.domain}</div>
+            </div>
+            <a
+              href={activeMemberPreview.url}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-medium flex items-center gap-1 transition-colors"
+            >
+              <span>Open Domain</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
       </section>
 
-      {/* 2. The 3D Orbital Canvas */}
-      <section className="space-y-3">
-        <ConstellationCanvas
-          members={verifiedMembers}
-          onSelectMember={setSelectedMember}
-        />
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] font-mono text-zinc-500 px-1 text-center sm:text-left">
-          <span>Drag orbit to rotate &bull; Click node to inspect &bull; Press [ and ] keys to surf</span>
-          <Link to="/nodes" className="hover:text-zinc-300 transition-colors flex items-center gap-1">
-            <span>View node registry ({verifiedCount})</span>
-            <ArrowRight className="w-3 h-3" />
+      {/* 3. Members Directory */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <div>
+            <h2 className="font-serif text-2xl text-[#fbf9f5]">Directory</h2>
+            <p className="text-xs font-mono text-[#8c8376] mt-0.5">
+              Verified sovereign domains currently bound in the loop.
+            </p>
+          </div>
+          <Link
+            to="/members"
+            className="text-xs font-mono text-amber-500/90 hover:text-amber-400 transition-colors"
+          >
+            Raw JSON &rarr;
           </Link>
         </div>
+
+        {/* Directory Table */}
+        <div className="border border-white/[0.08] rounded-xl overflow-hidden bg-[#181614]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-[#121110] border-b border-white/[0.08] text-[#8c8376]">
+                <tr>
+                  <th className="py-3 px-4 w-12 font-normal">#</th>
+                  <th className="py-3 px-4 font-normal">Member</th>
+                  <th className="py-3 px-4 font-normal">Personal Domain</th>
+                  <th className="py-3 px-4 font-normal hidden sm:table-cell">RSS Feed</th>
+                  <th className="py-3 px-4 font-normal hidden md:table-cell">Joined</th>
+                  <th className="py-3 px-4 text-right font-normal">Link</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.06] text-[#dcd5c9]">
+                {verifiedMembers.map((member, index) => (
+                  <tr
+                    key={member.id}
+                    className="hover:bg-[#201d1a] transition-colors group"
+                  >
+                    <td className="py-3.5 px-4 text-[#756e63]">
+                      {String(index + 1).padStart(2, '0')}
+                    </td>
+                    <td className="py-3.5 px-4 font-semibold text-[#f5f0e8]">
+                      {member.name}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="text-amber-400/90 hover:text-amber-300">
+                        {member.domain}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 hidden sm:table-cell text-[#8c8376]">
+                      {member.rss ? (
+                        <a
+                          href={member.rss}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:text-[#c4bcaf] inline-flex items-center gap-1"
+                          title="RSS Feed"
+                        >
+                          <Rss className="w-3 h-3 text-amber-500/70" />
+                          <span>feed</span>
+                        </a>
+                      ) : (
+                        <span className="text-[#555047]">&mdash;</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 hidden md:table-cell text-[#756e63]">
+                      {member.joinDate}
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <a
+                        href={member.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[#8c8376] group-hover:text-amber-400 transition-colors"
+                      >
+                        <span>Visit</span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
-      {/* 3. Three Simple Truths (Full-width 3-column layout, zero empty left space, zero cards) */}
-      <section className="space-y-8 pt-6 max-w-5xl mx-auto px-4">
-        <div className="space-y-1.5 border-b border-white/[0.08] pb-4">
-          <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500 uppercase tracking-widest">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            <span>HOW IT WORKS</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
-            Three simple truths.
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
-          {/* Truth 1 */}
-          <div className="space-y-2 border-l border-white/15 pl-4 sm:pl-5">
-            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block">
-              01 // SOVEREIGNTY
-            </span>
-            <h3 className="text-base sm:text-lg font-display font-semibold text-white tracking-tight">
-              You own your spot
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
-              You host your precious projects, writings, and experiments on a personal site or dev garden you actually own. No social media algorithms controlling your reach.
+      {/* 4. Quick Embed Snippet */}
+      <section className="bg-[#181614] border border-white/[0.08] rounded-xl p-6 sm:p-8 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-4">
+          <div>
+            <h2 className="font-serif text-xl sm:text-2xl text-[#fbf9f5]">
+              Add to your website
+            </h2>
+            <p className="text-xs font-mono text-[#8c8376] mt-0.5">
+              Paste these 4 links anywhere on your footer or colophon.
             </p>
           </div>
-
-          {/* Truth 2 */}
-          <div className="space-y-2 border-l border-white/15 pl-4 sm:pl-5">
-            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block">
-              02 // THE EMBED
-            </span>
-            <h3 className="text-base sm:text-lg font-display font-semibold text-white tracking-tight">
-              You wear the seal
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
-              You place our quiet, minimal badge in your site footer. When someone clicks <code className="text-zinc-200 px-1.5 py-0.5 rounded bg-zinc-900 border border-white/10 text-xs font-mono">Next</code>, it hops them to another cracked peer in the ring.
-            </p>
-          </div>
-
-          {/* Truth 3 */}
-          <div className="space-y-2 border-l border-white/15 pl-4 sm:pl-5">
-            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block">
-              03 // HUMAN DISCOVERY
-            </span>
-            <h3 className="text-base sm:text-lg font-display font-semibold text-white tracking-tight">
-              Real eyes, zero noise
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
-              Curious visitors who appreciate high-effort work circulate continuously between our sovereign sites. Pure human discovery with zero advertising or engagement farming.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. How to Join (Direct, Conversational) */}
-      <section className="p-6 sm:p-8 bg-zinc-950 border border-white/[0.08] rounded-2xl space-y-4 max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1 max-w-xl">
-            <h3 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight">
-              Think you belong in the ring?
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
-              We don&apos;t do formal resumes or automated rejections. If you have an active personal site and something you&apos;re cooking, submit your domain or hop into the Kavyon Discord community to chat with Ibrahim (Carbon) and the crew. If you have that curious mindset, you get your Ring Key.
-            </p>
-          </div>
-
-          <a
-            href="https://discord.gg/8JmHjMSqJ5"
-            target="_blank"
-            rel="noreferrer"
-            className="w-full sm:w-auto px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-mono text-xs font-semibold rounded-md transition-all shadow flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          <Link
+            to="/widget"
+            className="text-xs font-mono text-amber-500 hover:text-amber-400 flex items-center gap-1 transition-colors self-start sm:self-auto"
           >
-            <Disc className="w-4 h-4" />
-            <span>Join Kavyon Discord</span>
-            <ExternalLink className="w-3 h-3 text-zinc-600" />
-          </a>
+            <span>See full snippet guide</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
-      </section>
 
-      {/* 5. Exit Quote */}
-      <section className="text-center py-4 space-y-1">
-        <p className="font-mono text-xs sm:text-sm text-zinc-400 italic">
-          &ldquo;The web didn&apos;t lose its genius. It just retreated to personal domains.&rdquo;
+        {/* Code block with copy button */}
+        <div className="relative group">
+          <pre className="p-4 rounded-lg bg-[#121110] border border-white/[0.08] text-xs font-mono text-[#dcd5c9] overflow-x-auto leading-relaxed">
+            <code>{quickSnippet}</code>
+          </pre>
+          <button
+            onClick={handleCopySnippet}
+            className="absolute top-3 right-3 px-2.5 py-1.5 rounded bg-[#25221e] hover:bg-[#302c27] text-xs font-mono text-[#c4bcaf] hover:text-white border border-white/[0.1] transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            {copiedSnippet ? (
+              <>
+                <Check className="w-3 h-3 text-emerald-400" />
+                <span className="text-emerald-400">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" />
+                <span>Copy HTML</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <p className="text-xs text-[#8c8376] font-mono leading-relaxed">
+          Replace <code className="text-amber-400/90">&apos;your-name&apos;</code> with your registered handle.
         </p>
-        <div className="text-[11px] font-mono text-zinc-600">
-          NICHENET &bull; Est. 2026
+      </section>
+
+      {/* 5. Routes & Endpoints */}
+      <section className="border border-white/[0.08] rounded-xl p-6 bg-[#181614] space-y-4">
+        <div className="flex items-center gap-2 text-xs font-mono text-[#8c8376]">
+          <Terminal className="w-3.5 h-3.5 text-amber-500" />
+          <span>RING ROUTING SYSTEM</span>
+        </div>
+        <h3 className="font-serif text-lg text-[#fbf9f5]">Available Routes</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
+            <span className="text-amber-400">/next/:handle</span>
+            <p className="text-[#8c8376]">Redirects to the next member in sequence.</p>
+          </div>
+          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
+            <span className="text-amber-400">/prev/:handle</span>
+            <p className="text-[#8c8376]">Redirects to the previous member in sequence.</p>
+          </div>
+          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
+            <span className="text-amber-400">/rand</span>
+            <p className="text-[#8c8376]">Jumps to a random member. Add <code className="text-[#c4bcaf]">?from=:handle</code> to skip self.</p>
+          </div>
+          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
+            <span className="text-amber-400">/members</span>
+            <p className="text-[#8c8376]">Returns raw JSON payload of active ring members.</p>
+          </div>
         </div>
       </section>
 
-      {/* Member Dossier Modal */}
-      <MemberDossierModal
-        member={selectedMember}
-        onClose={() => setSelectedMember(null)}
-        onNavigate={(newMember) => setSelectedMember(newMember)}
-      />
+      {/* 6. How to Join */}
+      <section className="border border-white/[0.08] rounded-xl p-6 sm:p-8 bg-[#181614] space-y-3">
+        <h2 className="font-serif text-xl sm:text-2xl text-[#fbf9f5]">
+          Want to join?
+        </h2>
+        <p className="text-sm text-[#c4bcaf] leading-relaxed font-sans">
+          The Uncommons is invite-only to protect the webring from domain squatters and corporate content farms. We look for personal websites with distinct character&mdash;craft, research, essays, or tools.
+        </p>
+        <p className="text-xs font-mono text-[#8c8376]">
+          Reach out directly to Carbon via <a href="https://carbon.is-a.dev" target="_blank" rel="noreferrer" className="text-amber-400 hover:underline">carbon.is-a.dev</a> with a link to your personal domain. Once vetted, you will receive your ring position and private Forgejo instance invite.
+        </p>
+      </section>
     </div>
   );
 };
