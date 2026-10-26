@@ -70,3 +70,52 @@ code, pre, kbd, .font-mono {
 .border-warm-subtle {
   border-color: rgba(255, 255, 255, 0.05);
 }
+
+/* THEME: Nordic Pine */
+[data-theme="nordic"], [data-theme="nordic"] body {
+  background-color: #0d1311 !important;
+  color: #e6efe9 !important;
+}
+[data-theme="nordic"] .bg-\[\#121110\] { background-color: #0d1311 !important; }
+[data-theme="nordic"] .bg-\[\#181614\] { background-color: #141b18 !important; }
+[data-theme="nordic"] .bg-\[\#1c1a17\], [data-theme="nordic"] .bg-\[\#221f1c\], [data-theme="nordic"] .bg-\[\#25221e\] { background-color: #1a231f !important; }
+[data-theme="nordic"] .text-\[\#f5f0e8\], [data-theme="nordic"] .text-\[\#fbf9f5\] { color: #e6efe9 !important; }
+[data-theme="nordic"] .text-\[\#c4bcaf\], [data-theme="nordic"] .text-\[\#dcd5c9\] { color: #b8c9c0 !important; }
+[data-theme="nordic"] .text-\[\#8c8376\], [data-theme="nordic"] .text-\[\#9c9387\] { color: #7a8f84 !important; }
+[data-theme="nordic"] .text-amber-400, [data-theme="nordic"] .text-amber-500, [data-theme="nordic"] .text-amber-400\/90 { color: #34d399 !important; }
+[data-theme="nordic"] .bg-amber-600 { background-color: #059669 !important; }
+[data-theme="nordic"] .bg-amber-500 { background-color: #10b981 !important; }
+[data-theme="nordic"] .border-amber-500\/20, [data-theme="nordic"] .border-amber-500\/30 { border-color: rgba(52, 211, 153, 0.25) !important; }
+
+/* THEME: Pitch Obsidian */
+[data-theme="obsidian"], [data-theme="obsidian"] body {
+  background-color: #090909 !important;
+  color: #ededed !important;
+}
+[data-theme="obsidian"] .bg-\[\#121110\] { background-color: #090909 !important; }
+[data-theme="obsidian"] .bg-\[\#181614\] { background-color: #131313 !important; }
+[data-theme="obsidian"] .bg-\[\#1c1a17\], [data-theme="obsidian"] .bg-\[\#221f1c\], [data-theme="obsidian"] .bg-\[\#25221e\] { background-color: #1d1d1d !important; }
+[data-theme="obsidian"] .text-\[\#f5f0e8\], [data-theme="obsidian"] .text-\[\#fbf9f5\] { color: #ffffff !important; }
+[data-theme="obsidian"] .text-\[\#c4bcaf\], [data-theme="obsidian"] .text-\[\#dcd5c9\] { color: #d4d4d8 !important; }
+[data-theme="obsidian"] .text-\[\#8c8376\], [data-theme="obsidian"] .text-\[\#9c9387\] { color: #a1a1aa !important; }
+[data-theme="obsidian"] .text-amber-400, [data-theme="obsidian"] .text-amber-500, [data-theme="obsidian"] .text-amber-400\/90 { color: #e4e4e7 !important; }
+[data-theme="obsidian"] .bg-amber-600 { background-color: #3f3f46 !important; }
+[data-theme="obsidian"] .bg-amber-500 { background-color: #d4d4d8 !important; }
+[data-theme="obsidian"] .border-amber-500\/20, [data-theme="obsidian"] .border-amber-500\/30 { border-color: rgba(255, 255, 255, 0.15) !important; }
+
+/* THEME: Library Parchment (Light) */
+[data-theme="parchment"], [data-theme="parchment"] body {
+  background-color: #f6f2ea !important;
+  color: #1f1c19 !important;
+}
+[data-theme="parchment"] .bg-\[\#121110\] { background-color: #f6f2ea !important; }
+[data-theme="parchment"] .bg-\[\#181614\] { background-color: #ede7dc !important; }
+[data-theme="parchment"] .bg-\[\#1c1a17\], [data-theme="parchment"] .bg-\[\#221f1c\], [data-theme="parchment"] .bg-\[\#25221e\] { background-color: #e2dbce !important; }
+[data-theme="parchment"] .text-\[\#f5f0e8\], [data-theme="parchment"] .text-\[\#fbf9f5\] { color: #1a1715 !important; }
+[data-theme="parchment"] .text-\[\#c4bcaf\], [data-theme="parchment"] .text-\[\#dcd5c9\] { color: #3d3731 !important; }
+[data-theme="parchment"] .text-\[\#8c8376\], [data-theme="parchment"] .text-\[\#9c9387\] { color: #6e6559 !important; }
+[data-theme="parchment"] .border-white\/\[0\.08\], [data-theme="parchment"] .border-white\/\[0\.06\], [data-theme="parchment"] .border-white\/10, [data-theme="parchment"] .border-white\/15 { border-color: rgba(0, 0, 0, 0.1) !important; }
+[data-theme="parchment"] .text-amber-400, [data-theme="parchment"] .text-amber-500, [data-theme="parchment"] .text-amber-400\/90 { color: #b45309 !important; }
+[data-theme="parchment"] .bg-amber-600 { background-color: #b45309 !important; }
+[data-theme="parchment"] .bg-amber-500 { background-color: #d97706 !important; }
+[data-theme="parchment"] .border-amber-500\/20, [data-theme="parchment"] .border-amber-500\/30 { border-color: rgba(180, 83, 9, 0.25) !important; }

@@ -78,18 +78,64 @@ export const HomePage: React.FC = () => {
         </p>
       </header>
 
-      {/* 2. Casual Letter / Manifesto (Option C) */}
+      {/* 2. Casual Letter / Manifesto */}
       <section className="bg-[#181614] border border-white/[0.08] rounded-xl p-6 sm:p-8 space-y-4 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-1 h-full bg-amber-600/70" />
-        <h2 className="font-serif text-xl sm:text-2xl text-[#f5f0e8] font-normal">
-          A quiet corner outside the feed
-        </h2>
         <div className="space-y-3 text-sm sm:text-base text-[#c4bcaf] leading-relaxed font-sans">
           <p>
-            Most of the internet has been corralled into walled gardens, noisy feeds, and algorithmic hamster wheels. We built The Uncommons to link personal domains together again&mdash;quiet corners of the web maintained by makers with distinct taste.
+            hey! the uncommons is a{' '}
+            <a
+              href="https://en.wikipedia.org/wiki/Webring"
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-400 hover:underline"
+            >
+              webring
+            </a>{' '}
+            for a circle of friends who build things on the internet.
           </p>
           <p>
-            No engagement metrics, no sponsored posts, no corporate telemetry. If you publish on your own domain and build with intentionality, this circle is for you.
+            we link our websites together and share a private Forgejo Git forge on{' '}
+            <a
+              href="https://git.carbon.is-a.dev"
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-400 hover:underline font-mono text-xs sm:text-sm"
+            >
+              git.carbon.is-a.dev
+            </a>
+            . membership is invite-only between friends and people whose work we respect.
+          </p>
+          <p>
+            the source code for the webring is{' '}
+            <a
+              href="https://git.carbon.is-a.dev/carbonthecoder/uncommonsring"
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-400 hover:underline"
+            >
+              open source
+            </a>
+            . it&apos;s just a simple python flask app by orangc; see the README for more details.
+          </p>
+          <p>
+            to join, contact the ringmaster,{' '}
+            <a
+              href="https://carbon.is-a.dev/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-400 hover:underline"
+            >
+              carbon
+            </a>
+            , preferably via{' '}
+            <a
+              href="mailto:contact@carbon.is-a.dev"
+              className="text-amber-400 hover:underline"
+            >
+              email
+            </a>
+            . to explore, scroll below to hop through our personal sites.
           </p>
         </div>
 

@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { sound } from '../utils/audio';
-import { Volume2, VolumeX, Menu, X, ArrowUpRight } from 'lucide-react';
+import { Volume2, VolumeX, Menu, X, ArrowUpRight, Palette } from 'lucide-react';
 
 interface NavbarProps {
   nodeCount: number;
 }
+
+const THEMES = [
+  { id: 'espresso', label: 'Espresso', dot: '#d97706' },
+  { id: 'nordic', label: 'Nordic Pine', dot: '#10b981' },
+  { id: 'obsidian', label: 'Obsidian', dot: '#e4e4e7' },
+  { id: 'parchment', label: 'Parchment', dot: '#b45309' },
+] as const;
+
+type ThemeId = typeof THEMES[number]['id'];
 
 const ForgejoIcon: React.FC<{ className?: string }> = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={`${className} fill-current`} viewBox="0 0 24 24">
@@ -17,6 +26,28 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  const [theme, setTheme] = useState<ThemeId>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('unc_theme') as ThemeId;
+      if (saved && THEMES.some(t => t.id === saved)) return saved;
+    }
+    return 'espresso';
+  });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('unc_theme', theme);
+    }
+  }, [theme]);
+
+  const cycleTheme = () => {
+    sound.playClick();
+    const currentIndex = THEMES.findIndex(t => t.id === theme);
+    const nextTheme = THEMES[(currentIndex + 1) % THEMES.length].id;
+    setTheme(nextTheme);
+  };
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -94,6 +125,22 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
             <ArrowUpRight className="w-3 h-3 text-[#756e63]" />
           </a>
 
+          {/* Theme Switcher (Zero emojis - SVG icon & palette indicator) */}
+          <button
+            onClick={cycleTheme}
+            title={`Current theme: ${THEMES.find(t => t.id === theme)?.label}. Click to cycle.`}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-mono rounded-lg border border-white/10 hover:border-white/20 text-[#8c8376] hover:text-[#f5f0e8] bg-[#181614] transition-colors cursor-pointer"
+          >
+            <Palette className="w-3.5 h-3.5 text-amber-500" />
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: THEMES.find(t => t.id === theme)?.dot }}
+            />
+            <span className="hidden sm:inline uppercase text-[10px] tracking-wider text-[#c4bcaf]">
+              {THEMES.find(t => t.id === theme)?.label}
+            </span>
+          </button>
+
           {/* Sound Toggle */}
           <button
             onClick={toggleSound}
@@ -152,6 +199,23 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
             </span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
+
+          <button
+            onClick={cycleTheme}
+            className="w-full flex items-center justify-between px-3.5 py-3 rounded-lg text-sm font-mono text-[#c4bcaf] bg-[#181614] border border-white/10"
+          >
+            <span className="flex items-center gap-2">
+              <Palette className="w-4 h-4 text-amber-500" />
+              <span>Theme</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-xs font-mono uppercase text-[#8c8376]">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: THEMES.find(t => t.id === theme)?.dot }}
+              />
+              <span>{THEMES.find(t => t.id === theme)?.label}</span>
+            </span>
+          </button>
         </div>
       )}
     </header>
