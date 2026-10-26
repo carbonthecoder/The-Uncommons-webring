@@ -5,7 +5,7 @@ import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
 import { ForgePage } from './pages/ForgePage';
 import { WidgetPage } from './pages/WidgetPage';
-import { MembersJsonPage } from './pages/MembersJsonPage';
+import { MembersPage } from './pages/MembersPage';
 import { GoPage } from './pages/GoPage';
 import { OwnerOrchestratorModal } from './components/OwnerOrchestratorModal';
 import { OwnerPasscodeModal } from './components/OwnerPasscodeModal';
@@ -110,7 +110,7 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/forge" element={<ForgePage />} />
             <Route path="/widget" element={<WidgetPage />} />
-            <Route path="/members" element={<MembersJsonPage />} />
+            <Route path="/members" element={<MembersPage />} />
             <Route path="/nodes" element={<HomePage />} />
             <Route path="/next/:handle" element={<GoPage forcedAction="next" />} />
             <Route path="/prev/:handle" element={<GoPage forcedAction="prev" />} />
