@@ -122,7 +122,7 @@ export default function App() {
 
         {/* Global Classy Footer */}
         <footer className="w-full border-t border-white/[0.08] bg-[#121110] py-12 mt-20 text-xs font-mono text-[#8c8376]">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col space-y-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col space-y-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-white/[0.06] pb-8">
               <div className="space-y-1">
                 <div className="font-serif text-base text-[#fbf9f5] font-normal tracking-wide">
@@ -152,17 +152,17 @@ export default function App() {
                   rel="noreferrer"
                   className="text-amber-500/90 hover:text-amber-400 transition-colors"
                 >
-                  git.carbon.is-a.dev &rarr;
+                  Git Instance &rarr;
                 </a>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#6d665b]">
-              <div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-[#6d665b] w-full">
+              <div className="text-center md:text-left">
                 Curated by Carbon. Hosted on personal hardware. Zero telemetry, zero tracking cookies, zero surveillance.
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0 whitespace-nowrap">
                 <a
                   href="https://carbon.is-a.dev"
                   target="_blank"

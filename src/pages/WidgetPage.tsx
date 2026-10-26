@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Code, Terminal, Eye } from 'lucide-react';
+import { Copy, Check, Code, Terminal, Eye, Shuffle } from 'lucide-react';
 import { sound } from '../utils/audio';
 
 export const WidgetPage: React.FC = () => {
@@ -10,20 +10,23 @@ export const WidgetPage: React.FC = () => {
   const htmlSnippet = `<nav class="uncommons-badge" aria-label="The Uncommons Webring">
   <a href="https://uncommons.network/prev/${demoHandle}" title="Previous member">←</a>
   <a href="https://uncommons.network" title="The Uncommons Webring">the uncommons</a>
-  <a href="https://uncommons.network/rand?from=${demoHandle}" title="Random member">✦</a>
+  <a href="https://uncommons.network/rand?from=${demoHandle}" title="Random member">⇄</a>
   <a href="https://uncommons.network/next/${demoHandle}" title="Next member">→</a>
 </nav>`;
 
-  const markdownSnippet = `[←](https://uncommons.network/prev/${demoHandle}) [the uncommons](https://uncommons.network) [✦](https://uncommons.network/rand?from=${demoHandle}) [→](https://uncommons.network/next/${demoHandle})`;
+  const markdownSnippet = `[←](https://uncommons.network/prev/${demoHandle}) [the uncommons](https://uncommons.network) [⇄](https://uncommons.network/rand?from=${demoHandle}) [→](https://uncommons.network/next/${demoHandle})`;
 
   const reactSnippet = `import React from 'react';
+import { Shuffle } from 'lucide-react';
 
 export function UncommonsWidget({ handle }: { handle: string }) {
   return (
     <nav className="inline-flex items-center gap-3 px-3 py-1.5 rounded-lg border border-white/10 bg-[#181614] text-xs font-mono text-[#c4bcaf]">
       <a href={\`https://uncommons.network/prev/\${handle}\`} className="hover:text-amber-400 transition-colors" title="Previous member">←</a>
       <a href="https://uncommons.network" className="text-[#f5f0e8] hover:text-white font-medium" title="The Uncommons">the uncommons</a>
-      <a href={\`https://uncommons.network/rand?from/\${handle}\`} className="text-amber-500 hover:text-amber-400 transition-colors" title="Random member">✦</a>
+      <a href={\`https://uncommons.network/rand?from/\${handle}\`} className="text-amber-500 hover:text-amber-400 transition-colors flex items-center" title="Random member">
+        <Shuffle className="w-3 h-3 inline" />
+      </a>
       <a href={\`https://uncommons.network/next/\${handle}\`} className="hover:text-amber-400 transition-colors" title="Next member">→</a>
     </nav>
   );
@@ -102,7 +105,9 @@ export function UncommonsWidget({ handle }: { handle: string }) {
 
         {/* Live render preview container */}
         <div className="py-8 px-4 rounded-lg bg-[#121110] border border-white/[0.06] flex flex-col items-center justify-center gap-4 text-center">
-          <div className="text-xs font-mono text-[#756e63]">How it appears in your footer:</div>
+          <div className="text-xs font-mono text-[#756e63]">
+            How it appears in your website&apos;s footer or anywhere you like to keep:
+          </div>
           
           <nav className="inline-flex items-center gap-3 px-4 py-2 rounded-lg border border-white/10 bg-[#181614] text-xs font-mono text-[#c4bcaf] shadow-md">
             <a
@@ -121,10 +126,10 @@ export function UncommonsWidget({ handle }: { handle: string }) {
             </a>
             <a
               href={`/rand?from=${demoHandle}`}
-              className="text-amber-500 hover:text-amber-400 transition-colors p-1"
+              className="text-amber-500 hover:text-amber-400 transition-colors p-1 flex items-center justify-center"
               title="Random member"
             >
-              ✦
+              <Shuffle className="w-3.5 h-3.5" />
             </a>
             <a
               href={`/next/${demoHandle}`}

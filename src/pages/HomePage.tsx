@@ -21,7 +21,7 @@ export const HomePage: React.FC = () => {
 
   const quickSnippet = `<a href="https://uncommons.network/prev/your-name">←</a>
 <a href="https://uncommons.network">the uncommons</a>
-<a href="https://uncommons.network/rand?from=your-name">✦</a>
+<a href="https://uncommons.network/rand?from=your-name" title="Random member">⇄</a>
 <a href="https://uncommons.network/next/your-name">→</a>`;
 
   const handleCopySnippet = () => {
