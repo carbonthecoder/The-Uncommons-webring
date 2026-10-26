@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLiveMembers, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
 import { sound } from '../utils/audio';
-import { ArrowLeft, ArrowRight, Shuffle, Copy, Check, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Shuffle, Copy, Check, ArrowUpRight, Rss } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const liveMembers = useLiveMembers();
@@ -216,7 +216,7 @@ export const HomePage: React.FC = () => {
                   <th className="py-3 px-4 w-12 font-normal">#</th>
                   <th className="py-3 px-4 font-normal">Member</th>
                   <th className="py-3 px-4 font-normal">Personal Domain</th>
-                  <th className="py-3 px-4 font-normal hidden sm:table-cell">Handle</th>
+                  <th className="py-3 px-4 font-normal hidden sm:table-cell">RSS Feed</th>
                   <th className="py-3 px-4 font-normal hidden md:table-cell">Joined</th>
                   <th className="py-3 px-4 text-right font-normal">Link</th>
                 </tr>
@@ -238,8 +238,21 @@ export const HomePage: React.FC = () => {
                         {member.domain}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 hidden sm:table-cell text-[#8c8376] font-mono">
-                      @{member.handle}
+                    <td className="py-3.5 px-4 hidden sm:table-cell text-[#8c8376]">
+                      {member.rss ? (
+                        <a
+                          href={member.rss}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:text-amber-400 inline-flex items-center gap-1.5 transition-colors"
+                          title="RSS Feed"
+                        >
+                          <Rss className="w-3 h-3 text-amber-500/80" />
+                          <span>feed</span>
+                        </a>
+                      ) : (
+                        <span className="text-[#555047]">&mdash;</span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 hidden md:table-cell text-[#756e63]">
                       {member.joinDate}
