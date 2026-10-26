@@ -143,10 +143,6 @@ export const Navbar: React.FC<NavbarProps> = ({ nodeCount }) => {
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-mono rounded-lg border border-white/10 hover:border-white/20 text-[#8c8376] hover:text-[#f5f0e8] bg-[#181614] transition-colors cursor-pointer"
             >
               <Palette className="w-3.5 h-3.5 text-amber-500" />
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: THEMES.find(t => t.id === theme)?.dot }}
-              />
               <span className="hidden sm:inline uppercase text-[10px] tracking-wider text-[#c4bcaf]">
                 {THEMES.find(t => t.id === theme)?.label}
               </span>

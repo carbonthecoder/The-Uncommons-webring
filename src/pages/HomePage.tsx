@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLiveMembers, getNextMember, getPrevMember, getRandomMember } from '../data/members';
 import type { Member } from '../data/members';
 import { sound } from '../utils/audio';
-import { ArrowLeft, ArrowRight, Shuffle, Copy, Check, Terminal, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Shuffle, Copy, Check, ArrowUpRight } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const liveMembers = useLiveMembers();
@@ -311,35 +311,7 @@ export const HomePage: React.FC = () => {
         </p>
       </section>
 
-      {/* 5. Routes & Endpoints */}
-      <section className="border border-white/[0.08] rounded-xl p-6 bg-[#181614] space-y-4">
-        <div className="flex items-center gap-2 text-xs font-mono text-[#8c8376]">
-          <Terminal className="w-3.5 h-3.5 text-amber-500" />
-          <span>RING ROUTING SYSTEM</span>
-        </div>
-        <h3 className="font-serif text-lg text-[#fbf9f5]">Available Routes</h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
-            <span className="text-amber-400">/next/:handle</span>
-            <p className="text-[#8c8376]">Redirects to the next member in sequence.</p>
-          </div>
-          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
-            <span className="text-amber-400">/prev/:handle</span>
-            <p className="text-[#8c8376]">Redirects to the previous member in sequence.</p>
-          </div>
-          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
-            <span className="text-amber-400">/rand</span>
-            <p className="text-[#8c8376]">Jumps to a random member. Add <code className="text-[#c4bcaf]">?from=:handle</code> to skip self.</p>
-          </div>
-          <div className="p-3 rounded-lg bg-[#121110] border border-white/[0.06] space-y-1">
-            <span className="text-amber-400">/members</span>
-            <p className="text-[#8c8376]">Returns raw JSON payload of active ring members.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. How to Join */}
+      {/* How to Join */}
       <section className="border border-white/[0.08] rounded-xl p-6 sm:p-8 bg-[#181614] space-y-3">
         <h2 className="font-serif text-xl sm:text-2xl text-[#fbf9f5]">
           Want to join?
